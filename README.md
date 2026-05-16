@@ -1,82 +1,35 @@
-﻿# Kronecker-Separable Spatio-Temporal HiPPO-SVGP
+# Joint SSGP Kronecker HiPPO Implementation
 
-This repository contains the LaTeX source and compiled PDF for a joint online Gaussian process model with a linear mean component and a Kronecker-separable spatio-temporal HiPPO-SVGP inducing representation.
+This repository contains a joint online Gaussian process implementation for
+Kronecker-separable spatio-temporal HiPPO-SVGP models with a linear mean model.
+It now includes both the formula document and an isolated NumPy/SciPy CPU
+implementation of:
 
-## Main Files
+- joint linear-mean GP updates,
+- SSGP-style old-likelihood-ratio transfer,
+- Kronecker-preserving temporal changing-basis updates,
+- Sylvester-compatible structured posterior solves,
+- synthetic and ERA5 processed-data experiment scripts.
 
-- `new_main_joint_training_ssgp_kron_with_appendix.tex`: LaTeX source with the full derivation and appendix.
-- `new_main_joint_training_ssgp_kron_with_appendix.pdf`: compiled formula document.
+The baseline PyTorch training files are kept intact. The new method is isolated
+under `stvgp_kronecker/joint_ssgp_kron/`, with separate scripts, tests, docs,
+verification outputs, datasets, and experiment results.
 
-## Core Model
+## Reference Formula Document
 
-The document studies online spatio-temporal regression at spatial locations `s_i` and time points `t_n`. The observation model is
+The main derivation is in:
 
-```math
-y(t_n, s_i) = \phi(t_n, s_i)^T \beta + f(t_n, s_i) + \epsilon_{n,i},
-\qquad \epsilon_{n,i} \sim \mathcal{N}(0, \sigma^2).
-```
+- `stvgp_kronecker/new_main_joint_training_ssgp_kron_with_appendix.tex`
+- `stvgp_kronecker/new_main_joint_training_ssgp_kron_with_appendix.pdf`
 
-At block level,
-
-```math
-y_n = \Phi_n \beta + f_n + \epsilon_n,
-\qquad \epsilon_n \sim \mathcal{N}(0, \sigma^2 I).
-```
-
-The latent process is a separable spatio-temporal Gaussian process:
-
-```math
-k((s,t),(s',t')) = k_s(s,s') k_t(t,t'),
-\qquad K_{ff} = K_t \otimes K_s.
-```
-
-The main modeling decision is to train the linear mean parameter `beta` and the sparse GP inducing variables `u` jointly, instead of estimating `beta` first and fitting the GP to residuals.
-
-## Why Joint Training
-
-A two-stage residual method uses
+The core observation model is:
 
 ```math
-r_n(\hat{\beta}_n) = y_n - \Phi_n \hat{\beta}_n.
+y_n = \Phi_n \beta + A_n u_n + \epsilon_n,
+\qquad \epsilon_n \sim \mathcal{N}(0,\sigma^2 I).
 ```
 
-For an old block `j < n`, if the estimate changes from `\hat{\beta}_{n-1}` to `\hat{\beta}_n`, then
-
-```math
-r_j(\hat{\beta}_n)
-= r_j(\hat{\beta}_{n-1}) - \Phi_j(\hat{\beta}_n - \hat{\beta}_{n-1}).
-```
-
-Historical residual targets therefore become stale whenever `beta` is updated. The joint model avoids this by keeping the likelihood on `y_n`:
-
-```math
-p(y_n | \beta, u_n)
-= \mathcal{N}(y_n | \Phi_n \beta + A_n u_n, \sigma^2 I).
-```
-
-## Kronecker HiPPO-SVGP Representation
-
-Temporal inducing variables use HiPPO-LegS interdomain features over a horizon `T`:
-
-```math
-u_\ell^{(t)}(T) = \int_0^T g_\ell^{(T)}(x) f_t(x) dx.
-```
-
-A stationary temporal kernel is approximated with random Fourier features. This gives analytic temporal inducing covariances and point-to-inducing cross-covariances through Legendre oscillatory integrals and spherical Bessel identities.
-
-Spatial inducing variables use fixed inducing locations
-
-```math
-Z_s = \{z_1^{(s)}, \ldots, z_{M_s}^{(s)}\}.
-```
-
-The mixed spatio-temporal inducing covariance is
-
-```math
-K_{uu}^{(st)}(T) = K_{uu}^{(t)}(T) \otimes K_{ZZ}^{(s)}.
-```
-
-For block `D_n`, the sparse GP projection is Kronecker structured:
+The sparse Kronecker projection is:
 
 ```math
 A_n = T_n \otimes C,
@@ -85,147 +38,171 @@ A_n = T_n \otimes C,
 where
 
 ```math
-T_n = K_{fu,n}^{(t)} (K_{uu,n}^{(t)})^{-1},
+T_n = K_{fu,n}^{(t)}(K_{uu,n}^{(t)})^{-1},
 \qquad
-C = K_{XZ}^{(s)} (K_{ZZ}^{(s)})^{-1}.
+C = K_{XZ}^{(s)}(K_{ZZ}^{(s)})^{-1}.
 ```
 
-## Online Joint ELBO
+## Why Joint Training
 
-The online joint variational objective is
+The original derivation emphasizes that two-stage residual training can make
+historical residuals stale when the linear mean parameter changes:
 
 ```math
-\mathcal{L}_n
-= \mathbb{E}_{q_n(\beta,u_n)}[\log p(y_n | \beta,u_n)]
-- \mathrm{KL}[q_n(\beta,u_n) \Vert p_n(\beta,u_n)].
+r_j(\hat{\beta}_n)
+= r_j(\hat{\beta}_{n-1}) - \Phi_j(\hat{\beta}_n-\hat{\beta}_{n-1}).
 ```
 
-A practical mean-field version uses
+The new implementation therefore keeps the likelihood directly on `y_n` and
+updates the linear mean and sparse GP state jointly.
 
-```math
-q_n(\beta,u_n) = q_n(\beta) q_n(u_n),
-```
+## Added Components
 
-with Gaussian factors for both the linear coefficient and the GP inducing state.
+- `stvgp_kronecker/joint_ssgp_kron/kron_utils.py`: Kronecker products, dense
+  test adapters, SPD solves, and the Sylvester-compatible precision solver.
+- `stvgp_kronecker/joint_ssgp_kron/ssgp_transfer.py`: SSGP old-likelihood-ratio
+  transfer and projected-prior ablation formulas.
+- `stvgp_kronecker/joint_ssgp_kron/structured_state.py`: structured posterior
+  state with `B_temporal` and `H_info`.
+- `stvgp_kronecker/joint_ssgp_kron/model.py`: joint linear-mean model with
+  SSGP transfer, no-transfer, projected-prior, prediction, and dense test hooks.
+- `stvgp_kronecker/joint_ssgp_kron/synthetic.py`: synthetic separable GP data
+  and consistent temporal/spatial projection factors.
+- `scripts/verify_joint_ssgp_kron_derivations.py`: derivation checks and JSON
+  report writer.
+- `scripts/run_joint_ssgp_kron_experiments.py`: synthetic and ERA5 processed-data
+  experiment runner.
+- `tests/test_joint_ssgp_kron_*.py`: unit tests for formulas and model sanity.
+- `docs/joint_ssgp_kron_test_report.md`: latest verification and experiment
+  report.
 
-## Changing-Basis Transfer
+## Main Formulas
 
-Because the HiPPO temporal basis may change between online blocks, old inducing variables `u_o` and new inducing variables `u_n` are not in the same coordinate system. The main proposed update transfers old information through an SSGP-style old-likelihood ratio.
-
-For
-
-```math
-q_{n-1}(u_o)=\mathcal{N}(m_o,S_o),
-\qquad p(u_o)=\mathcal{N}(0,K_{oo}),
-```
-
-define old likelihood natural statistics
-
-```math
-R_o = S_o^{-1} - K_{oo}^{-1},
-\qquad r_o = S_o^{-1} m_o.
-```
-
-With
-
-```math
-L_{on}=K_{on}K_{nn}^{-1},
-```
-
-the old likelihood information transfers as
-
-```math
-\Lambda_{o\to n}=L_{on}^T R_o L_{on},
-\qquad h_{o\to n}=L_{on}^T r_o.
-```
-
-The GP coordinate update is
-
-```math
-S_{u,n}^{-1}
-= K_{nn}^{-1} + \Lambda_{o\to n} + \sigma^{-2}A_n^T A_n,
-```
-
-```math
-S_{u,n}^{-1}m_{u,n}
-= h_{o\to n} + \sigma^{-2}A_n^T(y_n - \Phi_n m_{\beta,n}).
-```
-
-## Kronecker-Preserving Old-Likelihood Transfer
-
-The appendix proves that when the spatial inducing set is fixed and the changing basis acts only along time,
-
-```math
-L_{on}=L_{on}^{(t)} \otimes I_s.
-```
-
-If the old likelihood precision is maintained in structured form
-
-```math
-R_o = B_o \otimes G,
-\qquad G=C^T C,
-```
-
-then the transferred precision remains Kronecker separable:
-
-```math
-\Lambda_{o\to n}
-= [(L_{on}^{(t)})^T B_o L_{on}^{(t)}] \otimes G.
-```
-
-The temporal likelihood statistic is updated by
-
-```math
-B_n = (L_{on}^{(t)})^T B_o L_{on}^{(t)} + \sigma^{-2}T_n^T T_n.
-```
-
-Thus the inducing precision keeps the form
-
-```math
-\Lambda_{u,n}
-= (K_{nn}^{(t)})^{-1} \otimes K_s^{-1} + B_n \otimes G.
-```
-
-## Sylvester Computation
-
-The Kronecker precision allows posterior mean and uncertainty solves to be reduced to Sylvester equations. For `z = vec(Z)` and `q = vec(Q)`,
-
-```math
-\Lambda_{u,n} z = q
-```
-
-is equivalent to
-
-```math
-K_s^{-1} Z (K_{nn}^{(t)})^{-1} + G Z B_n = Q.
-```
-
-This avoids materializing dense `M_t M_s` by `M_t M_s` precision matrices and is the main scalability mechanism in the formulation.
-
-## Recommended Comparisons
-
-The LaTeX document recommends evaluating:
-
-1. two-stage future-only residual baseline;
-2. two-stage residual GP with buffer or sketch correction;
-3. fixed-basis exact joint Gaussian update;
-4. joint mean-field without changing-basis transfer;
-5. joint mean-field with projected-prior transfer;
-6. joint mean-field with SSGP-style old-likelihood-ratio transfer;
-7. structured joint posterior with SSGP-style transfer.
-
-Suggested metrics include RMSE, MAE, test negative log likelihood, predictive interval coverage, runtime per online block, peak memory, memory-matched RMSE/NLL, calibration error, and continual evaluation windows.
-
-## Repository Layout
+With fixed spatial inducing locations and a temporal-only basis change:
 
 ```text
-.
-├── README.md
-├── .gitignore
-├── new_main_joint_training_ssgp_kron_with_appendix.tex
-└── new_main_joint_training_ssgp_kron_with_appendix.pdf
+L_on = K_on K_nn^{-1} = L_t kron I_s
+L_t  = K_on^(t) (K_nn^(t))^{-1}
 ```
 
-## Status
+The scalable implementation maintains old likelihood natural precision as:
 
-This repository currently contains the theoretical derivation, appendix, and compiled formula document. It is intended as the reference material for implementing joint online Kronecker-separable spatio-temporal HiPPO-SVGP training.
+```text
+R_o = B_o kron G
+G   = C^T C
+```
+
+so the transferred old likelihood precision is:
+
+```text
+Lambda_old = (L_t^T B_o L_t) kron G
+```
+
+For a new block with temporal projection `T_n`:
+
+```text
+B_n = L_t^T B_o L_t + T_n^T T_n / sigma2
+H_n = H_o L_t + C^T residual T_n / sigma2
+```
+
+The posterior mean matrix solves:
+
+```text
+Ks^{-1} M Kt^{-1} + G M B_n = H_n
+```
+
+without materializing the full Kronecker precision.
+
+## Transfer Variants
+
+- **SSGP-style old-likelihood-ratio transfer** is the default method. It carries
+  `B_temporal` and `H_info` through the temporal changing basis.
+- **Gaussian projected-prior transfer** is an ablation. It maps posterior moments
+  by dense Gaussian marginalization and is intended only for small/medium tests.
+- **No transfer** resets the GP old likelihood contribution between changing
+  bases while still allowing the linear mean posterior to continue.
+
+## Run Verification
+
+```bash
+uv run --no-sync python scripts/verify_joint_ssgp_kron_derivations.py
+```
+
+The script writes:
+
+```text
+results/verification/joint_ssgp_kron_verification.json
+```
+
+## Run Tests
+
+```bash
+uv run --no-sync pytest -q
+```
+
+Latest result:
+
+```text
+24 passed
+```
+
+## Run Synthetic Experiments
+
+```bash
+uv run --no-sync python scripts/run_joint_ssgp_kron_experiments.py \
+  --dataset synthetic \
+  --num-seeds 3 \
+  --num-time 40 \
+  --num-space 6 \
+  --block-size 5 \
+  --mt 5 \
+  --ms 4 \
+  --noise 0.05 \
+  --methods no_transfer projected_prior ssgp_transfer \
+  --outdir results/experiments
+```
+
+Outputs:
+
+```text
+results/experiments/joint_ssgp_kron_synthetic_metrics.csv
+results/experiments/joint_ssgp_kron_synthetic_report.json
+results/experiments/coverage_plot.png
+results/experiments/rmse_over_blocks.png
+results/experiments/nll_over_blocks.png
+```
+
+## Run ERA5 Processed-Data Probe
+
+The experiment script can stream the local processed ERA5 `.npz` files:
+
+```bash
+uv run --no-sync python scripts/run_joint_ssgp_kron_experiments.py \
+  --dataset era5 \
+  --num-seeds 1 \
+  --num-time 40 \
+  --num-space 6 \
+  --block-size 5 \
+  --mt 5 \
+  --ms 4 \
+  --noise 0.05 \
+  --methods no_transfer projected_prior ssgp_transfer \
+  --outdir results/experiments_era5_probe
+```
+
+This loader aligns common timestamps across selected scaled ERA5 location files.
+It is a lightweight reproduction/probe for the new method and does not replace
+the existing baseline ERA5 training scripts.
+
+## Known Limitations
+
+- If the spatial observation pattern changes per block, `G_j` changes and the
+  old likelihood becomes a sum of Kronecker products, not one `B_o kron G`.
+- If spatial inducing locations move online, `L_on` need not equal
+  `L_t kron I_s`.
+- If a dense unrestricted covariance is used and one computes
+  `S_o^{-1} - K_oo^{-1}`, the result need not be a single Kronecker product.
+- Non-Gaussian likelihoods may break the simple `A.T A / sigma2` likelihood
+  precision structure.
+- The synthetic experiments use consistent RBF temporal inducing matrices for
+  verification. They do not require exact HiPPO-RFF integrals.
