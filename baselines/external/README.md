@@ -10,7 +10,9 @@ seen-history protocol.
 | `thangbui_streaming_sparse_gp` | https://github.com/thangbui/streaming_sparse_gp | OSVGP / OSGPR streaming sparse GP reference | Downloaded; not yet wrapped in the unified ERA5 runner |
 | `wjmaddox_online_vargp` | https://github.com/wjmaddox/online_vargp | Online variational conditioning, OVC fixed/optimized inducing point reference | Downloaded; not yet wrapped in the unified ERA5 runner |
 | `wjmaddox_online_gp` | https://github.com/wjmaddox/online_gp | Online GP / WISKI / online SGPR-SVGP reference | Downloaded; not yet wrapped in the unified ERA5 runner |
-| `nkiyohara_HIPPOSVGP` | https://github.com/nkiyohara/HIPPOSVGP | OHSVGP-style HiPPO temporal baseline reference | Clone attempted; local folder exists but may need integrity check before use |
+| `harrisonzhu508_HIPPOSVGP` | https://github.com/harrisonzhu508/HIPPOSVGP | OHSVGP-style HiPPO temporal baseline reference | Downloaded; not yet wrapped in the unified ERA5 runner |
+| `secondmind_labs_markovflow` | https://github.com/secondmind-labs/markovflow | Markovian GP / sparse Markovian GP reference | Downloaded; not yet wrapped in the unified ERA5 runner |
+| N/A | N/A | s2VGP / STVGP official implementation | No public official GitHub repository found yet |
 
 The immediately runnable fair baselines remain the local GPyTorch SGPR/SVGP
 wrappers in `baselines/online_baselines.py`. Those wrappers now support:
