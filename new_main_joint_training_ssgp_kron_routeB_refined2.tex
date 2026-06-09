@@ -1,0 +1,2027 @@
+\documentclass[12pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{bm}
+\usepackage{mathtools}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+
+\setlength{\abovedisplayskip}{10pt}
+\setlength{\belowdisplayskip}{10pt}
+\setlength{\abovedisplayshortskip}{6pt}
+\setlength{\belowdisplayshortskip}{6pt}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\KL}{\operatorname{KL}}
+\newcommand{\cov}{\operatorname{cov}}
+\newcommand{\Var}{\operatorname{Var}}
+\newcommand{\tr}{\operatorname{tr}}
+\newcommand{\diag}{\operatorname{diag}}
+\newcommand{\vecop}{\operatorname{vec}}
+
+\title{Joint Online Gaussian Process with Linear Mean Model\\
+for Kronecker-Separable Spatio-Temporal HiPPO-SVGP}
+\author{}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+
+\section{Joint Observation Model}
+
+We consider a spatio-temporal latent response observed at spatial locations
+$s_i\in\mathcal{S}\subset\mathbb{R}^{d_s}$ and time points $t_n\in\mathbb{R}$.
+The observation at location $(t_n,s_i)$ is modeled as the sum of a linear mean
+component, a nonparametric Gaussian process component, and independent Gaussian noise:
+\begin{equation}
+y(t_n,s_i)
+=
+\phi(t_n,s_i)^\top \beta
++
+f(t_n,s_i)
++
+\epsilon_{n,i},
+\qquad
+\epsilon_{n,i}\sim\mathcal{N}(0,\sigma^2).
+\label{eq:joint-observation-scalar}
+\end{equation}
+Here $\phi(t_n,s_i)\in\mathbb{R}^{d}$ is a covariate design vector,
+$\beta\in\mathbb{R}^{d}$ is the linear mean parameter, and
+$f$ is a spatio-temporal Gaussian process.
+
+Let the data in the $n$-th online temporal block be
+\begin{equation}
+D_n=\{(t,s,y,\phi): (t,s)\in\mathcal{B}_n\},
+\end{equation}
+and let
+\begin{equation}
+y_n\in\mathbb{R}^{B_n},
+\qquad
+\Phi_n\in\mathbb{R}^{B_n\times d}
+\end{equation}
+denote the stacked response vector and design matrix for this block. The block-level
+observation model is
+\begin{equation}
+y_n = \Phi_n \beta + f_n + \epsilon_n,
+\qquad
+\epsilon_n\sim\mathcal{N}(0,\sigma^2 I).
+\label{eq:block-observation}
+\end{equation}
+
+The Gaussian process prior is assumed to be separable:
+\begin{equation}
+f\sim \mathcal{GP}(0,k),
+\qquad
+k\big((s,t),(s',t')\big)
+=
+k_s(s,s')k_t(t,t').
+\label{eq:separable-kernel}
+\end{equation}
+If latent values are vectorized over a full time--space grid, then
+\begin{equation}
+K_{ff}=K_t\otimes K_s.
+\label{eq:full-kron-prior}
+\end{equation}
+
+The key modeling decision in this document is to train the linear mean and the GP
+component jointly. Instead of first estimating $\beta$ and then fitting a GP to residuals,
+we directly construct an online posterior over the joint unknowns $(\beta,u)$, where
+$u$ denotes the GP inducing variables.
+
+\section{Kronecker HiPPO-SVGP Inducing Representation}
+
+\subsection{Temporal HiPPO-RFF Interdomain Features}
+
+For the temporal axis, we use HiPPO-LegS interdomain inducing variables together with
+a random Fourier feature approximation of a stationary temporal kernel.
+
+For a time horizon $T>0$, define the scaled Legendre basis
+\begin{equation}
+g^{(T)}_\ell(x)
+=
+\sqrt{\frac{2\ell+1}{T}}\,
+P_\ell\!\left(\frac{2x}{T}-1\right),
+\qquad
+x\in[0,T],
+\quad
+\ell=0,\dots,M_t-1,
+\label{eq:scaled-legs-basis}
+\end{equation}
+where $P_\ell$ is the Legendre polynomial of degree $\ell$.
+The temporal interdomain inducing variables are
+\begin{equation}
+u_\ell^{(t)}(T)
+=
+\int_0^T g_\ell^{(T)}(x) f_t(x)\,dx.
+\label{eq:temporal-hippo-inducing}
+\end{equation}
+
+Assume the temporal kernel $k_t$ is stationary. By Bochner's theorem, we approximate it
+using random Fourier features:
+\begin{equation}
+k_t(\tau,\tau')
+\approx
+\sum_{r=1}^{R} w_r
+\left[
+\cos(\omega_r\tau)\cos(\omega_r\tau')
++
+\sin(\omega_r\tau)\sin(\omega_r\tau')
+\right].
+\label{eq:rff-kernel}
+\end{equation}
+Define the oscillatory integrals
+\begin{align}
+I^{\cos}_\ell(T;\omega)
+&=
+\int_0^T \cos(\omega x)g_\ell^{(T)}(x)\,dx,\\
+I^{\sin}_\ell(T;\omega)
+&=
+\int_0^T \sin(\omega x)g_\ell^{(T)}(x)\,dx.
+\end{align}
+Using the spherical-Bessel identity
+\begin{equation}
+\int_{-1}^{1} e^{i\kappa u}P_\ell(u)\,du
+=
+2 i^\ell j_\ell(\kappa),
+\qquad
+\kappa=\frac{\omega T}{2},
+\end{equation}
+these integrals admit closed-form expressions involving spherical Bessel functions
+$j_\ell(\cdot)$. This gives analytic temporal inducing covariances and point-to-inducing
+cross-covariances.
+
+Let $B_t(T)\in\mathbb{R}^{M_t\times 2R}$ be the temporal HiPPO-RFF feature matrix,
+with entries
+\begin{equation}
+[B_t(T)]_{\ell,r}
+=
+\sqrt{w_r}\,I^{\cos}_\ell(T;\omega_r),
+\qquad
+[B_t(T)]_{\ell,R+r}
+=
+\sqrt{w_r}\,I^{\sin}_\ell(T;\omega_r),
+\end{equation}
+and define the temporal RFF vector
+\begin{equation}
+\varphi_t(\tau)
+=
+\left(
+\sqrt{w_1}\cos(\omega_1\tau),\dots,\sqrt{w_R}\cos(\omega_R\tau),
+\sqrt{w_1}\sin(\omega_1\tau),\dots,\sqrt{w_R}\sin(\omega_R\tau)
+\right)^\top.
+\end{equation}
+Then
+\begin{equation}
+K_{uu}^{(t)}(T)
+\approx
+B_t(T)B_t(T)^\top,
+\label{eq:temporal-inducing-cov}
+\end{equation}
+and
+\begin{equation}
+k_{fu}^{(t)}(\tau;T)
+\approx
+\varphi_t(\tau)^\top B_t(T)^\top.
+\label{eq:temporal-cross-cov}
+\end{equation}
+
+For local temporal mini-batches, the same construction is applied using a local horizon
+$T_n$ for block $D_n$, yielding $K_{uu,n}^{(t)}$ and $K_{fu,n}^{(t)}$.
+
+\subsection{Spatial Inducing Variables}
+
+On the spatial axis, we use inducing locations
+\begin{equation}
+Z_s=\{z_1^{(s)},\dots,z_{M_s}^{(s)}\}.
+\end{equation}
+The spatial inducing covariance and cross-covariance are
+\begin{align}
+K_{ZZ}^{(s)}
+&\in\mathbb{R}^{M_s\times M_s},
+&
+[K_{ZZ}^{(s)}]_{jj'}
+&=
+k_s(z_j^{(s)},z_{j'}^{(s)}),
+\\
+K_{XZ}^{(s)}
+&\in\mathbb{R}^{N_s\times M_s},
+&
+[K_{XZ}^{(s)}]_{ij}
+&=
+k_s(s_i,z_j^{(s)}).
+\end{align}
+
+The spatial inducing set is fixed across online time steps. This is important: online
+adaptation occurs through the temporal HiPPO component, while the spatial inducing
+geometry remains shared across all blocks.
+
+\subsection{Mixed Spatio-Temporal Inducing Variables}
+
+For each spatial inducing location $z_j^{(s)}$, define temporal interdomain variables
+\begin{equation}
+u_{\ell,j}(T)
+=
+\int_0^T g_\ell^{(T)}(x)f(x,z_j^{(s)})\,dx.
+\end{equation}
+Stacking the temporal and spatial inducing variables gives
+\begin{equation}
+u(T)
+=
+\vecop\!\left([u_{\ell,j}(T)]_{\ell,j}\right)
+\in\mathbb{R}^{M_tM_s}.
+\end{equation}
+
+By separability of the spatio-temporal kernel,
+\begin{equation}
+K_{uu}^{(st)}(T)
+=
+K_{uu}^{(t)}(T)
+\otimes
+K_{ZZ}^{(s)}.
+\label{eq:mixed-inducing-cov}
+\end{equation}
+For a block $D_n$, the point-to-inducing covariance has the corresponding Kronecker
+form
+\begin{equation}
+K_{fu,n}^{(st)}
+=
+K_{fu,n}^{(t)}
+\otimes
+K_{XZ}^{(s)}.
+\label{eq:mixed-cross-cov}
+\end{equation}
+
+The sparse GP projection matrix for block $n$ is therefore
+\begin{equation}
+A_n
+=
+K_{fu,n}^{(st)}
+\left(K_{uu,n}^{(st)}\right)^{-1}.
+\label{eq:projection-general}
+\end{equation}
+Using Kronecker identities,
+\begin{equation}
+A_n
+=
+\left[
+K_{fu,n}^{(t)}
+\left(K_{uu,n}^{(t)}\right)^{-1}
+\right]
+\otimes
+\left[
+K_{XZ}^{(s)}
+\left(K_{ZZ}^{(s)}\right)^{-1}
+\right].
+\label{eq:projection-kron}
+\end{equation}
+Define
+\begin{equation}
+T_n
+:=
+K_{fu,n}^{(t)}
+\left(K_{uu,n}^{(t)}\right)^{-1},
+\qquad
+C
+:=
+K_{XZ}^{(s)}
+\left(K_{ZZ}^{(s)}\right)^{-1}.
+\label{eq:Tn-C-def}
+\end{equation}
+Then
+\begin{equation}
+A_n=T_n\otimes C.
+\label{eq:A-kron}
+\end{equation}
+
+\section{Why Residual-Based Online Learning is Inconsistent}
+
+A two-stage procedure first estimates the linear mean and then fits a GP to residuals:
+\begin{equation}
+r_n(\hat{\beta}_n)
+=
+y_n-\Phi_n\hat{\beta}_n.
+\end{equation}
+The difficulty is that residuals are not fixed targets. If the estimate of the linear
+coefficient changes from $\hat{\beta}_{n-1}$ to $\hat{\beta}_{n}$, then for any historical
+block $j<n$,
+\begin{align}
+r_j(\hat{\beta}_{n})
+&=
+y_j-\Phi_j\hat{\beta}_{n}
+\\
+&=
+y_j-\Phi_j\hat{\beta}_{n-1}
+-
+\Phi_j(\hat{\beta}_{n}-\hat{\beta}_{n-1})
+\\
+&=
+r_j(\hat{\beta}_{n-1})
+-
+\Phi_j(\hat{\beta}_{n}-\hat{\beta}_{n-1}).
+\label{eq:residual-mismatch}
+\end{align}
+Thus, the historical residual memory becomes stale whenever $\beta$ is updated.
+
+\begin{proposition}[Joint training removes stale residual targets]
+In the joint model
+\begin{equation}
+y_j\mid \beta,u_j
+\sim
+\mathcal{N}(\Phi_j\beta+A_j u_j,\sigma^2I),
+\end{equation}
+historical information is stored as a likelihood contribution to the same joint posterior
+over $(\beta,u)$, rather than as residual observations computed from a changing point
+estimate of $\beta$. Therefore, historical information does not become inconsistent when
+the posterior mean of $\beta$ changes.
+\end{proposition}
+
+\begin{proof}
+The two-stage target for block $j$ is
+$r_j(\hat{\beta})=y_j-\Phi_j\hat{\beta}$, which explicitly depends on the current point
+estimate $\hat{\beta}$. Equation~\eqref{eq:residual-mismatch} shows that the target
+changes when $\hat{\beta}$ changes.
+
+By contrast, joint training uses the likelihood
+\begin{equation}
+p(y_j\mid \beta,u_j)
+=
+\mathcal{N}(y_j\mid \Phi_j\beta+A_j u_j,\sigma^2I).
+\end{equation}
+This likelihood is a fixed probabilistic statement about $y_j$ as a function of the
+unknown variables $(\beta,u_j)$. Updating the posterior mean of $\beta$ changes our
+belief about $\beta$, but it does not redefine the historical observation $y_j$ or the
+likelihood contribution of block $j$. Hence no stale residual target is created.
+\end{proof}
+
+The essential distinction is
+\begin{equation}
+\text{two-stage: learn } y-\Phi\hat{\beta},
+\qquad
+\text{joint training: learn } p(y\mid \beta,u).
+\end{equation}
+This is the reason the rest of this document focuses on a joint online posterior over
+the linear mean and GP inducing variables.
+
+
+\section{Online Structured Joint Training ELBO}
+\label{sec:online_structured_joint_elbo}
+
+For online block $n$, the sparse GP approximation gives
+\begin{equation}
+    f_n\mid u_n \approx A_nu_n .
+\end{equation}
+The likelihood is therefore
+\begin{equation}
+    p(y_n\mid \beta,u_n)
+    =
+    \mathcal{N}
+    \left(
+        y_n\mid \Phi_n\beta+A_nu_n,\sigma^2I
+    \right).
+    \label{eq:joint-likelihood}
+\end{equation}
+
+The main method in this document uses a \emph{structured joint Gaussian posterior}
+over the linear coefficient and the GP inducing variables:
+\begin{equation}
+    q_n(\beta,u_n)
+    =
+    \mathcal{N}
+    \left(
+    \begin{bmatrix}\beta\\u_n\end{bmatrix}
+    \middle|
+    \begin{bmatrix}m_{\beta,n}\\m_{u,n}\end{bmatrix},
+    S_n
+    \right),
+    \qquad
+    S_n^{-1}=\Lambda_n .
+    \label{eq:structured-joint-posterior}
+\end{equation}
+The precision is stored in block form
+\begin{equation}
+    \Lambda_n
+    =
+    \begin{bmatrix}
+        \Lambda_{\beta\beta,n} & \Lambda_{\beta u,n}\\
+        \Lambda_{u\beta,n} & \Lambda_{uu,n}
+    \end{bmatrix},
+    \qquad
+    h_n=
+    \begin{bmatrix}
+        h_{\beta,n}\\h_{u,n}
+    \end{bmatrix}.
+    \label{eq:structured-joint-precision}
+\end{equation}
+The crucial modeling choice is that $\Lambda_{uu,n}$ keeps the
+Kronecker/Sylvester structure, while $\Lambda_{\beta u,n}$ is retained rather
+than discarded. Since the dimension $d$ of $\beta$ is usually small, the
+cross block $\Lambda_{\beta u,n}\in\mathbb{R}^{d\times M_tM_s}$ can be stored
+explicitly or as $d$ reshaped temporal--spatial matrices. This preserves the
+posterior dependence between the linear trend and the GP component without
+requiring a dense covariance over all inducing variables.
+
+Let the base prior for the static linear coefficient be
+\begin{equation}
+    p(\beta)=\mathcal{N}(m_{\beta,0},K_\beta),
+    \qquad
+    P_\beta:=K_\beta^{-1},
+\end{equation}
+and let the current GP inducing prior be
+\begin{equation}
+    p(u_n)=\mathcal{N}(0,K_{nn}).
+\end{equation}
+The online variational objective can be written as
+\begin{equation}
+    \mathcal{L}_n
+    =
+    \E_{q_n(\beta,u_n)}
+    \left[
+        \log p(y_n\mid \beta,u_n)
+    \right]
+    -
+    \KL
+    \left[
+        q_n(\beta,u_n)
+        \Vert
+        p_n(\beta,u_n)
+    \right],
+    \label{eq:structured-joint-elbo}
+\end{equation}
+where $p_n(\beta,u_n)$ denotes the prior plus the transferred old-likelihood
+information defined in Section~\ref{sec:changing_basis_transfer}. In the
+Gaussian case this objective is equivalent to updating the joint natural
+parameters.
+
+For a full joint Gaussian posterior, the expected log likelihood is
+\begin{align}
+    \E\log p(y_n\mid \beta,u_n)
+    &=-\frac{B_n}{2}\log(2\pi\sigma^2) \\
+    &\quad
+    -\frac{1}{2\sigma^2}
+    \Big[
+        \|y_n-\Phi_nm_{\beta,n}-A_nm_{u,n}\|^2
+        +\tr(\Phi_nS_{\beta\beta,n}\Phi_n^\top)  \\
+    &\qquad\qquad
+        +\tr(A_nS_{uu,n}A_n^\top)
+        +2\tr(\Phi_nS_{\beta u,n}A_n^\top)
+    \Big].
+    \label{eq:structured-expected-log-likelihood}
+\end{align}
+The cross term $2\tr(\Phi_nS_{\beta u,n}A_n^\top)$ is exactly the term lost by
+a mean-field approximation $q(\beta)q(u_n)$. Retaining it is the reason for
+using the structured joint route in the main method.
+
+A fully factorized posterior remains useful as an ablation, but it is not the
+main formulation. In the remainder of the document, ``main method'' refers to
+the structured joint precision update in which $\Lambda_{\beta u,n}$ is kept
+and posterior moments are recovered by a Schur-complement computation.
+
+\section{Fixed-Basis Exact Joint Gaussian Update}
+
+If the inducing representation is fixed across online blocks, i.e. the same inducing
+variable $u$ is used throughout, then the joint model is conjugate under a Gaussian
+likelihood. In this special case, the exact joint posterior can be maintained in
+information form.
+
+Define the joint state
+\begin{equation}
+z=
+\begin{bmatrix}
+\beta\\
+u
+\end{bmatrix},
+\qquad
+H_n=
+\begin{bmatrix}
+\Phi_n & A_n
+\end{bmatrix}.
+\label{eq:joint-state-fixed-basis}
+\end{equation}
+Then
+\begin{equation}
+y_n\mid z
+\sim
+\mathcal{N}(H_nz,\sigma^2I).
+\end{equation}
+Let
+\begin{equation}
+q_{n-1}(z)=\mathcal{N}(m_{n-1},S_{n-1}),
+\end{equation}
+and define the natural parameters
+\begin{equation}
+\Lambda_{n-1}=S_{n-1}^{-1},
+\qquad
+h_{n-1}=S_{n-1}^{-1}m_{n-1}.
+\end{equation}
+The exact Gaussian-conjugate update is
+\begin{equation}
+\Lambda_n
+=
+\Lambda_{n-1}
++
+\frac{1}{\sigma^2}H_n^\top H_n,
+\label{eq:joint-precision-update}
+\end{equation}
+\begin{equation}
+h_n
+=
+h_{n-1}
++
+\frac{1}{\sigma^2}H_n^\top y_n.
+\label{eq:joint-info-update}
+\end{equation}
+The posterior moments are recovered by
+\begin{equation}
+S_n=\Lambda_n^{-1},
+\qquad
+m_n=S_nh_n.
+\label{eq:joint-moment-recovery}
+\end{equation}
+
+Expanding the precision contribution gives
+\begin{equation}
+H_n^\top H_n
+=
+\begin{bmatrix}
+\Phi_n^\top\Phi_n
+&
+\Phi_n^\top A_n
+\\
+A_n^\top\Phi_n
+&
+A_n^\top A_n
+\end{bmatrix}.
+\label{eq:joint-precision-blocks}
+\end{equation}
+Therefore,
+\begin{equation}
+\Lambda_n
+=
+\Lambda_{n-1}
++
+\frac{1}{\sigma^2}
+\begin{bmatrix}
+\Phi_n^\top\Phi_n
+&
+\Phi_n^\top A_n
+\\
+A_n^\top\Phi_n
+&
+A_n^\top A_n
+\end{bmatrix},
+\end{equation}
+and
+\begin{equation}
+h_n
+=
+h_{n-1}
++
+\frac{1}{\sigma^2}
+\begin{bmatrix}
+\Phi_n^\top y_n\\
+A_n^\top y_n
+\end{bmatrix}.
+\end{equation}
+
+This update is stronger than a mean-field approximation because it keeps the posterior
+cross-covariance
+\begin{equation}
+\cov(\beta,u)\neq 0.
+\end{equation}
+The fixed-basis exact joint Gaussian update should therefore be used as a baseline and
+sanity check for more scalable structured or mean-field approximations.
+
+\begin{remark}
+Equations~\eqref{eq:joint-precision-update}--\eqref{eq:joint-moment-recovery} are valid
+only when all historical likelihood contributions are expressed in the same inducing
+coordinates. If the HiPPO temporal inducing basis changes over time, the previous
+posterior must first be transferred to the new inducing coordinates before the next
+likelihood update is applied.
+\end{remark}
+
+
+\section{Changing-Basis Structured Joint Old-Likelihood Transfer}
+\label{sec:changing_basis_transfer}
+
+In the HiPPO-SVGP setting, the temporal inducing basis depends on the current
+horizon or local block. Thus the old inducing variable $u_o$ and the new
+inducing variable $u_n$ are generally different random variables. For example,
+\begin{equation}
+    u_{\ell}^{old}
+    =
+    \int_0^{T_{n-1}} g_\ell^{(T_{n-1})}(x)f(x)\,dx,
+    \qquad
+    u_{\ell}^{new}
+    =
+    \int_0^{T_n} g_\ell^{(T_n)}(x)f(x)\,dx .
+\end{equation}
+Therefore the previous posterior cannot be directly reused as a posterior over
+$u_n$. The old likelihood information must be transferred from the old
+coordinates $(\beta,u_o)$ to the new coordinates $(\beta,u_n)$.
+
+\subsection{Streaming VFE Transfer for the Joint State}
+\label{subsec:streaming_vfe_transfer}
+
+The streaming sparse GP principle represents historical observations by the
+old likelihood ratio. For the joint state, the old approximate likelihood
+factor is
+\begin{equation}
+    \frac{q_{n-1}(\beta,u_o)}{p(\beta)p(u_o)} .
+\end{equation}
+The changing-basis VFE update becomes
+\begin{equation}
+    q_n(\beta,u_n)
+    \propto
+    p(\beta)p(u_n)
+    \exp
+    \left\{
+    \E_{p(u_o\mid u_n)}
+    \left[
+        \log
+        \frac{q_{n-1}(\beta,u_o)}{p(\beta)p(u_o)}
+    \right]
+    +
+    \log p(y_n\mid \beta,u_n)
+    \right\}.
+    \label{eq:joint_streaming_vfe}
+\end{equation}
+Here $\beta$ is unchanged across the transfer, while $u_o$ is integrated through
+the GP conditional $p(u_o\mid u_n)$. This is the structured joint analogue of
+the old-likelihood-ratio transfer used in streaming sparse GP inference. It is
+stronger than transferring only a marginal posterior over $u$, because the
+historical correlation between the linear trend and the GP residual is retained.
+
+\subsection{Closed-Form Gaussian Transfer of the Joint Old Likelihood}
+\label{subsec:closed_form_old_likelihood_transfer}
+
+Assume that the old joint posterior and the corresponding old prior are
+Gaussian. Define the old joint likelihood natural parameters by
+\begin{equation}
+    \log
+    \frac{q_{n-1}(\beta,u_o)}{p(\beta)p(u_o)}
+    =
+    -\frac{1}{2}
+    \begin{bmatrix}\beta\\u_o\end{bmatrix}^{\!\top}
+    R_o^z
+    \begin{bmatrix}\beta\\u_o\end{bmatrix}
+    +
+    \begin{bmatrix}\beta\\u_o\end{bmatrix}^{\!\top}
+    r_o^z
+    +c_o,
+    \label{eq:joint_old_likelihood_ratio}
+\end{equation}
+where
+\begin{equation}
+    R_o^z
+    =
+    \begin{bmatrix}
+        R_{\beta\beta,o} & R_{\beta u,o}\\
+        R_{u\beta,o} & R_{uu,o}
+    \end{bmatrix},
+    \qquad
+    r_o^z=
+    \begin{bmatrix}
+        r_{\beta,o}\\r_{u,o}
+    \end{bmatrix}.
+    \label{eq:joint_old_natural_blocks}
+\end{equation}
+The old $u$--$u$ likelihood precision will be maintained in the structured form
+\begin{equation}
+    R_{uu,o}=B_o\otimes G,
+    \label{eq:joint_old_Ruu_kron}
+\end{equation}
+while the cross block $R_{\beta u,o}$ is retained as a $d\times M_tM_s$ matrix.
+Since $d$ is small, this cross block is affordable and is the key object that
+preserves $\beta$--$u$ posterior dependence.
+
+Under the GP prior,
+\begin{equation}
+    p(u_o\mid u_n)
+    =
+    \mathcal{N}(L_{on}u_n,\Sigma_{o\mid n}),
+    \qquad
+    L_{on}=K_{on}K_{nn}^{-1}.
+    \label{eq:joint_old_given_new}
+\end{equation}
+Introduce the deterministic transfer matrix for the conditional mean
+\begin{equation}
+    M_{on}
+    :=
+    \begin{bmatrix}
+        I_d & 0\\
+        0 & L_{on}
+    \end{bmatrix}.
+    \label{eq:joint_transfer_matrix}
+\end{equation}
+Taking the expectation in \eqref{eq:joint_streaming_vfe} gives, up to constants,
+\begin{equation}
+    \E_{p(u_o\mid u_n)}
+    \left[
+        \log
+        \frac{q_{n-1}(\beta,u_o)}{p(\beta)p(u_o)}
+    \right]
+    =
+    -\frac{1}{2}
+    \begin{bmatrix}\beta\\u_n\end{bmatrix}^{\!\top}
+    R_{o\rightarrow n}^z
+    \begin{bmatrix}\beta\\u_n\end{bmatrix}
+    +
+    \begin{bmatrix}\beta\\u_n\end{bmatrix}^{\!\top}
+    r_{o\rightarrow n}^z
+    +\mathrm{const},
+\end{equation}
+where
+\begin{equation}
+    R_{o\rightarrow n}^z=M_{on}^\top R_o^zM_{on},
+    \qquad
+    r_{o\rightarrow n}^z=M_{on}^\top r_o^z .
+    \label{eq:joint_old_transfer_natural_compact}
+\end{equation}
+The same transfer can be written in block form as
+\begin{equation}
+    R_{o\rightarrow n}^z
+    =
+    \begin{bmatrix}
+        R_{\beta\beta,o\rightarrow n} & R_{\beta u,o\rightarrow n}\\
+        R_{u\beta,o\rightarrow n} & R_{uu,o\rightarrow n}
+    \end{bmatrix},
+    \qquad
+    r_{o\rightarrow n}^z
+    =
+    \begin{bmatrix}
+        r_{\beta,o\rightarrow n}\\
+        r_{u,o\rightarrow n}
+    \end{bmatrix}.
+    \label{eq:joint_old_transfer_blocks_matrix}
+\end{equation}
+The conditional covariance term
+$\tr(R_{uu,o}\Sigma_{o\mid n})$ is absorbed into the constant because it does not
+depend on $(\beta,u_n)$.
+
+Expanding the transferred blocks gives
+\begin{align}
+    R_{\beta\beta,o\rightarrow n}
+    &=R_{\beta\beta,o},
+    \label{eq:transfer_Rbb}\\
+    R_{\beta u,o\rightarrow n}
+    &=R_{\beta u,o}L_{on},
+    \label{eq:transfer_Rbu}\\
+    R_{u\beta,o\rightarrow n}
+    &=L_{on}^\top R_{u\beta,o},
+    \label{eq:transfer_Rub}\\
+    R_{uu,o\rightarrow n}
+    &=L_{on}^\top R_{uu,o}L_{on},
+    \label{eq:transfer_Ruu}\\
+    r_{\beta,o\rightarrow n}
+    &=r_{\beta,o},
+    \label{eq:transfer_rb}\\
+    r_{u,o\rightarrow n}
+    &=L_{on}^\top r_{u,o}.
+    \label{eq:transfer_ru}
+\end{align}
+These equations are the route-B replacement for the earlier mean-field transfer: the
+$\beta$--$u$ cross natural parameter is explicitly propagated.
+
+\subsection{Assimilating the New Block}
+\label{subsec:joint_new_block_assimilation}
+
+For the new block, define
+\begin{equation}
+    H_n=
+    \begin{bmatrix}
+        \Phi_n & A_n
+    \end{bmatrix}.
+\end{equation}
+The Gaussian likelihood contributes the joint natural parameters
+\begin{equation}
+    R_{\mathrm{new},n}^z
+    =
+    \frac{1}{\sigma^2}H_n^\top H_n,
+    \qquad
+    r_{\mathrm{new},n}^z
+    =
+    \frac{1}{\sigma^2}H_n^\top y_n.
+\end{equation}
+Equivalently, in block-matrix form,
+\begin{equation}
+    R_{\mathrm{new},n}^z
+    =
+    \begin{bmatrix}
+        R_{\beta\beta,\mathrm{new}} & R_{\beta u,\mathrm{new}}\\
+        R_{u\beta,\mathrm{new}} & R_{uu,\mathrm{new}}
+    \end{bmatrix},
+    \qquad
+    r_{\mathrm{new},n}^z
+    =
+    \begin{bmatrix}
+        r_{\beta,\mathrm{new}}\\
+        r_{u,\mathrm{new}}
+    \end{bmatrix}.
+    \label{eq:new_block_joint_blocks_matrix}
+\end{equation}
+The individual blocks are
+\begin{align}
+    R_{\beta\beta,\mathrm{new}}
+    &=\frac{1}{\sigma^2}\Phi_n^\top\Phi_n,\\
+    R_{\beta u,\mathrm{new}}
+    &=\frac{1}{\sigma^2}\Phi_n^\top A_n,\\
+    R_{u\beta,\mathrm{new}}
+    &=\frac{1}{\sigma^2}A_n^\top\Phi_n,\\
+    R_{uu,\mathrm{new}}
+    &=\frac{1}{\sigma^2}A_n^\top A_n,
+\end{align}
+and
+\begin{align}
+    r_{\beta,\mathrm{new}}
+    &=\frac{1}{\sigma^2}\Phi_n^\top y_n,\\
+    r_{u,\mathrm{new}}
+    &=\frac{1}{\sigma^2}A_n^\top y_n.
+\end{align}
+The accumulated likelihood natural parameters in the new coordinates are therefore
+\begin{equation}
+    R_n^z
+    =
+    \begin{bmatrix}
+        R_{\beta\beta,n} & R_{\beta u,n}\\
+        R_{u\beta,n} & R_{uu,n}
+    \end{bmatrix},
+    \qquad
+    r_n^z
+    =
+    \begin{bmatrix}
+        r_{\beta,n}\\
+        r_{u,n}
+    \end{bmatrix}.
+    \label{eq:joint_accumulated_blocks_matrix}
+\end{equation}
+The block-wise accumulated likelihood statistics are
+\begin{align}
+    R_{\beta\beta,n}
+    &=R_{\beta\beta,o\rightarrow n}+\frac{1}{\sigma^2}\Phi_n^\top\Phi_n
+      =R_{\beta\beta,o}+\frac{1}{\sigma^2}\Phi_n^\top\Phi_n,
+    \label{eq:joint_accum_Rbb}\\
+    R_{\beta u,n}
+    &=R_{\beta u,o\rightarrow n}+\frac{1}{\sigma^2}\Phi_n^\top A_n
+      =R_{\beta u,o}L_{on}+\frac{1}{\sigma^2}\Phi_n^\top A_n,
+    \label{eq:joint_accum_Rbu}\\
+    R_{u\beta,n}
+    &=R_{u\beta,o\rightarrow n}+\frac{1}{\sigma^2}A_n^\top\Phi_n
+      =L_{on}^\top R_{u\beta,o}+\frac{1}{\sigma^2}A_n^\top\Phi_n,
+    \label{eq:joint_accum_Rub}\\
+    R_{uu,n}
+    &=R_{uu,o\rightarrow n}+\frac{1}{\sigma^2}A_n^\top A_n
+      =L_{on}^\top R_{uu,o}L_{on}+\frac{1}{\sigma^2}A_n^\top A_n,
+    \label{eq:joint_accum_Ruu}\\
+    r_{\beta,n}
+    &=r_{\beta,o\rightarrow n}+\frac{1}{\sigma^2}\Phi_n^\top y_n
+      =r_{\beta,o}+\frac{1}{\sigma^2}\Phi_n^\top y_n,
+    \label{eq:joint_accum_rb}\\
+    r_{u,n}
+    &=r_{u,o\rightarrow n}+\frac{1}{\sigma^2}A_n^\top y_n
+      =L_{on}^\top r_{u,o}+\frac{1}{\sigma^2}A_n^\top y_n.
+    \label{eq:joint_accum_ru}
+\end{align}
+
+Adding the base priors gives the posterior information parameters
+\begin{align}
+    \Lambda_{\beta\beta,n}
+    &=P_\beta+R_{\beta\beta,n},
+    \label{eq:joint_Lbb_total}\\
+    \Lambda_{\beta u,n}
+    &=R_{\beta u,n},
+    \label{eq:joint_Lbu_total}\\
+    \Lambda_{uu,n}
+    &=K_{nn}^{-1}+R_{uu,n},
+    \label{eq:joint_Luu_total}\\
+    h_{\beta,n}
+    &=P_\beta m_{\beta,0}+r_{\beta,n},
+    \label{eq:joint_hb_total}\\
+    h_{u,n}
+    &=r_{u,n}.
+    \label{eq:joint_hu_total}
+\end{align}
+This is the structured joint natural-parameter update used by the main method.
+A slowly drifting $\beta$ can be introduced as an approximation by replacing
+$(m_{\beta,0},K_\beta)$ with a predicted Gaussian prior at each block. The exact
+old-likelihood-ratio derivation above is cleanest for a static $\beta$ with a fixed
+base prior.
+
+\subsection{Projected-Prior Baseline with Cross-Covariance}
+\label{subsec:projected_prior_approximation}
+
+A cheaper ablation is to project the previous joint posterior moments instead of
+propagating the old likelihood ratio. If
+$q_{n-1}(\beta,u_o)$ has moments
+$(m_{\beta,o},m_{u,o},S_{\beta\beta,o},S_{\beta u,o},S_{uu,o})$, then
+\begin{equation}
+    p_n^{\mathrm{proj}}(\beta,u_n)
+    =
+    \int p(u_n\mid u_o)q_{n-1}(\beta,u_o)\,du_o
+\end{equation}
+with $L_{no}:=K_{no}K_{oo}^{-1}$ gives
+\begin{align}
+    m_{\beta,n\mid n-1}^{\mathrm{proj}}&=m_{\beta,o},\\
+    m_{u,n\mid n-1}^{\mathrm{proj}}&=L_{no}m_{u,o},\\
+    S_{\beta\beta,n\mid n-1}^{\mathrm{proj}}&=S_{\beta\beta,o},\\
+    S_{\beta u,n\mid n-1}^{\mathrm{proj}}&=S_{\beta u,o}L_{no}^\top,\\
+    S_{uu,n\mid n-1}^{\mathrm{proj}}
+    &=K_{nn}+L_{no}(S_{uu,o}-K_{oo})L_{no}^\top.
+\end{align}
+This projected-prior update is not the main theoretical method, but it is useful as a
+baseline because it tests whether the old-likelihood-ratio transfer is better than a
+simple filtering-style moment projection.
+
+\subsection{Summary of the Structured Changing-Basis Transfer}
+\label{subsec:changing_basis_summary}
+
+The changing-basis update now transfers the old joint likelihood statistic rather than
+only the marginal inducing statistic. The essential update is
+\begin{equation}
+    \begin{bmatrix}
+        R_{\beta\beta,o\rightarrow n} & R_{\beta u,o\rightarrow n}\\
+        R_{u\beta,o\rightarrow n} & R_{uu,o\rightarrow n}
+    \end{bmatrix}
+    =
+    \begin{bmatrix}
+        I & 0\\0 & L_{on}
+    \end{bmatrix}^{\!\top}
+    \begin{bmatrix}
+        R_{\beta\beta,o} & R_{\beta u,o}\\
+        R_{u\beta,o} & R_{uu,o}
+    \end{bmatrix}
+    \begin{bmatrix}
+        I & 0\\0 & L_{on}
+    \end{bmatrix}.
+\end{equation}
+The $u$--$u$ block remains Kronecker/Sylvester structured under the conditions derived
+in Section~\ref{sec:kronecker_aware_implementation}, while the cross block
+$R_{\beta u}$ is retained explicitly. This is the route-B main-paper version: it fixes
+stale residual targets and keeps the structured $\beta$--$u$ covariance needed for
+well-calibrated predictive uncertainty.
+
+\section{Structured Joint Posterior Recovery by Schur Complement}
+\label{sec:structured_joint_schur}
+
+After the natural-parameter update, we need posterior means and selected covariance
+quadratic forms without inverting the full joint precision. Write
+\begin{equation}
+    \Lambda_n=
+    \begin{bmatrix}
+        A_\beta & B_{\beta u}\\
+        B_{\beta u}^\top & D_u
+    \end{bmatrix},
+    \qquad
+    h_n=
+    \begin{bmatrix}
+        h_\beta\\h_u
+    \end{bmatrix},
+    \label{eq:schur_block_notation}
+\end{equation}
+where
+\begin{equation}
+    A_\beta=\Lambda_{\beta\beta,n},
+    \qquad
+    B_{\beta u}=\Lambda_{\beta u,n},
+    \qquad
+    D_u=\Lambda_{uu,n}.
+\end{equation}
+The matrix $D_u$ is large but has the Kronecker/Sylvester form. The dimension of
+$A_\beta$ is only $d\times d$.
+
+Define the Schur-complement precision
+\begin{equation}
+    \Lambda_{\beta\mid u}
+    :=
+    A_\beta-B_{\beta u}D_u^{-1}B_{\beta u}^\top.
+    \label{eq:beta_schur_complement}
+\end{equation}
+This object is a precision matrix for the low-dimensional $\beta$ block after
+eliminating the GP block; it is not the posterior covariance of $\beta$.
+To form it, solve
+\begin{equation}
+    D_u W=B_{\beta u}^\top,
+    \qquad
+    D_uv_h=h_u,
+    \label{eq:schur_sylvester_solves}
+\end{equation}
+using the Sylvester solver. Since $B_{\beta u}^\top$ has only $d$ columns, this requires
+only $d+1$ Sylvester solves per block. Then
+\begin{equation}
+    \Lambda_{\beta\mid u}=A_\beta-B_{\beta u}W.
+\end{equation}
+The posterior mean of $\beta$ is
+\begin{equation}
+    m_\beta
+    =
+    \Lambda_{\beta\mid u}^{-1}
+    \left(
+        h_\beta-B_{\beta u}v_h
+    \right),
+    \label{eq:schur_beta_mean}
+\end{equation}
+and the posterior mean of $u$ is
+\begin{equation}
+    m_u
+    =
+    v_h-Wm_\beta.
+    \label{eq:schur_u_mean}
+\end{equation}
+The covariance blocks needed for prediction are not materialized densely. They are
+characterized by
+\begin{align}
+    S_{\beta\beta}&=\Lambda_{\beta\mid u}^{-1},
+    \label{eq:Sbb_schur}\\
+    S_{\beta u}&=-\Lambda_{\beta\mid u}^{-1}B_{\beta u}D_u^{-1},
+    \label{eq:Sbu_schur}\\
+    S_{uu}&=D_u^{-1}+D_u^{-1}B_{\beta u}^\top
+    \Lambda_{\beta\mid u}^{-1}B_{\beta u}D_u^{-1}.
+    \label{eq:Suu_schur}
+\end{align}
+Thus the route-B method keeps the $\beta$--$u$ posterior dependence while preserving the
+large-scale solver for the GP block.
+
+
+\section{Kronecker-Aware Implementation}
+\label{sec:kronecker_aware_implementation}
+
+The Kronecker form
+\begin{equation}
+    A_n=T_n\otimes C
+\end{equation}
+should be used explicitly. Therefore,
+\begin{equation}
+    A_n^\top A_n
+    =
+    (T_n^\top T_n)\otimes(C^\top C).
+\end{equation}
+Let
+\begin{equation}
+    G:=C^\top C.
+\end{equation}
+Since the spatial inducing set is fixed, $G$ can be precomputed.
+
+\subsection{Kronecker-Preserving $u$--$u$ Old-Likelihood Transfer}
+\label{subsec:kronecker_preserving_transfer}
+
+Let
+\begin{equation}
+    K_{nn}=K_{nn}^{(t)}\otimes K_s,
+    \qquad
+    K_{oo}=K_{oo}^{(t)}\otimes K_s,
+    \qquad
+    K_{on}=K_{on}^{(t)}\otimes K_s,
+\end{equation}
+where $K_s=K_{ZZ}^{(s)}$. Since the spatial inducing locations are fixed,
+\begin{equation}
+    L_{on}=K_{on}K_{nn}^{-1}=L_{on}^{(t)}\otimes I_s,
+    \qquad
+    L_{on}^{(t)}:=K_{on}^{(t)}(K_{nn}^{(t)})^{-1}.
+    \label{eq:temporal_only_transfer_operator}
+\end{equation}
+If the old $u$--$u$ likelihood precision is maintained as
+\begin{equation}
+    R_{uu,o}=B_o\otimes G,
+\end{equation}
+then
+\begin{align}
+    R_{uu,o\rightarrow n}
+    &=L_{on}^\top R_{uu,o}L_{on} \\
+    &=
+    \left[(L_{on}^{(t)})^\top B_oL_{on}^{(t)}\right]\otimes G.
+\end{align}
+Define
+\begin{equation}
+    B_{o\rightarrow n}:=(L_{on}^{(t)})^\top B_oL_{on}^{(t)}.
+\end{equation}
+The new block contributes
+\begin{equation}
+    \frac{1}{\sigma^2}A_n^\top A_n
+    =
+    \frac{1}{\sigma^2}(T_n^\top T_n)\otimes G.
+\end{equation}
+Therefore the updated temporal likelihood statistic is
+\begin{equation}
+    B_n
+    =
+    B_{o\rightarrow n}
+    +
+    \frac{1}{\sigma^2}T_n^\top T_n.
+    \label{eq:temporal_stat_ssgp_transfer}
+\end{equation}
+The $u$--$u$ precision block in the full joint posterior is
+\begin{equation}
+    \Lambda_{uu,n}
+    =
+    (K_{nn}^{(t)})^{-1}\otimes K_s^{-1}
+    +
+    B_n\otimes G.
+    \label{eq:kronecker_precision_after_ssgp_transfer}
+\end{equation}
+This is the same Sylvester-compatible structure as in the marginal GP route, but now it
+is the lower-right block of a structured joint precision over $(\beta,u)$.
+
+\subsection{Structured $\beta$--$u$ Cross Block}
+\label{subsec:structured_beta_u_cross_block}
+
+Route B additionally maintains the cross natural parameter
+\begin{equation}
+    R_{\beta u,n}\in\mathbb{R}^{d\times M_tM_s}.
+\end{equation}
+The old cross block transfers as
+\begin{equation}
+    R_{\beta u,o\rightarrow n}
+    =
+    R_{\beta u,o}L_{on}
+    =
+    R_{\beta u,o}(L_{on}^{(t)}\otimes I_s).
+    \label{eq:cross_block_transfer_kron}
+\end{equation}
+This should be implemented without materializing $L_{on}$ when possible: each row of
+$R_{\beta u,o}$ can be reshaped into an $M_s\times M_t$ matrix and multiplied along the
+temporal dimension by $L_{on}^{(t)}$ according to the vectorization convention.
+
+The new likelihood adds
+\begin{equation}
+    R_{\beta u,\mathrm{new}}
+    =
+    \frac{1}{\sigma^2}\Phi_n^\top A_n
+    =
+    \frac{1}{\sigma^2}\Phi_n^\top(T_n\otimes C).
+    \label{eq:new_cross_block_likelihood}
+\end{equation}
+The updated cross block is
+\begin{equation}
+    R_{\beta u,n}
+    =
+    R_{\beta u,o}(L_{on}^{(t)}\otimes I_s)
+    +
+    \frac{1}{\sigma^2}\Phi_n^\top A_n.
+    \label{eq:updated_cross_block}
+\end{equation}
+This block is a likelihood natural-precision cross block, not the posterior
+cross-covariance itself. The posterior cross-covariance is recovered implicitly as
+\begin{equation}
+    S_{\beta u}
+    =
+    -\Lambda_{\beta\mid u}^{-1}B_{\beta u}D_u^{-1}.
+    \label{eq:posterior_cross_covariance_implicit}
+\end{equation}
+The cross block need not be a single Kronecker product. That is acceptable because its row
+dimension is only $d$. It affects posterior recovery only through matrix products with
+$D_u^{-1}$, which are computed by repeated Sylvester solves.
+
+The corresponding information vector transfer is
+\begin{equation}
+    r_{u,o\rightarrow n}=L_{on}^\top r_{u,o},
+    \qquad
+    r_{\beta,o\rightarrow n}=r_{\beta,o},
+\end{equation}
+and the new information contributions are
+\begin{equation}
+    r_{u,\mathrm{new}}=\frac{1}{\sigma^2}A_n^\top y_n,
+    \qquad
+    r_{\beta,\mathrm{new}}=\frac{1}{\sigma^2}\Phi_n^\top y_n.
+\end{equation}
+
+\subsection{Sylvester Solves for the $u$ Block}
+\label{subsec:sylvester_reformulation}
+
+With the Kronecker-preserving transfer, linear systems involving
+$D_u=\Lambda_{uu,n}$ reduce to Sylvester equations. Let
+\begin{equation}
+    q=\vecop(Q),
+    \qquad
+    z=D_u^{-1}q=\vecop(Z),
+\end{equation}
+where $Q,Z\in\mathbb{R}^{M_s\times M_t}$. Using
+\begin{equation}
+    D_u=(K_{nn}^{(t)})^{-1}\otimes K_s^{-1}+B_n\otimes G,
+\end{equation}
+and the identity $(A\otimes B)\vecop(Z)=\vecop(BZA^\top)$, the system
+$D_uz=q$ is equivalent to
+\begin{equation}
+    K_s^{-1}Z(K_{nn}^{(t)})^{-1}+GZB_n=Q,
+    \label{eq:sylvester_after_ssgp_transfer}
+\end{equation}
+assuming symmetric temporal matrices. The same solver is used for
+\begin{equation}
+    D_u^{-1}h_u,
+    \qquad
+    D_u^{-1}R_{u\beta,n},
+    \qquad
+    D_u^{-1}a_*.
+\end{equation}
+The second solve has only $d$ right-hand sides and is what makes the Schur complement
+for $\beta$ computationally practical.
+
+\begin{remark}
+If the spatial observation pattern or spatial projection changes across online blocks,
+the $u$--$u$ precision may become a sum of Kronecker products rather than a single
+Sylvester form. The structured joint route still applies, but $D_u^{-1}$ must then be
+implemented with a generalized Sylvester or conjugate-gradient solver using Kronecker
+matrix-vector products.
+\end{remark}
+
+
+\section{Prediction and Uncertainty}
+\label{sec:prediction_uncertainty}
+
+For a test point $x_*=(t_*,s_*)$, let
+\begin{equation}
+    \phi_*:=\phi(t_*,s_*),
+    \qquad
+    a_*^\top:=K_{*u}K_{uu}^{-1}.
+\end{equation}
+Let the structured joint precision be partitioned as in
+\eqref{eq:schur_block_notation}, with $D_u=\Lambda_{uu}$ and
+$B_{\beta u}=\Lambda_{\beta u}$. The predictive mean is
+\begin{equation}
+    \E[y_*]
+    =
+    \phi_*^\top m_\beta+a_*^\top m_u.
+    \label{eq:structured_predictive_mean}
+\end{equation}
+
+The sparse GP conditional variance term is
+\begin{equation}
+    \nu_*
+    :=
+    k(x_*,x_*)-K_{*u}K_{uu}^{-1}K_{u*}.
+\end{equation}
+The remaining posterior-parameter uncertainty is
+\begin{equation}
+    \begin{bmatrix}\phi_*\\a_*\end{bmatrix}^{\!\top}
+    \Lambda^{-1}
+    \begin{bmatrix}\phi_*\\a_*\end{bmatrix}.
+\end{equation}
+This quantity can be evaluated without materializing the full covariance. Solve
+\begin{equation}
+    D_uv_*=a_*.
+\end{equation}
+Then, using the Schur-complement precision
+$\Lambda_{\beta\mid u}=A_\beta-B_{\beta u}D_u^{-1}B_{\beta u}^\top$, we have
+\begin{equation}
+    \begin{bmatrix}\phi_*\\a_*\end{bmatrix}^{\!\top}
+    \Lambda^{-1}
+    \begin{bmatrix}\phi_*\\a_*\end{bmatrix}
+    =
+    a_*^\top v_*
+    +
+    \left(\phi_*-B_{\beta u}v_*\right)^\top
+    \Lambda_{\beta\mid u}^{-1}
+    \left(\phi_*-B_{\beta u}v_*\right).
+    \label{eq:structured_predictive_quadratic}
+\end{equation}
+Therefore the predictive variance is
+\begin{equation}
+    \Var(y_*)
+    =
+    \sigma^2+
+    \nu_*+
+    a_*^\top v_*
+    +
+    \left(\phi_*-B_{\beta u}v_*\right)^\top
+    \Lambda_{\beta\mid u}^{-1}
+    \left(\phi_*-B_{\beta u}v_*\right).
+    \label{eq:structured_predictive_variance}
+\end{equation}
+Equation~\eqref{eq:structured_predictive_variance} contains the effect of the
+$\beta$--$u$ cross covariance implicitly. Expanding the full covariance would give
+\begin{equation}
+    \phi_*^\top S_{\beta\beta}\phi_*
+    +a_*^\top S_{uu}a_*
+    +2\phi_*^\top S_{\beta u}a_*.
+\end{equation}
+The cross term $2\phi_*^\top S_{\beta u}a_*$ is absent under mean-field. Route B keeps
+it through the Schur-complement formula above while still requiring only Sylvester solves
+with the $u$ block.
+
+For comparison, the mean-field ablation $q(\beta)q(u)$ uses
+\begin{equation}
+    \Var_{\mathrm{MF}}(y_*)
+    =
+    \sigma^2+
+    \nu_*+
+    \phi_*^\top S_{\beta,\mathrm{MF}}\phi_*
+    +
+    a_*^\top S_{u,\mathrm{MF}}a_* ,
+\end{equation}
+which drops the cross-covariance contribution and should therefore be treated as a
+calibration ablation rather than the main predictive distribution.
+
+
+\section{Experiments and Ablations}
+\label{sec:experiments_ablations}
+
+The recommended experimental sequence should isolate the contribution of each modeling
+choice: joint training, changing-basis transfer, old-likelihood-ratio transfer,
+Kronecker structure, and retention of structured $\beta$--$u$ covariance.
+
+\subsection{Methods to Compare}
+
+At minimum, compare the following methods:
+\begin{enumerate}[label=(\arabic*)]
+    \item \textbf{Two-stage future-only baseline.}
+    The linear mean is updated first and the GP is trained on current residuals only.
+
+    \item \textbf{Two-stage residual GP with buffer or sketch correction.}
+    This tests whether explicit residual repair can mitigate stale residual targets.
+
+    \item \textbf{Fixed-basis exact joint Gaussian baseline.}
+    This uses a fixed inducing representation and performs the exact joint Gaussian
+    update over $(\beta,u)$.
+
+    \item \textbf{Joint mean-field with projected-prior transfer.}
+    This is the efficient filtering-style approximation but drops $\beta$--$u$ posterior
+    covariance.
+
+    \item \textbf{Joint mean-field with SSGP-style old-likelihood-ratio transfer.}
+    This tests whether old-likelihood transfer helps even without the structured cross
+    covariance.
+
+    \item \textbf{Structured joint posterior with SSGP-style transfer.}
+    This is the main route-B method. It keeps $\Lambda_{\beta u}$ and recovers posterior
+    moments using the Schur complement.
+
+    \item \textbf{Structured joint posterior without changing-basis transfer.}
+    This ablation keeps $\Lambda_{\beta u}$ but ignores that $u_o$ and $u_n$ live in
+    different HiPPO coordinates.
+\end{enumerate}
+
+\subsection{Ablations}
+
+Important ablations include:
+\begin{enumerate}[label=(\arabic*)]
+    \item number of temporal HiPPO basis functions $M_t$;
+    \item number of spatial inducing points $M_s$;
+    \item number of RFF frequencies $R$;
+    \item fixed temporal basis versus changing HiPPO basis;
+    \item no transfer versus projected-prior transfer versus old-likelihood-ratio transfer;
+    \item maintaining $R_{uu,o}$ as dense versus maintaining $B_o\otimes G$;
+    \item dropping versus retaining the cross block $\Lambda_{\beta u}$;
+    \item exact fixed-basis joint posterior versus structured Schur approximation;
+    \item static $\beta$ versus approximate drifting $\beta$;
+    \item PSD projection, damping, or jitter for old-likelihood natural precisions when
+    dense approximations are used.
+\end{enumerate}
+
+\subsection{Metrics}
+
+The evaluation should not rely only on RMSE. Report:
+\begin{enumerate}[label=(\arabic*)]
+    \item RMSE;
+    \item MAE;
+    \item test negative log likelihood;
+    \item predictive interval coverage, for example $50\%$, $90\%$, and $95\%$;
+    \item runtime per online block;
+    \item peak memory;
+    \item RMSE/NLL under matched memory budgets;
+    \item calibration error for Gaussian predictive intervals;
+    \item error on continual evaluation windows, not only future-only forecasting.
+\end{enumerate}
+
+The most important comparison is whether the structured route-B method improves
+continual evaluation and uncertainty calibration relative to residual-based learning,
+projected-prior transfer, and mean-field SSGP-style transfer.
+
+
+\section{Summary}
+\label{sec:summary}
+
+The proposed model follows the logical structure
+\begin{equation}
+\begin{aligned}
+    &\text{two-stage learning has stale residuals} \\
+    \Rightarrow\;&
+    \text{joint training fixes the observation target} \\
+    \Rightarrow\;&
+    \text{changing HiPPO bases require old-information transfer} \\
+    \Rightarrow\;&
+    \text{SSGP-style old-likelihood-ratio transfer gives a principled streaming update} \\
+    \Rightarrow\;&
+    \text{route B keeps the structured }\beta\text{--}u\text{ covariance} \\
+    \Rightarrow\;&
+    \text{Kronecker/Sylvester structure keeps the method scalable.}
+\end{aligned}
+\end{equation}
+
+The observation model is
+\begin{equation}
+    y_n=\Phi_n\beta+A_nu_n+\epsilon_n,
+    \qquad
+    \epsilon_n\sim\mathcal{N}(0,\sigma^2I).
+\end{equation}
+Unlike residual-based learning, the likelihood is always applied to $y_n$:
+\begin{equation}
+    p(y_n\mid \beta,u_n)
+    =
+    \mathcal{N}(y_n\mid \Phi_n\beta+A_nu_n,\sigma^2I).
+\end{equation}
+
+For a changing HiPPO temporal basis, the main update propagates the old joint likelihood
+ratio
+\begin{equation}
+    \frac{q_{n-1}(\beta,u_o)}{p(\beta)p(u_o)}.
+\end{equation}
+If the old likelihood natural parameters are
+\begin{equation}
+    R_o^z=
+    \begin{bmatrix}
+        R_{\beta\beta,o} & R_{\beta u,o}\\
+        R_{u\beta,o} & R_{uu,o}
+    \end{bmatrix},
+    \qquad
+    r_o^z=
+    \begin{bmatrix}
+        r_{\beta,o}\\r_{u,o}
+    \end{bmatrix},
+\end{equation}
+and $p(u_o\mid u_n)=\mathcal{N}(L_{on}u_n,\Sigma_{o\mid n})$, then the old likelihood is
+transferred by
+\begin{equation}
+    R_{o\rightarrow n}^z
+    =
+    \begin{bmatrix}
+        I & 0\\0 & L_{on}
+    \end{bmatrix}^{\!\top}
+    R_o^z
+    \begin{bmatrix}
+        I & 0\\0 & L_{on}
+    \end{bmatrix},
+    \qquad
+    r_{o\rightarrow n}^z
+    =
+    \begin{bmatrix}
+        I & 0\\0 & L_{on}
+    \end{bmatrix}^{\!\top}
+    r_o^z.
+\end{equation}
+The resulting accumulated likelihood blocks are
+\begin{align}
+    R_{\beta\beta,n}
+    &=R_{\beta\beta,o}+\frac{1}{\sigma^2}\Phi_n^\top\Phi_n,\\
+    R_{\beta u,n}
+    &=R_{\beta u,o}L_{on}+\frac{1}{\sigma^2}\Phi_n^\top A_n,\\
+    R_{uu,n}
+    &=L_{on}^\top R_{uu,o}L_{on}+\frac{1}{\sigma^2}A_n^\top A_n.
+\end{align}
+After adding the priors, the posterior precision has the route-B structure
+\begin{equation}
+    \Lambda_n=
+    \begin{bmatrix}
+        \Lambda_{\beta\beta,n} & \Lambda_{\beta u,n}\\
+        \Lambda_{u\beta,n} & \Lambda_{uu,n}
+    \end{bmatrix}.
+\end{equation}
+The $u$--$u$ block keeps the Sylvester form. Since the changing basis acts only in the
+temporal dimension and the spatial inducing set is fixed,
+\begin{equation}
+    L_{on}=L_{on}^{(t)}\otimes I_s.
+\end{equation}
+If
+\begin{equation}
+    R_{uu,o}=B_o\otimes G,
+    \qquad
+    G=C^\top C,
+\end{equation}
+then
+\begin{equation}
+    L_{on}^\top R_{uu,o}L_{on}
+    =
+    \left[(L_{on}^{(t)})^\top B_oL_{on}^{(t)}\right]\otimes G.
+\end{equation}
+Thus
+\begin{equation}
+    \Lambda_{uu,n}
+    =
+    (K_{nn}^{(t)})^{-1}\otimes K_s^{-1}+B_n\otimes G,
+\end{equation}
+where
+\begin{equation}
+    B_n=(L_{on}^{(t)})^\top B_oL_{on}^{(t)}+\frac{1}{\sigma^2}T_n^\top T_n.
+\end{equation}
+The Sylvester equation
+\begin{equation}
+    K_s^{-1}Z(K_{nn}^{(t)})^{-1}+GZB_n=Q
+\end{equation}
+therefore remains available for $D_u^{-1}$ solves.
+
+Posterior moments are recovered by Schur complement. For
+\begin{equation}
+    \Lambda_n=
+    \begin{bmatrix}
+        A_\beta & B_{\beta u}\\
+        B_{\beta u}^\top & D_u
+    \end{bmatrix},
+\end{equation}
+define the Schur-complement precision
+\begin{equation}
+    \Lambda_{\beta\mid u}=A_\beta-B_{\beta u}D_u^{-1}B_{\beta u}^\top.
+\end{equation}
+Then
+\begin{equation}
+    m_\beta=\Lambda_{\beta\mid u}^{-1}(h_\beta-B_{\beta u}D_u^{-1}h_u),
+    \qquad
+    m_u=D_u^{-1}(h_u-B_{\beta u}^\top m_\beta).
+\end{equation}
+Only $d+1$ Sylvester solves are needed to form the Schur complement and posterior means.
+For prediction, the structured posterior variance is evaluated as
+\begin{equation}
+    \Var(y_*)
+    =
+    \sigma^2+\nu_*+a_*^\top v_*
+    +
+    (\phi_*-B_{\beta u}v_*)^\top \Lambda_{\beta\mid u}^{-1}(\phi_*-B_{\beta u}v_*),
+    \qquad
+    D_uv_*=a_*.
+\end{equation}
+This formula retains the $\beta$--$u$ covariance term that the mean-field approximation
+would drop. Therefore the main theoretical contribution is no longer only
+old-likelihood-ratio transfer for $u$, but \emph{structured joint old-likelihood transfer
+with a Kronecker-preserving GP block and a Schur-complement correction for the linear
+mean}.
+
+\appendix
+
+\section{Proofs for Kronecker-Preserving Changing-Basis Transfer}
+\label{app:kron_preserving_transfer_proofs}
+
+This appendix gives the detailed proof of the two structural claims used
+in the main text:
+\begin{equation}
+    L_{on}=L_{on}^{(t)}\otimes I_s,
+    \label{eq:app_Lon_kron_claim}
+\end{equation}
+and
+\begin{equation}
+    R_{uu,o}=B_o\otimes G.
+    \label{eq:app_Ruu_kron_claim}
+\end{equation}
+The first identity is a consequence of the separable spatio-temporal
+kernel and the fact that the spatial inducing set is fixed. The second
+identity is not true for an arbitrary dense posterior covariance; it is an
+algorithmic invariant obtained by maintaining the old likelihood natural
+precision in a Kronecker-structured form.
+
+\subsection{\texorpdfstring{Proof that \(L_{on}=L_{on}^{(t)}\otimes I_s\)}{Proof that Lon = Lon(t) tensor Is}}
+\label{app:proof_Lon_temporal_only}
+
+Assume the spatio-temporal kernel is separable:
+\begin{equation}
+    k\big((t,s),(t',s')\big)
+    =
+    k_t(t,t')k_s(s,s').
+    \label{eq:app_sep_kernel}
+\end{equation}
+Let the mixed HiPPO interdomain inducing variables be
+\begin{equation}
+    u_{\ell,j}(T)
+    =
+    \int_0^T
+    g_\ell^{(T)}(x)f(x,z_j^{(s)})\,dx,
+    \label{eq:app_mixed_inducing}
+\end{equation}
+where \(\ell\) indexes the temporal HiPPO basis and \(j\) indexes the
+fixed spatial inducing location \(z_j^{(s)}\).
+
+Let
+\begin{equation}
+    u_o := u(T_o),
+    \qquad
+    u_n := u(T_n),
+\end{equation}
+where \(T_o=T_{n-1}\) is the old temporal horizon and \(T_n\) is the new
+temporal horizon. The temporal HiPPO basis changes from
+\(g_\ell^{(T_o)}\) to \(g_\ell^{(T_n)}\), but the spatial inducing
+locations \(Z_s=\{z_1^{(s)},\ldots,z_{M_s}^{(s)}\}\) are fixed.
+
+For two inducing entries,
+\begin{equation}
+    u_{\ell,j}^{old}
+    =
+    \int_0^{T_o}
+    g_\ell^{(T_o)}(x)f(x,z_j^{(s)})\,dx,
+\end{equation}
+and
+\begin{equation}
+    u_{m,j'}^{new}
+    =
+    \int_0^{T_n}
+    g_m^{(T_n)}(x')f(x',z_{j'}^{(s)})\,dx',
+\end{equation}
+their prior covariance is
+\begin{align}
+    \cov
+    \left(
+        u_{\ell,j}^{old},
+        u_{m,j'}^{new}
+    \right)
+    &=
+    \int_0^{T_o}
+    \int_0^{T_n}
+    g_\ell^{(T_o)}(x)
+    g_m^{(T_n)}(x')
+    k\big((x,z_j^{(s)}),(x',z_{j'}^{(s)})\big)
+    \,dx'\,dx                                                  \\
+    &=
+    \int_0^{T_o}
+    \int_0^{T_n}
+    g_\ell^{(T_o)}(x)
+    g_m^{(T_n)}(x')
+    k_t(x,x')
+    k_s(z_j^{(s)},z_{j'}^{(s)})
+    \,dx'\,dx                                                   \\
+    &=
+    \left[
+    \int_0^{T_o}
+    \int_0^{T_n}
+    g_\ell^{(T_o)}(x)
+    g_m^{(T_n)}(x')
+    k_t(x,x')
+    \,dx'\,dx
+    \right]
+    k_s(z_j^{(s)},z_{j'}^{(s)}).
+    \label{eq:app_old_new_cov_entry}
+\end{align}
+Thus the old-new covariance factorizes into a temporal covariance factor
+and a spatial covariance factor. With the vectorization convention used in
+the main text,
+\begin{equation}
+    K_{on}
+    =
+    K_{on}^{(t)}\otimes K_s,
+    \qquad
+    K_s:=K_{ZZ}^{(s)}.
+    \label{eq:app_Kon_kron}
+\end{equation}
+Similarly,
+\begin{equation}
+    K_{nn}
+    =
+    K_{nn}^{(t)}\otimes K_s,
+    \qquad
+    K_{oo}
+    =
+    K_{oo}^{(t)}\otimes K_s.
+    \label{eq:app_Knn_Koo_kron}
+\end{equation}
+
+The conditional mean operator in
+\begin{equation}
+    p(u_o\mid u_n)
+    =
+    \mathcal{N}
+    \left(
+        L_{on}u_n,
+        \Sigma_{o\mid n}
+    \right)
+\end{equation}
+is
+\begin{equation}
+    L_{on}
+    =
+    K_{on}K_{nn}^{-1}.
+\end{equation}
+Using \eqref{eq:app_Kon_kron}--\eqref{eq:app_Knn_Koo_kron} and the
+Kronecker identities
+\begin{equation}
+    (A\otimes B)^{-1}=A^{-1}\otimes B^{-1},
+    \qquad
+    (A\otimes B)(C\otimes D)=(AC)\otimes(BD),
+\end{equation}
+we obtain
+\begin{align}
+    L_{on}
+    &=
+    \left(
+        K_{on}^{(t)}\otimes K_s
+    \right)
+    \left[
+        \left(K_{nn}^{(t)}\right)^{-1}
+        \otimes
+        K_s^{-1}
+    \right]                                                     \\
+    &=
+    K_{on}^{(t)}
+    \left(K_{nn}^{(t)}\right)^{-1}
+    \otimes
+    K_sK_s^{-1}                                                  \\
+    &=
+    L_{on}^{(t)}\otimes I_s,
+    \label{eq:app_Lon_kron_proof}
+\end{align}
+where
+\begin{equation}
+    L_{on}^{(t)}
+    :=
+    K_{on}^{(t)}
+    \left(K_{nn}^{(t)}\right)^{-1}.
+\end{equation}
+Therefore, under a separable kernel, fixed spatial inducing locations, and
+temporal-only changing basis, the old-to-new conditional operator acts
+only on the temporal inducing coordinates and leaves the spatial inducing
+coordinates unchanged.
+
+\paragraph{Vectorization convention.}
+The identity \eqref{eq:app_Lon_kron_proof} assumes the same vectorization
+ordering as the Kronecker convention \(K_{uu}=K_{uu}^{(t)}\otimes K_s\).
+If an implementation uses the opposite vectorization order, the equivalent
+identity becomes \(L_{on}=I_s\otimes L_{on}^{(t)}\). The mathematics is
+unchanged, but the code must be consistent with the chosen ordering.
+
+\subsection{\texorpdfstring{Proof and Status of \(R_{uu,o}=B_o\otimes G\)}{Proof and Status of Ruu,o = Bo tensor G}}
+\label{app:proof_Ro_kron_natural_stat}
+
+The identity
+\begin{equation}
+    R_{uu,o}=B_o\otimes G
+\end{equation}
+should be interpreted carefully. It is not a property of an arbitrary
+dense posterior covariance. It is a structured natural-parameter
+representation of the accumulated old likelihood information.
+
+For a Gaussian observation model, the likelihood contribution of a block
+\(j\) to the inducing-variable precision is
+\begin{equation}
+    \Lambda_{\mathrm{like},j}
+    =
+    \frac{1}{\sigma^2}A_j^\top A_j.
+    \label{eq:app_likelihood_precision}
+\end{equation}
+Under the Kronecker HiPPO-SVGP representation,
+\begin{equation}
+    A_j=T_j\otimes C,
+    \label{eq:app_Aj_kron}
+\end{equation}
+where \(T_j\) is the temporal projection matrix for block \(j\), and
+\begin{equation}
+    C=K_{XZ}^{(s)}\left(K_{ZZ}^{(s)}\right)^{-1}
+\end{equation}
+is the fixed spatial projection matrix. Therefore,
+\begin{align}
+    \Lambda_{\mathrm{like},j}
+    &=
+    \frac{1}{\sigma^2}
+    (T_j\otimes C)^\top(T_j\otimes C)                         \\
+    &=
+    \frac{1}{\sigma^2}
+    (T_j^\top T_j)\otimes(C^\top C).
+    \label{eq:app_likelihood_precision_kron}
+\end{align}
+Define
+\begin{equation}
+    G:=C^\top C.
+\end{equation}
+Then each block contributes
+\begin{equation}
+    \Lambda_{\mathrm{like},j}
+    =
+    \frac{1}{\sigma^2}
+    (T_j^\top T_j)\otimes G.
+\end{equation}
+
+The old $u$--$u$ likelihood natural precision before processing block \(n\)
+is the sum of historical likelihood precision contributions, expressed in the old
+inducing coordinates:
+\begin{equation}
+    R_{uu,o}
+    :=
+    \sum_{j<n}
+    \Lambda_{\mathrm{like},j}.
+\end{equation}
+If the spatial projection matrix \(C\) is fixed across the online blocks,
+then the spatial factor \(G=C^\top C\) is common to all terms. Hence
+\begin{align}
+    R_{uu,o}
+    &=
+    \sum_{j<n}
+    \frac{1}{\sigma^2}
+    (T_j^\top T_j)\otimes G                                  \\
+    &=
+    \left[
+        \sum_{j<n}
+        \frac{1}{\sigma^2}
+        T_j^\top T_j
+    \right]\otimes G.
+\end{align}
+Define the temporal old-likelihood precision statistic
+\begin{equation}
+    B_o
+    :=
+    \sum_{j<n}
+    \frac{1}{\sigma^2}
+    T_j^\top T_j.
+    \label{eq:app_Bo_definition}
+\end{equation}
+Then
+\begin{equation}
+    R_{uu,o}=B_o\otimes G.
+    \label{eq:app_Ruu_Bo_G}
+\end{equation}
+
+Thus \(R_{uu,o}=B_o\otimes G\) is valid when the algorithm maintains the old
+$u$--$u$ likelihood precision directly in natural-parameter form. In a
+marginal GP-only Gaussian update, this agrees with
+\begin{equation}
+    R_{uu,o}=D_{u,o}-K_{oo}^{-1},
+\end{equation}
+where \(D_{u,o}\) is the lower-right inducing-variable precision block.
+In the structured joint route, this block should be maintained as a
+natural statistic; it should not be reconstructed from the marginal
+covariance of \(u_o\). If one stores an unrestricted dense posterior
+covariance, a marginal covariance from a full joint posterior over
+\((\beta,u_o)\), or an arbitrary structured approximation, then the dense
+quantity obtained by inverting that marginal covariance need not be a
+single Kronecker product.
+
+\subsection{Kronecker Preservation of the Old-Likelihood Transfer}
+\label{app:proof_Lambda_transfer_kron}
+
+Combining the previous two results proves the Kronecker preservation of
+the SSGP-style old-likelihood-ratio transfer.
+
+The transferred old $u$--$u$ likelihood precision is
+\begin{equation}
+    R_{uu,o\rightarrow n}
+    =
+    L_{on}^\top R_{uu,o}L_{on}.
+\end{equation}
+Using
+\begin{equation}
+    L_{on}=L_{on}^{(t)}\otimes I_s,
+    \qquad
+    R_{uu,o}=B_o\otimes G,
+\end{equation}
+we have
+\begin{align}
+    R_{uu,o\rightarrow n}
+    &=
+    \left[
+        \left(L_{on}^{(t)}\right)^\top\otimes I_s
+    \right]
+    (B_o\otimes G)
+    \left[
+        L_{on}^{(t)}\otimes I_s
+    \right]                                                     \\
+    &=
+    \left[
+        \left(L_{on}^{(t)}\right)^\top
+        B_o
+        L_{on}^{(t)}
+    \right]
+    \otimes G.
+\end{align}
+Define
+\begin{equation}
+    B_{o\rightarrow n}
+    :=
+    \left(L_{on}^{(t)}\right)^\top
+    B_o
+    L_{on}^{(t)}.
+\end{equation}
+Then
+\begin{equation}
+    R_{uu,o\rightarrow n}
+    =
+    B_{o\rightarrow n}\otimes G.
+    \label{eq:app_Ruu_transfer_kron}
+\end{equation}
+The new block likelihood contribution is
+\begin{equation}
+    \frac{1}{\sigma^2}A_n^\top A_n
+    =
+    \frac{1}{\sigma^2}
+    (T_n^\top T_n)\otimes G.
+\end{equation}
+Therefore the updated temporal likelihood statistic is
+\begin{equation}
+    B_n
+    =
+    B_{o\rightarrow n}
+    +
+    \frac{1}{\sigma^2}T_n^\top T_n.
+    \label{eq:app_Bn_after_transfer}
+\end{equation}
+The resulting inducing precision has the Sylvester-compatible form
+\begin{equation}
+    \Lambda_{uu,n}
+    =
+    \left(K_{nn}^{(t)}\right)^{-1}\otimes K_s^{-1}
+    +
+    B_n\otimes G.
+    \label{eq:app_Lambda_un_sylvester_form}
+\end{equation}
+
+Consequently, for \(q_*=\vecop(Q)\) and
+\(z=\Lambda_{uu,n}^{-1}q_*=\vecop(Z)\), the system
+\begin{equation}
+    \Lambda_{uu,n}z=q_*
+\end{equation}
+is equivalent to the Sylvester-type equation
+\begin{equation}
+    K_s^{-1}Z
+    \left(K_{nn}^{(t)}\right)^{-1}
+    +
+    GZB_n
+    =
+    Q,
+    \label{eq:app_sylvester_after_transfer}
+\end{equation}
+assuming the vectorization convention used in the main text and symmetric
+\(B_n\). Thus the SSGP-style old-likelihood-ratio transfer can preserve
+the Sylvester solver under the temporal-only changing-basis and fixed
+spatial-geometry assumptions.
+
+\subsection{\texorpdfstring{When \(R_{uu,o}=B_o\otimes G\) Can Fail}{When Ruu,o = Bo tensor G Can Fail}}
+\label{app:failure_cases_Ro_kron}
+
+The single-Kronecker representation \(R_{uu,o}=B_o\otimes G\) is not
+unconditional. It may fail in the following cases.
+
+\paragraph{Changing spatial observation pattern.}
+If the spatial observation pattern or spatial mini-batch changes across
+blocks, then the spatial projection matrix may become block-dependent:
+\begin{equation}
+    C_j\neq C.
+\end{equation}
+Consequently,
+\begin{equation}
+    G_j=C_j^\top C_j
+\end{equation}
+also changes. The old $u$--$u$ likelihood precision becomes
+\begin{equation}
+    R_{uu,o}
+    =
+    \sum_{j<n}
+    B_j\otimes G_j,
+\end{equation}
+rather than a single Kronecker product \(B_o\otimes G\). This is still a
+sum-of-Kronecker structure, but the simple closed-form Sylvester equation
+in \eqref{eq:app_sylvester_after_transfer} no longer applies directly.
+One would need a generalized Sylvester solver or an iterative method using
+Kronecker matrix-vector products.
+
+\paragraph{Changing spatial inducing locations.}
+If the spatial inducing locations \(Z_s\) are updated online, then
+\begin{equation}
+    K_s=K_{ZZ}^{(s)},
+    \qquad
+    C=K_{XZ}^{(s)}\left(K_{ZZ}^{(s)}\right)^{-1},
+    \qquad
+    G=C^\top C
+\end{equation}
+all change over time. In that case, the old-to-new transfer operator need
+not have the form \(L_{on}^{(t)}\otimes I_s\), and the likelihood
+precision is generally not a single \(B_o\otimes G\) term.
+
+\paragraph{Recovering \(R_{uu,o}\) from a dense posterior covariance.}
+If one stores a full joint posterior over \((\beta,u_o)\) and then uses only
+the marginal covariance of \(u_o\), the inverse of that marginal covariance
+does not generally equal the lower-right precision block of the joint
+posterior. The structure-preserving statistic should instead be interpreted in
+information form:
+\begin{equation}
+    R_{uu,o}=D_{u,o}-K_{oo}^{-1},
+\end{equation}
+where \(D_{u,o}\) is the lower-right posterior precision block. This is a
+single Kronecker product only if that precision block preserves the required
+structure. For the Sylvester-preserving implementation, the old $u$--$u$
+likelihood natural precision should be maintained directly as \(B_o\otimes G\),
+rather than recovered from an arbitrary dense covariance.
+
+\paragraph{Non-Gaussian likelihoods or non-conjugate approximations.}
+For Gaussian likelihoods, the likelihood precision contribution is
+\begin{equation}
+    \frac{1}{\sigma^2}A_j^\top A_j.
+\end{equation}
+With non-Gaussian likelihoods, approximate inference methods such as
+Laplace, expectation propagation, or stochastic variational inference may
+produce likelihood-site precisions that are not simply proportional to
+\(A_j^\top A_j\), or that vary by observation. The resulting precision
+may fail to share a common spatial factor \(G\).
+
+\paragraph{Practical implication.}
+To retain the simple Sylvester solver, the scalable version of the method
+should explicitly assume fixed spatial inducing geometry and should
+maintain the old $u$--$u$ likelihood precision as a Kronecker natural statistic:
+\begin{equation}
+    R_{uu,o}=B_o\otimes G.
+\end{equation}
+When these assumptions are violated, the model can still be implemented,
+but the solver must be replaced by a more general structured linear
+algebra routine, such as a sum-of-Kronecker conjugate-gradient method or a
+generalized Sylvester solver.
+
+\end{document}

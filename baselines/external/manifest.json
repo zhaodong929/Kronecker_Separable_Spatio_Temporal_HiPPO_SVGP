@@ -1,0 +1,48 @@
+{
+  "created_for": "ERA5 Route B online GP baseline expansion",
+  "protocol_target": {
+    "calibration": "task_1 initial full-GP MLL grid for ell_t, sigma2, kernel variance",
+    "online_evaluation": "task_2 held-out seen-history",
+    "main_metrics": ["NLL/NLPD", "RMSE", "Cov90", "ECE", "runtime/block", "forgetting"],
+    "routeB_reference": "Rich-v3 Phi + Matern-3/2 + Mt=32 + Ms=256"
+  },
+  "repositories": [
+    {
+      "name": "streaming_sparse_gp",
+      "local_folder": "thangbui_streaming_sparse_gp",
+      "url": "https://github.com/thangbui/streaming_sparse_gp",
+      "intended_methods": ["OSVGP", "OSGPR"],
+      "download_status": "downloaded",
+      "unified_era5_runner_status": "not_integrated"
+    },
+    {
+      "name": "online_vargp",
+      "local_folder": "wjmaddox_online_vargp",
+      "url": "https://github.com/wjmaddox/online_vargp",
+      "intended_methods": ["OVC-fixedZ", "OVC-optZ"],
+      "download_status": "downloaded",
+      "unified_era5_runner_status": "not_integrated"
+    },
+    {
+      "name": "online_gp",
+      "local_folder": "wjmaddox_online_gp",
+      "url": "https://github.com/wjmaddox/online_gp",
+      "intended_methods": ["online SGPR", "online SVGP", "WISKI"],
+      "download_status": "downloaded",
+      "unified_era5_runner_status": "not_integrated"
+    },
+    {
+      "name": "HIPPOSVGP",
+      "local_folder": "nkiyohara_HIPPOSVGP",
+      "url": "https://github.com/nkiyohara/HIPPOSVGP",
+      "intended_methods": ["OHSVGP-style temporal baseline"],
+      "download_status": "clone_attempted_check_required",
+      "unified_era5_runner_status": "not_integrated"
+    }
+  ],
+  "notes": [
+    "Reference repositories are not automatically comparable until wrapped by the same OnlineBaseline interface.",
+    "The local SGPR/SVGP wrappers are the first same-kernel/frozen-hyperparameter baselines to run under the unified ERA5 protocol.",
+    "Lag-Phi should not be used for future claims unless the lag features are constructed without reading labels inside the future block."
+  ]
+}

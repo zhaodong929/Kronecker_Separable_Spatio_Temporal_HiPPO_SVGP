@@ -1,142 +1,113 @@
-# Joint SSGP Kronecker HiPPO Implementation
+# Joint SSGP Kronecker Route B Implementation
 
-This directory documents the new NumPy/SciPy CPU implementation added under
-`stvgp_kronecker/joint_ssgp_kron/`. The baseline PyTorch training files are
-left intact; the new code is isolated in new modules, scripts, and tests.
+Route B is now the main implementation under `stvgp_kronecker/joint_ssgp_kron/`.
+It keeps a structured joint Gaussian posterior over `z = [beta; u]` rather than
+using the previous residual/plug-in mean-field update as the main method.
 
-## Added Components
+## Shape Convention
 
-- `stvgp_kronecker/joint_ssgp_kron/kron_utils.py`: Kronecker products, dense
-  test adapters, SPD solves, and the Sylvester-compatible precision solver.
-- `stvgp_kronecker/joint_ssgp_kron/ssgp_transfer.py`: SSGP old-likelihood-ratio
-  transfer and projected-prior ablation formulas.
-- `stvgp_kronecker/joint_ssgp_kron/structured_state.py`: structured posterior
-  state with `B_temporal` and `H_info`.
-- `stvgp_kronecker/joint_ssgp_kron/model.py`: joint linear-mean model with
-  SSGP transfer, no-transfer, projected-prior, prediction, and dense test hooks.
-- `stvgp_kronecker/joint_ssgp_kron/synthetic.py`: synthetic separable GP data
-  and consistent temporal/spatial projection factors.
-- `scripts/verify_joint_ssgp_kron_derivations.py`: derivation checks and JSON
-  report writer.
-- `scripts/run_joint_ssgp_kron_experiments.py`: synthetic experiment runner.
-- `tests/test_joint_ssgp_kron_*.py`: unit tests for formulas and model sanity.
+- `u = vec_F(M_u)` with `M_u.shape == (M_s, M_t)`.
+- `A = T_n kron C`.
+- `A @ vec_F(M_u) = vec_F(C @ M_u @ T_n.T)`.
+- `H_info.shape == (M_s, M_t)` stores the likelihood natural vector `h_u`.
+- `D_u x = q` is solved as `K_s^{-1} Z K_t^{-1} + G Z B = Q`, where
+  `x = vec_F(Z)` and `q = vec_F(Q)`.
+- A temporal basis transfer uses `L_on = L_t kron I_s`; therefore
+  `h_u -> L_on.T h_u` is implemented as `H_info @ L_t`.
 
-## Main Formulas
+## Route B Natural Statistics
 
-With fixed spatial inducing locations and a temporal-only basis change,
+For `y = Phi beta + A u + eps`, the structured joint likelihood update stores:
 
 ```text
-L_on = K_on K_nn^{-1} = L_t kron I_s
-L_t  = K_on^(t) (K_nn^(t))^{-1}
+R_beta_beta = Phi.T Phi / sigma2
+R_beta_u    = Phi.T A / sigma2
+R_uu        = (T.T T / sigma2) kron (C.T C)
+h_beta      = Phi.T y / sigma2
+h_u         = A.T y / sigma2
 ```
 
-The scalable implementation maintains old likelihood natural precision as
+`R_beta_u` is a likelihood natural-precision cross block, not posterior
+covariance. The posterior beta-u covariance is recovered implicitly by Schur
+complement.
+
+## Changing-Basis Transfer
+
+The old joint likelihood ratio is transferred as:
 
 ```text
-R_o = B_o kron G
-G   = C^T C
+R_beta_beta -> R_beta_beta
+R_beta_u    -> R_beta_u @ (L_t kron I_s)
+R_uu        -> (L_t.T B_old L_t) kron G
+h_beta      -> h_beta
+h_u         -> (L_t kron I_s).T h_u
 ```
 
-so the transferred old likelihood precision is
+The Kronecker invariant applies only to the `u-u` block:
 
 ```text
-Lambda_old = (L_t^T B_o L_t) kron G
+R_uu = B_temporal kron G
+G = C.T C
 ```
 
-For a new block with temporal projection `T_n`,
+The full joint likelihood block is not claimed to be a single Kronecker product.
+
+## Posterior Recovery
+
+With
 
 ```text
-B_n = L_t^T B_o L_t + T_n^T T_n / sigma2
-H_n = H_o L_t + C^T residual T_n / sigma2
+Lambda = [[A_beta, B_beta_u],
+          [B_beta_u.T, D_u]]
 ```
 
-The posterior mean matrix solves
+Route B forms:
 
 ```text
-Ks^{-1} M Kt^{-1} + G M B_n = H_n
+Lambda_beta_given_u = A_beta - B_beta_u D_u^{-1} B_beta_u.T
+m_beta = Lambda_beta_given_u^{-1}(h_beta - B_beta_u D_u^{-1} h_u)
+m_u = D_u^{-1} h_u - D_u^{-1} B_beta_u.T m_beta
 ```
 
-without materializing the full Kronecker precision.
+`Lambda_beta_given_u` is a precision. It is intentionally not named `S_beta`.
 
-## Transfer Variants
+## Prediction
 
-- **SSGP-style old-likelihood-ratio transfer** is the default method. It carries
-  `B_temporal` and `H_info` through the temporal changing basis.
-- **Gaussian projected-prior transfer** is an ablation. It maps posterior moments
-  by dense Gaussian marginalization and is intended only for small/medium tests.
-- **No transfer** resets the GP old likelihood contribution between changing
-  bases while still allowing the linear mean posterior to continue.
-
-## Run Verification
-
-```bash
-uv run --no-sync python scripts/verify_joint_ssgp_kron_derivations.py
-```
-
-The script writes:
+The structured predictive variance is:
 
 ```text
-results/verification/joint_ssgp_kron_verification.json
+sigma2 + nu_star + a_star.T v_star
++ (phi_star - B_beta_u v_star).T
+   Lambda_beta_given_u^{-1}
+  (phi_star - B_beta_u v_star)
 ```
 
-## Run Synthetic Experiments
-
-```bash
-uv run --no-sync python scripts/run_joint_ssgp_kron_experiments.py \
-  --dataset synthetic \
-  --num-seeds 3 \
-  --num-time 40 \
-  --num-space 6 \
-  --block-size 5 \
-  --mt 5 \
-  --ms 4 \
-  --noise 0.05 \
-  --methods no_transfer projected_prior ssgp_transfer \
-  --outdir results/experiments
-```
-
-Outputs:
+where `D_u v_star = a_star`. The conditional term uses explicit kernel
+amplitude:
 
 ```text
-results/experiments/joint_ssgp_kron_synthetic_metrics.csv
-results/experiments/joint_ssgp_kron_synthetic_report.json
-results/experiments/coverage_plot.png
-results/experiments/rmse_over_blocks.png
-results/experiments/nll_over_blocks.png
+nu_star = max(0, prior_point_variance - a_star.T K_uu a_star)
 ```
 
-## Run ERA5 Processed-Data Probe
+This keeps the beta-u covariance effect that the mean-field ablation drops.
 
-The same script can stream the local processed ERA5 `.npz` files without using
-the baseline training entry points:
+## Main Files
 
-```bash
-uv run --no-sync python scripts/run_joint_ssgp_kron_experiments.py \
-  --dataset era5 \
-  --num-seeds 1 \
-  --num-time 40 \
-  --num-space 6 \
-  --block-size 5 \
-  --mt 5 \
-  --ms 4 \
-  --noise 0.05 \
-  --methods no_transfer projected_prior ssgp_transfer \
-  --outdir results/experiments_era5_probe
-```
+- `kron_utils.py`: vectorization helpers, dense references, `solve_Du_sylvester`,
+  and Schur recovery.
+- `ssgp_transfer.py`: Route B likelihood statistics and joint transfer helpers.
+- `structured_state.py`: old fields plus Route B natural statistics.
+- `model.py`: `update_block_structured_joint_ssgp_transfer` as the main Route B
+  method; old methods remain as ablations.
+- `scripts/verify_joint_ssgp_kron_derivations.py`: old checks plus Route B JSON.
+- `scripts/run_joint_ssgp_kron_experiments.py`: includes
+  `structured_joint_ssgp_transfer` and `mean_field_ssgp_transfer`.
 
-This loader aligns common timestamps across selected scaled ERA5 location files.
-It is a lightweight reproduction/probe for the new method, not a replacement for
-the existing baseline ERA5 training scripts.
+## Limitations
 
-## Known Limitations
-
-- If the spatial observation pattern changes per block, `G_j` changes and the
-  old likelihood becomes a sum of Kronecker products, not one `B_o kron G`.
-- If spatial inducing locations move online, `L_on` need not equal
-  `L_t kron I_s`.
-- If a dense unrestricted covariance is used and one computes
-  `S_o^{-1} - K_oo^{-1}`, the result need not be a single Kronecker product.
-- Non-Gaussian likelihoods may break the simple `A.T A / sigma2` likelihood
-  precision structure.
-- The synthetic experiments use consistent RBF temporal inducing matrices for
-  verification. They do not require exact HiPPO-RFF integrals.
+- If spatial observation pattern changes per block, the old likelihood may become
+  a sum of Kronecker products.
+- If spatial inducing locations move online, `L_on` may not equal `L_t kron I_s`.
+- Non-Gaussian likelihoods break the simple Gaussian natural-statistic update.
+- Dense unrestricted posterior covariance should not be used to infer a single
+  Kronecker `R_uu`.

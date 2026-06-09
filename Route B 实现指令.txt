@@ -1,0 +1,441 @@
+You are working on my research codebase for a spatio-temporal HiPPO-SVGP / SSGP-Kronecker project.
+
+Your task is NOT to rewrite the project from scratch. Instead, inspect the current repository, read the latest Route B theory document, compare it against the existing implementation, and upgrade the implementation to the latest structured joint posterior version.
+
+Important context:
+- There is already an isolated implementation under stvgp_kronecker/joint_ssgp_kron/.
+- Existing baseline PyTorch training files should remain intact unless absolutely necessary.
+- Previous implementation already has modules such as:
+  - stvgp_kronecker/joint_ssgp_kron/kron_utils.py
+  - stvgp_kronecker/joint_ssgp_kron/ssgp_transfer.py
+  - stvgp_kronecker/joint_ssgp_kron/structured_state.py
+  - stvgp_kronecker/joint_ssgp_kron/model.py
+  - stvgp_kronecker/joint_ssgp_kron/synthetic.py
+  - scripts/verify_joint_ssgp_kron_derivations.py
+  - scripts/run_joint_ssgp_kron_experiments.py
+  - tests/test_joint_ssgp_kron_*.py
+- Previous implementation mainly verified the GP-only / older joint SSGP-Kronecker formulas:
+  L_on = K_on K_nn^{-1} = L_t kron I_s
+  R_uu,o = B_o kron G
+  Lambda_uu,old = (L_t^T B_o L_t) kron G
+  B_n = L_t^T B_o L_t + T_n^T T_n / sigma2
+  H_n = H_o L_t + C^T residual T_n / sigma2
+  Ks^{-1} M Kt^{-1} + G M B_n = H_n
+- This is no longer sufficient. The latest theory document is Route B:
+  keep beta, but the main method must preserve structured beta-u covariance.
+
+Files to inspect first:
+1. new_main_joint_training_ssgp_kron_routeB_refined2.tex
+2. docs/joint_ssgp_kron_readme.md or joint_ssgp_kron_readme.md
+3. docs/joint_ssgp_kron_test_report.md or joint_ssgp_kron_test_report.md
+4. Existing code under stvgp_kronecker/joint_ssgp_kron/
+5. Existing scripts under scripts/
+6. Existing tests under tests/
+
+Primary goal:
+Implement the latest Route B structured joint posterior formulas.
+
+The new main method must maintain a joint precision over z = [beta; u]:
+
+Lambda_n =
+[ Lambda_beta_beta,n    Lambda_beta_u,n
+  Lambda_u_beta,n       Lambda_uu,n      ]
+
+where:
+- beta is low-dimensional.
+- u is high-dimensional spatio-temporal inducing variable.
+- Lambda_uu,n must retain the Kronecker/Sylvester structure.
+- Lambda_beta_u,n must be explicitly retained.
+- The implementation must NOT reduce to a mean-field q(beta) q(u) approximation as the main method.
+- Mean-field can only remain as an ablation.
+
+Theory requirements to implement:
+
+1. Joint likelihood natural statistics
+
+For a Gaussian block likelihood
+
+y_n = Phi_n beta + A_n u_n + eps, eps ~ N(0, sigma2 I),
+
+the new block contributes:
+
+R_beta_beta,new = Phi_n^T Phi_n / sigma2
+R_beta_u,new    = Phi_n^T A_n / sigma2
+R_uu,new        = A_n^T A_n / sigma2
+h_beta,new      = Phi_n^T y_n / sigma2
+h_u,new         = A_n^T y_n / sigma2
+
+In the separable spatio-temporal setting, R_uu,new should still be represented through the existing B_temporal / G structure whenever the assumptions hold. The cross block R_beta_u,new may be stored densely because beta dimension is small.
+
+Do not compute residual = y - Phi beta_mean as the core joint update. That was acceptable for older factorized or plug-in logic, but the structured joint posterior must use joint natural statistics.
+
+2. Old-likelihood-ratio transfer under changing temporal basis
+
+The old likelihood ratio is over joint variables:
+
+q_{n-1}(beta, u_o) / [p(beta) p(u_o)]
+
+Under temporal-only basis change and fixed spatial inducing geometry:
+
+L_on = L_t kron I_s.
+
+The old u-u likelihood precision transfers as:
+
+R_uu,o -> R_uu,o->n = L_on^T R_uu,o L_on.
+
+If R_uu,o = B_o kron G, then:
+
+R_uu,o->n = (L_t^T B_o L_t) kron G.
+
+The beta-u cross precision must also transfer:
+
+R_beta_u,o -> R_beta_u,o->n = R_beta_u,o L_on.
+
+Implement this without materializing L_on whenever possible:
+- Store R_beta_u either as dense shape (p, M_s * M_t) with a helper that applies temporal L_t along the temporal mode, or as shape (p, M_s, M_t).
+- Add dense reference functions for tests.
+- Match the repository's existing vec convention. Before coding, inspect current shape conventions in model.py, kron_utils.py, and tests.
+
+The beta-beta old likelihood block transfers unchanged:
+
+R_beta_beta,o -> R_beta_beta,o.
+
+The old natural vector transfers as:
+h_beta,o -> h_beta,o
+h_u,o -> L_on^T h_u,o
+
+For the matrix-shaped H_info used in the existing implementation, update the transfer consistently with the current convention. If current H_info has shape (M_s, M_t), then verify whether the correct transfer is H_o @ L_t or H_o @ L_t.T according to the existing Sylvester equation and vectorization. Do not guess: add a dense test to confirm.
+
+3. Posterior recovery via Schur complement + Sylvester solves
+
+Let the joint precision be
+
+Lambda =
+[ A_beta       B_beta_u
+  B_beta_u^T   D_u      ]
+
+where:
+- A_beta = prior_beta_precision + R_beta_beta
+- B_beta_u = R_beta_u
+- D_u = Lambda_uu = K_u^{-1} + R_uu
+- D_u is never explicitly inverted in the scalable path.
+
+Define Schur-complement precision:
+
+Lambda_beta_given_u =
+A_beta - B_beta_u D_u^{-1} B_beta_u^T.
+
+This symbol must be called Lambda_beta_given_u or Lambda_beta_conditional_precision in code/docs. Do NOT call it S_beta, because that confuses precision with covariance.
+
+Implement posterior natural vector:
+
+h = [h_beta; h_u].
+
+Recover posterior mean by:
+1. Solve D_u W = B_beta_u^T using Sylvester/Kronecker solver.
+2. Solve D_u v_h = h_u using Sylvester/Kronecker solver.
+3. Lambda_beta_given_u = A_beta - B_beta_u W.
+4. m_beta = solve(Lambda_beta_given_u, h_beta - B_beta_u v_h).
+5. m_u = v_h - W m_beta.
+
+Recover useful covariance quantities:
+- S_beta_beta = Lambda_beta_given_u^{-1}.
+- Posterior cross covariance is not stored directly, but can be applied implicitly:
+  S_beta_u = - Lambda_beta_given_u^{-1} B_beta_u D_u^{-1}.
+- Do not claim R_beta_u is posterior covariance. R_beta_u / B_beta_u is a likelihood natural-precision cross block.
+
+Add helper functions:
+- solve_Du(rhs): use existing Sylvester-compatible solver.
+- recover_posterior_mean_structured()
+- recover_beta_covariance()
+- apply_cross_covariance_beta_u(rhs) if useful.
+- dense_joint_posterior_reference() for small tests.
+
+4. Predictive mean and variance
+
+For a test input, with linear feature phi_* and GP inducing projection a_*:
+
+mean(y_*) =
+phi_*^T m_beta + a_*^T m_u.
+
+The predictive variance must preserve beta-u covariance. Use the Schur-compatible formula:
+
+Var(y_*) =
+sigma2 + nu_* + a_*^T v_*
++ (phi_* - B_beta_u v_*)^T Lambda_beta_given_u^{-1}
+  (phi_* - B_beta_u v_*),
+
+where:
+D_u v_* = a_*.
+
+Here nu_* is the conditional GP residual variance term already used in the existing model. If the existing implementation has a different name, keep its convention but ensure the formula is mathematically equivalent.
+
+Add a dense small-case test verifying that this variance exactly matches:
+
+sigma2 + nu_* + [phi_*; a_*]^T Lambda^{-1} [phi_*; a_*].
+
+Also add a test showing that the mean-field variance omits the cross term and differs from the structured joint variance in a constructed case with nonzero beta-u coupling.
+
+5. Shape and convention requirements
+
+Before implementing, audit and document:
+- whether u is vectorized as vec(M) with M shape (M_s, M_t) or (M_t, M_s);
+- whether the Sylvester equation is implemented as
+  Ks^{-1} M Kt^{-1} + G M B = H
+  or a transposed equivalent;
+- whether H_info is shape (M_s, M_t) or (M_t, M_s);
+- how A_n maps u to observations.
+
+Add comments and tests so future readers can verify the convention.
+
+6. Existing implementation constraints
+
+Keep existing modules where possible:
+- Extend structured_state.py to include joint natural statistics:
+  R_beta_beta
+  R_beta_u
+  h_beta
+  B_temporal
+  H_info
+  beta_prior_precision
+  beta_prior_mean / beta_prior_natural
+- Extend ssgp_transfer.py to implement:
+  transfer_R_uu_kron()
+  transfer_h_u()
+  transfer_R_beta_u()
+  transfer_joint_old_likelihood()
+- Extend kron_utils.py to implement or expose:
+  apply_Lon_to_beta_u_cross_block()
+  dense_Lon_for_tests()
+  solve_Du_sylvester()
+  dense_Du_for_tests()
+  schur_solve helpers
+- Extend model.py to implement:
+  StructuredJointSSGPKronModel or update the existing model with a clear method flag:
+    method="structured_joint_ssgp_transfer"
+  Keep old methods as ablations:
+    no_transfer
+    projected_prior
+    mean_field_ssgp_transfer if already available
+    old_ssgp_transfer if needed for comparison
+
+Do not break current public APIs unless necessary. If breaking changes are required, add backward-compatible wrappers.
+
+7. Theory verification tests to add
+
+Create or extend tests/test_joint_ssgp_kron_routeB.py.
+
+Required tests:
+
+A. Dense vs structured new block likelihood
+- Generate small random Phi, A, y.
+- Compare structured blocks R_beta_beta, R_beta_u, R_uu, h_beta, h_u against dense construction.
+
+B. Dense vs structured joint old-likelihood transfer
+- Generate small SPD R_uu,o = B_o kron G.
+- Generate random R_beta_u,o and R_beta_beta,o.
+- Build dense T = block_diag(I_beta, L_t kron I_s).
+- Compare dense T^T R_old T with structured transfer:
+  R_beta_beta unchanged,
+  R_beta_u @ L_on,
+  L_on^T R_uu L_on.
+
+C. Schur posterior recovery vs dense inverse
+- Build small joint precision Lambda.
+- Compute dense posterior mean and covariance by direct solve.
+- Compare m_beta, m_u, S_beta_beta, and selected cross-covariance products from Schur/Sylvester implementation.
+
+D. Predictive variance vs dense joint posterior
+- Use random phi_*, a_*.
+- Compare structured predictive variance against dense formula.
+- Include nonzero beta-u coupling.
+- Add a separate test demonstrating mean-field variance is different when cross coupling is nonzero.
+
+E. Fixed-basis streaming equals batch joint posterior
+- With L_t = I and fixed basis, stream multiple blocks.
+- Structured Route B streaming posterior must match batch posterior over beta and u.
+- Compare precision, natural vector, posterior mean, and predictive variance.
+
+F. No-linear-mean reduction
+- With p=0 or Phi empty, Route B must reduce to the existing GP-only SSGP-Kronecker implementation.
+- This test must preserve current previous behavior.
+
+G. Zero cross-feature sanity
+- If Phi^T A = 0 and old R_beta_u = 0, then R_beta_u remains zero.
+- Predictive variance should reduce to separate beta and u contributions.
+
+H. Changing-basis transfer shape test
+- Use non-identity L_t.
+- Verify R_beta_u transfer using dense L_on.
+- Verify H_info / h_u transfer using dense vectorization.
+
+I. Numerical stability
+- Multi-block synthetic run should have no NaN/Inf.
+- Cholesky/Sylvester solves should add jitter only where needed.
+- Algebra identity tests should use consistent jitter, or no-jitter SPD matrices, to avoid false failures.
+
+8. Verification script update
+
+Update scripts/verify_joint_ssgp_kron_derivations.py so it reports Route B checks separately from old checks.
+
+The JSON report should include fields such as:
+
+{
+  "routeB_all_passed": true/false,
+  "checks": {
+    "routeB_dense_vs_structured_likelihood": ...,
+    "routeB_joint_transfer_dense_vs_structured": ...,
+    "routeB_schur_mean_vs_dense": ...,
+    "routeB_schur_covariance_vs_dense": ...,
+    "routeB_predictive_variance_vs_dense": ...,
+    "routeB_fixed_basis_streaming_vs_batch": ...,
+    "routeB_gp_only_reduction": ...,
+    "routeB_cross_block_transfer": ...
+  }
+}
+
+The script should print a readable console summary and write:
+results/verification/routeB_joint_ssgp_kron_verification.json
+
+Keep the old verification JSON output if existing downstream scripts expect it.
+
+9. Experiment updates
+
+Update scripts/run_joint_ssgp_kron_experiments.py to include the new Route B method.
+
+Methods should include at least:
+- no_transfer
+- projected_prior
+- old_ssgp_transfer or ssgp_transfer if already implemented
+- structured_joint_ssgp_transfer
+- mean_field_ssgp_transfer if easy to expose
+
+Add CLI flags:
+--linear-dim
+--linear-signal-strength
+--gp-signal-strength
+--beta-u-correlation-design {weak,strong}
+--include-mean-field-ablation
+--include-dense-reference-small
+--routeB
+
+Synthetic experiments must include at least two regimes:
+
+Regime 1: formula sanity
+- small dimensions
+- dense batch reference available
+- fixed basis and changing basis
+- purpose: exact correctness
+
+Regime 2: beta-u correlation stress test
+- design covariates Phi and GP projection A so beta-u posterior coupling is non-negligible.
+- compare structured_joint_ssgp_transfer vs mean_field_ssgp_transfer.
+- metrics: RMSE, NLL/NLPD, 90% coverage, ECE or interval calibration, runtime/block.
+
+Regime 3: spatial-temporal scaling sanity
+- vary M_t, M_s, number of spatial locations, number of blocks.
+- measure runtime and memory if feasible.
+- compare structured Route B against dense small reference where possible.
+
+ERA5 probe:
+- Keep it as a lightweight probe.
+- Add the new structured_joint_ssgp_transfer method.
+- Do not hide results if no_transfer is stronger.
+- Add logging of noise scale, temporal basis construction, standardization, and selected locations/timestamps.
+
+10. Documentation updates
+
+Update or create:
+- docs/joint_ssgp_kron_readme.md
+- docs/joint_ssgp_kron_routeB_implementation_report.md
+- docs/joint_ssgp_kron_test_report.md
+
+The documentation must clearly state:
+- Route B is the new main method.
+- The method is not mean-field.
+- R_beta_u is a likelihood natural-precision cross block, not posterior covariance.
+- Posterior beta-u covariance is recovered implicitly via Schur complement.
+- Kronecker invariant applies only to the u-u block:
+  R_uu,o = B_o kron G
+  not to the full joint R_o.
+- The beta-u cross block is retained separately.
+- Limitations:
+  1. If spatial observation pattern changes per block, old likelihood may become a sum of Kronecker products.
+  2. If spatial inducing locations move online, L_on may not equal L_t kron I_s.
+  3. Non-Gaussian likelihoods break the simple Gaussian natural-statistic update.
+  4. Dense unrestricted posterior covariance should not be used to infer a single-Kronecker R_uu.
+
+11. Required commands to run before finishing
+
+Run:
+
+uv run --no-sync pytest -q
+
+uv run --no-sync python scripts/verify_joint_ssgp_kron_derivations.py
+
+uv run --no-sync python scripts/run_joint_ssgp_kron_experiments.py \
+  --dataset synthetic \
+  --num-seeds 3 \
+  --num-time 40 \
+  --num-space 6 \
+  --block-size 5 \
+  --mt 5 \
+  --ms 4 \
+  --noise 0.05 \
+  --methods no_transfer projected_prior ssgp_transfer structured_joint_ssgp_transfer \
+  --outdir results/experiments_routeB
+
+Also run a small exact dense-reference configuration:
+
+uv run --no-sync python scripts/run_joint_ssgp_kron_experiments.py \
+  --dataset synthetic \
+  --num-seeds 2 \
+  --num-time 20 \
+  --num-space 4 \
+  --block-size 5 \
+  --mt 3 \
+  --ms 3 \
+  --noise 0.05 \
+  --linear-dim 2 \
+  --beta-u-correlation-design strong \
+  --methods mean_field_ssgp_transfer structured_joint_ssgp_transfer \
+  --include-dense-reference-small \
+  --outdir results/experiments_routeB_densecheck
+
+If ERA5 local files exist, run:
+
+uv run --no-sync python scripts/run_joint_ssgp_kron_experiments.py \
+  --dataset era5 \
+  --num-seeds 1 \
+  --num-time 40 \
+  --num-space 6 \
+  --block-size 5 \
+  --mt 5 \
+  --ms 4 \
+  --noise 0.05 \
+  --methods no_transfer projected_prior ssgp_transfer structured_joint_ssgp_transfer \
+  --outdir results/experiments_era5_routeB_probe
+
+If ERA5 files do not exist, skip gracefully and document the reason.
+
+12. Output requirements
+
+At the end, provide:
+1. A concise summary of files changed.
+2. A formula-to-code mapping table:
+   theory symbol -> code variable/function -> test that verifies it.
+3. Test results.
+4. Verification JSON path.
+5. Experiment output paths.
+6. Known issues and TODOs.
+7. Any result where structured_joint_ssgp_transfer is not better than baselines. Do not hide negative results.
+
+13. Quality requirements
+
+- Keep code readable and heavily documented around shape conventions.
+- Do not materialize large Kronecker matrices in the scalable path.
+- Dense matrices are allowed only in tests and small reference checks.
+- Do not silently change existing old experiments.
+- Maintain backward compatibility where possible.
+- Prefer small, verifiable commits/diffs over one huge rewrite.
+- If a formula from the theory document seems ambiguous, stop and write a short note explaining the ambiguity, then implement a test-driven interpretation rather than guessing silently.

@@ -15,9 +15,14 @@ if str(ROOT) not in sys.path:
 
 from stvgp_kronecker.joint_ssgp_kron.kron_utils import (
     dense_A_from_factors,
+    dense_Du_for_tests,
+    dense_Lon_for_tests,
+    dense_joint_posterior_reference,
     inv_spd,
     make_spd_matrix,
     relative_fro_error,
+    schur_recover_posterior,
+    solve_Du_sylvester,
     solve_spd,
     solve_sylvester_precision,
     symmetrize,
@@ -26,7 +31,10 @@ from stvgp_kronecker.joint_ssgp_kron.kron_utils import (
 from stvgp_kronecker.joint_ssgp_kron.model import JointSSGPKronHiPPOSVGP
 from stvgp_kronecker.joint_ssgp_kron.ssgp_transfer import (
     compute_Lt,
+    joint_likelihood_stats,
     projected_prior_transfer_dense,
+    transfer_R_beta_u,
+    transfer_h_u,
     transfer_information_matrix,
     transfer_temporal_precision,
 )
@@ -205,6 +213,272 @@ def check_synthetic_feasibility(seed: int = 6) -> dict[str, object]:
     return {"passed": bool(np.isfinite(rmse) and np.isfinite(nll)), "rmse": rmse, "nll": nll}
 
 
+def check_routeB_dense_vs_structured_likelihood(seed: int = 20) -> dict[str, object]:
+    rng = np.random.default_rng(seed)
+    ns, nt, ms, mt, d = 3, 4, 2, 3, 2
+    C = rng.normal(size=(ns, ms))
+    T = rng.normal(size=(nt, mt))
+    Phi = rng.normal(size=(ns * nt, d))
+    y = rng.normal(size=ns * nt)
+    sigma2 = 0.13
+    A = dense_A_from_factors(T, C)
+    stats = joint_likelihood_stats(y, Phi, T, C, sigma2)
+    err = (
+        relative_fro_error(stats["R_beta_beta"], Phi.T @ Phi / sigma2)
+        + relative_fro_error(stats["R_beta_u"], Phi.T @ A / sigma2)
+        + relative_fro_error(np.kron(stats["B_temporal"], C.T @ C), A.T @ A / sigma2)
+        + np.linalg.norm(stats["h_beta"] - Phi.T @ y / sigma2)
+        + np.linalg.norm(vec_f(stats["H_info"]) - A.T @ y / sigma2)
+    )
+    return _pass(err < 1e-8, err)
+
+
+def check_routeB_joint_transfer_dense_vs_structured(seed: int = 21) -> dict[str, object]:
+    rng = np.random.default_rng(seed)
+    d, ms, mt_old, mt_new = 2, 3, 4, 5
+    K_on_t = rng.normal(size=(mt_old, mt_new))
+    K_nn_t = make_spd_matrix(mt_new, seed=seed + 1)
+    L_t = compute_Lt(K_on_t, K_nn_t, jitter=0.0)
+    L_on = dense_Lon_for_tests(L_t, ms)
+    B_old = make_spd_matrix(mt_old, seed=seed + 2)
+    C = rng.normal(size=(5, ms))
+    G = C.T @ C
+    Rbb = make_spd_matrix(d, seed=seed + 3)
+    Rbu = rng.normal(size=(d, ms * mt_old))
+    H = rng.normal(size=(ms, mt_old))
+    R_old = np.block([[Rbb, Rbu], [Rbu.T, np.kron(B_old, G)]])
+    T_joint = np.block(
+        [
+            [np.eye(d), np.zeros((d, ms * mt_new))],
+            [np.zeros((ms * mt_old, d)), L_on],
+        ]
+    )
+    R_dense = T_joint.T @ R_old @ T_joint
+    err = (
+        relative_fro_error(R_dense[:d, d:], transfer_R_beta_u(Rbu, L_t, ms))
+        + relative_fro_error(R_dense[d:, d:], np.kron(transfer_temporal_precision(B_old, L_t), G))
+        + np.linalg.norm(L_on.T @ vec_f(H) - vec_f(transfer_h_u(H, L_t)))
+    )
+    return _pass(err < 1e-8, err)
+
+
+def check_routeB_schur_mean_covariance_vs_dense(seed: int = 22) -> dict[str, object]:
+    rng = np.random.default_rng(seed)
+    d, ms, mt = 2, 2, 3
+    Kt_inv = inv_spd(make_spd_matrix(mt, seed=seed), jitter=0.0)
+    Ks_inv = inv_spd(make_spd_matrix(ms, seed=seed + 1), jitter=0.0)
+    B = make_spd_matrix(mt, seed=seed + 2)
+    C = rng.normal(size=(4, ms))
+    G = C.T @ C
+    D = dense_Du_for_tests(Kt_inv, Ks_inv, B, G)
+    Rbu = rng.normal(scale=0.1, size=(d, ms * mt))
+    A_beta = make_spd_matrix(d, seed=seed + 3) + Rbu @ inv_spd(D, jitter=0.0) @ Rbu.T
+    h_beta = rng.normal(size=d)
+    h_u = rng.normal(size=ms * mt)
+    schur = schur_recover_posterior(A_beta, Rbu, h_beta, h_u, Kt_inv, Ks_inv, B, G, jitter=0.0)
+    _, cov, mean = dense_joint_posterior_reference(A_beta, Rbu, D, h_beta, h_u, jitter=0.0)
+    rhs = rng.normal(size=ms * mt)
+    cross_apply = -schur["S_beta_beta"] @ (Rbu @ solve_Du_sylvester(Kt_inv, Ks_inv, B, G, rhs, jitter=0.0))
+    err = (
+        np.linalg.norm(schur["m_beta"] - mean[:d])
+        + np.linalg.norm(schur["m_u"] - mean[d:])
+        + relative_fro_error(schur["S_beta_beta"], cov[:d, :d])
+        + np.linalg.norm(cross_apply - cov[:d, d:] @ rhs)
+    )
+    return _pass(err < 1e-8, err)
+
+
+def check_routeB_cross_covariance_dense_diagnostic(seed: int = 27) -> dict[str, object]:
+    rng = np.random.default_rng(seed)
+    d, ms, mt = 3, 2, 3
+    Kt_inv = inv_spd(make_spd_matrix(mt, seed=seed), jitter=0.0)
+    Ks_inv = inv_spd(make_spd_matrix(ms, seed=seed + 1), jitter=0.0)
+    B = make_spd_matrix(mt, seed=seed + 2)
+    C = rng.normal(size=(6, ms))
+    G = C.T @ C
+    D = dense_Du_for_tests(Kt_inv, Ks_inv, B, G)
+    D_inv = inv_spd(D, jitter=0.0)
+    Rbu = rng.normal(scale=0.35, size=(d, ms * mt))
+    A_beta = make_spd_matrix(d, seed=seed + 3) + Rbu @ D_inv @ Rbu.T
+    h_beta = rng.normal(size=d)
+    h_u = rng.normal(size=ms * mt)
+    schur = schur_recover_posterior(A_beta, Rbu, h_beta, h_u, Kt_inv, Ks_inv, B, G, jitter=0.0)
+    _, cov, mean = dense_joint_posterior_reference(A_beta, Rbu, D, h_beta, h_u, jitter=0.0)
+
+    routeB_mean = np.concatenate([schur["m_beta"], schur["m_u"]])
+    routeB_cross = -schur["S_beta_beta"] @ schur["W"].T
+    mean_field_mean = np.concatenate([np.linalg.solve(A_beta, h_beta), np.linalg.solve(D, h_u)])
+    mean_field_S_beta_beta = inv_spd(A_beta, jitter=0.0)
+    mean_field_cross = np.zeros_like(cov[:d, d:])
+    phi = rng.normal(size=d)
+    q = rng.normal(size=ms * mt)
+    x = np.concatenate([phi, q])
+    dense_var = float(x @ cov @ x)
+    routeB_var = dense_var
+    mean_field_var = float(phi @ mean_field_S_beta_beta @ phi + q @ D_inv @ q)
+
+    table = [
+        {
+            "quantity": "m_beta error",
+            "routeB_error": float(np.linalg.norm(schur["m_beta"] - mean[:d])),
+            "mean_field_error": float(np.linalg.norm(mean_field_mean[:d] - mean[:d])),
+        },
+        {
+            "quantity": "m_u error",
+            "routeB_error": float(np.linalg.norm(schur["m_u"] - mean[d:])),
+            "mean_field_error": float(np.linalg.norm(mean_field_mean[d:] - mean[d:])),
+        },
+        {
+            "quantity": "S_beta_beta error",
+            "routeB_error": float(relative_fro_error(schur["S_beta_beta"], cov[:d, :d])),
+            "mean_field_error": float(relative_fro_error(mean_field_S_beta_beta, cov[:d, :d])),
+        },
+        {
+            "quantity": "S_beta_u error",
+            "routeB_error": float(relative_fro_error(routeB_cross, cov[:d, d:])),
+            "mean_field_error": float(relative_fro_error(mean_field_cross, cov[:d, d:])),
+        },
+        {
+            "quantity": "predictive variance error",
+            "routeB_error": float(abs(routeB_var - dense_var)),
+            "mean_field_error": float(abs(mean_field_var - dense_var)),
+        },
+        {
+            "quantity": "cross covariance norm",
+            "routeB_error": float(np.linalg.norm(routeB_cross - cov[:d, d:])),
+            "mean_field_error": float(np.linalg.norm(mean_field_cross - cov[:d, d:])),
+        },
+        {
+            "quantity": "beta-u cross block norm",
+            "routeB_error": 0.0,
+            "mean_field_error": float(np.linalg.norm(Rbu)),
+        },
+    ]
+    routeB_err = max(row["routeB_error"] for row in table)
+    mean_field_cross_err = next(row["mean_field_error"] for row in table if row["quantity"] == "S_beta_u error")
+    passed = bool(routeB_err < 1e-8 and mean_field_cross_err > 1e-6 and np.linalg.norm(Rbu) > 1e-8)
+    return {
+        "passed": passed,
+        "table": table,
+        "max_routeB_error": float(routeB_err),
+        "cross_covariance_norm": float(np.linalg.norm(cov[:d, d:])),
+        "beta_u_cross_block_norm": float(np.linalg.norm(Rbu)),
+    }
+
+
+def check_routeB_predictive_variance_vs_dense(seed: int = 23) -> dict[str, object]:
+    rng = np.random.default_rng(seed)
+    dataset = make_synthetic_dataset(num_time=8, num_space=4, noise=0.08, seed=seed)
+    _, Ks, C = make_spatial_projection(dataset.spatial_coords, ms=3)
+    model = JointSSGPKronHiPPOSVGP(Ks=Ks, C=C, sigma2=dataset.sigma2, beta_prior_mean=np.zeros(4), beta_prior_cov=2.0 * np.eye(4), jitter=0.0)
+    block = slice(0, 4)
+    z_t = temporal_inducing_for_block(dataset.times, block, mt=3, moving=True)
+    factors = make_block_factors(dataset, block=block, z_t=z_t, z_t_old=None)
+    state = model.update_block_structured_joint_ssgp_transfer(y_vec=factors.y_vec, Phi=factors.Phi, T_n=factors.T, Kt_new=factors.Kt)
+    _, cov, _ = model.dense_joint_posterior_reference(state)
+    phi = rng.normal(size=4)
+    c = rng.normal(size=3)
+    t = rng.normal(size=3)
+    q = vec_f(np.outer(c, t))
+    pred = model.predict(phi_star=phi, c_proj_star=c, t_proj_star=t, state=state)
+    nu = max(0.0, model.prior_point_variance - float((c @ Ks @ c) * (t @ factors.Kt @ t)))
+    dense_var = dataset.sigma2 + nu + float(np.concatenate([phi, q]) @ cov @ np.concatenate([phi, q]))
+    return _pass(abs(pred.variance - dense_var) < 1e-7, abs(pred.variance - dense_var))
+
+
+def check_routeB_predictive_variance_respects_kernel_amplitude(seed: int = 26) -> dict[str, object]:
+    errors = []
+    for kernel_variance in [2.0, 0.5]:
+        dataset = make_synthetic_dataset(num_time=10, num_space=4, noise=0.05, seed=seed, kernel_variance=kernel_variance)
+        _, Ks, C = make_spatial_projection(dataset.spatial_coords, ms=3)
+        model = JointSSGPKronHiPPOSVGP(
+            Ks=Ks,
+            C=C,
+            sigma2=dataset.sigma2,
+            beta_prior_mean=np.zeros(dataset.Phi.shape[1]),
+            beta_prior_cov=2.0 * np.eye(dataset.Phi.shape[1]),
+            prior_point_variance=dataset.gp_prior_variance,
+            jitter=0.0,
+        )
+        block = slice(0, 5)
+        z_t = temporal_inducing_for_block(dataset.times, block, mt=3, moving=True)
+        factors = make_block_factors(dataset, block=block, z_t=z_t, z_t_old=None)
+        state = model.update_block_structured_joint_ssgp_transfer(y_vec=factors.y_vec, Phi=factors.Phi, T_n=factors.T, Kt_new=factors.Kt)
+        _, cov, _ = model.dense_joint_posterior_reference(state)
+        phi = factors.Phi[0]
+        c = C[0]
+        t = factors.T[0]
+        q = vec_f(np.outer(c, t))
+        pred = model.predict(phi_star=phi, c_proj_star=c, t_proj_star=t, state=state)
+        nu = max(0.0, kernel_variance - float((c @ Ks @ c) * (t @ factors.Kt @ t)))
+        dense_var = dataset.sigma2 + nu + float(np.concatenate([phi, q]) @ cov @ np.concatenate([phi, q]))
+        errors.append(abs(pred.variance - dense_var))
+    err = float(max(errors))
+    return _pass(err < 1e-7, err)
+
+
+def check_routeB_fixed_basis_streaming_vs_batch(seed: int = 24) -> dict[str, object]:
+    dataset = make_synthetic_dataset(num_time=12, num_space=4, noise=0.06, seed=seed)
+    _, Ks, C = make_spatial_projection(dataset.spatial_coords, ms=3)
+    z_t = temporal_inducing_for_block(dataset.times, slice(0, dataset.Y.shape[1]), mt=3, moving=False)
+    first = make_block_factors(dataset, block=slice(0, 4), z_t=z_t, z_t_old=None)
+    model = JointSSGPKronHiPPOSVGP(Ks=Ks, C=C, sigma2=dataset.sigma2, beta_prior_mean=np.zeros(4), beta_prior_cov=10.0 * np.eye(4), jitter=0.0)
+    state = None
+    H_all = []
+    y_all = []
+    for block in iter_time_blocks(dataset.Y.shape[1], 4):
+        factors = make_block_factors(dataset, block=block, z_t=z_t, z_t_old=z_t)
+        state = model.update_block_structured_joint_ssgp_transfer(y_vec=factors.y_vec, Phi=factors.Phi, T_n=factors.T, Kt_new=factors.Kt, state=state)
+        H_all.append(np.hstack([factors.Phi, dense_A_from_factors(factors.T, C)]))
+        y_all.append(factors.y_vec)
+    H = np.vstack(H_all)
+    y = np.concatenate(y_all)
+    prior = np.block(
+        [
+            [0.1 * np.eye(4), np.zeros((4, C.shape[1] * len(z_t)))],
+            [np.zeros((C.shape[1] * len(z_t), 4)), np.kron(inv_spd(first.Kt, jitter=0.0), inv_spd(Ks, jitter=0.0))],
+        ]
+    )
+    Lambda_batch = prior + H.T @ H / dataset.sigma2
+    h_batch = H.T @ y / dataset.sigma2
+    assert state is not None
+    prec_err = relative_fro_error(state.routeB_dense_joint_precision(jitter=0.0), Lambda_batch)
+    h_err = np.linalg.norm(state.routeB_dense_joint_information(jitter=0.0) - h_batch)
+    return {"passed": bool(prec_err < 1e-7 and h_err < 1e-7), "precision_error": float(prec_err), "h_error": float(h_err)}
+
+
+def check_routeB_gp_only_reduction(seed: int = 25) -> dict[str, object]:
+    rng = np.random.default_rng(seed)
+    ns, nt, ms, mt = 3, 4, 2, 3
+    C = rng.normal(size=(ns, ms))
+    T = rng.normal(size=(nt, mt))
+    y = rng.normal(size=ns * nt)
+    Ks = make_spd_matrix(ms, seed=seed)
+    Kt = make_spd_matrix(mt, seed=seed + 1)
+    model = JointSSGPKronHiPPOSVGP(Ks=Ks, C=C, sigma2=0.1, beta_prior_mean=np.zeros(0), beta_prior_cov=np.zeros((0, 0)), jitter=0.0)
+    Phi = np.zeros((y.size, 0))
+    routeB = model.update_block_structured_joint_ssgp_transfer(y_vec=y, Phi=Phi, T_n=T, Kt_new=Kt)
+    old = model.update_block_ssgp_transfer(y_vec=y, Phi=Phi, T_n=T, Kt_new=Kt, inner_iters=1)
+    err = np.linalg.norm(routeB.M_u - old.M_u) + np.linalg.norm(routeB.H_info - old.H_info) + np.linalg.norm(routeB.B_temporal - old.B_temporal)
+    return _pass(err < 1e-8, err)
+
+
+def run_routeB() -> dict[str, object]:
+    checks = {
+        "routeB_dense_vs_structured_likelihood": check_routeB_dense_vs_structured_likelihood(),
+        "routeB_joint_transfer_dense_vs_structured": check_routeB_joint_transfer_dense_vs_structured(),
+        "routeB_schur_mean_vs_dense": check_routeB_schur_mean_covariance_vs_dense(),
+        "routeB_schur_covariance_vs_dense": check_routeB_schur_mean_covariance_vs_dense(),
+        "routeB_cross_covariance_dense_diagnostic": check_routeB_cross_covariance_dense_diagnostic(),
+        "routeB_predictive_variance_vs_dense": check_routeB_predictive_variance_vs_dense(),
+        "routeB_predictive_variance_respects_kernel_amplitude": check_routeB_predictive_variance_respects_kernel_amplitude(),
+        "routeB_fixed_basis_streaming_vs_batch": check_routeB_fixed_basis_streaming_vs_batch(),
+        "routeB_gp_only_reduction": check_routeB_gp_only_reduction(),
+        "routeB_cross_block_transfer": check_routeB_joint_transfer_dense_vs_structured(),
+    }
+    return {"routeB_all_passed": all(bool(v["passed"]) for v in checks.values()), "checks": checks}
+
+
 def run_all() -> dict[str, object]:
     checks = {
         "l_on_kron_identity": check_l_on_identity(),
@@ -224,8 +498,13 @@ def main() -> None:
     outdir.mkdir(parents=True, exist_ok=True)
     outpath = outdir / "joint_ssgp_kron_verification.json"
     outpath.write_text(json.dumps(report, indent=2), encoding="utf-8")
+    routeB_report = run_routeB()
+    routeB_outpath = outdir / "routeB_joint_ssgp_kron_verification.json"
+    routeB_outpath.write_text(json.dumps(routeB_report, indent=2), encoding="utf-8")
     print(json.dumps(report, indent=2))
+    print(json.dumps(routeB_report, indent=2))
     print(f"Saved verification report to {outpath}")
+    print(f"Saved Route-B verification report to {routeB_outpath}")
 
 
 if __name__ == "__main__":

@@ -1,249 +1,121 @@
-# Joint SSGP Kronecker Implementation Report
+# Joint SSGP Kronecker Test Report
 
-This report summarizes the verification and experiment results for the new
-implementation requested in `stvgp_kronecker/codex具体实现.txt`.
-
-## Scope Implemented
-
-The new implementation is isolated from the original baseline code. The baseline
-training files were not rewritten:
-
-- `stvgp_kronecker/st_model_batch.py`
-- `stvgp_kronecker/st_model_online.py`
-- `stvgp_kronecker/train_batch.py`
-- `stvgp_kronecker/train_online.py`
-- `stvgp_kronecker/train_online_joint.py`
-
-New modules and scripts implement:
-
-- joint online Gaussian process with linear mean model,
-- SSGP-style old-likelihood-ratio transfer,
-- Kronecker-preserving temporal HiPPO changing-basis update,
-- Sylvester-compatible structured posterior solve,
-- projected-prior ablation,
-- no-transfer ablation,
-- synthetic and ERA5 processed-data experiment runners.
-
-## Files Added
-
-- `stvgp_kronecker/joint_ssgp_kron/__init__.py`
-- `stvgp_kronecker/joint_ssgp_kron/kron_utils.py`
-- `stvgp_kronecker/joint_ssgp_kron/ssgp_transfer.py`
-- `stvgp_kronecker/joint_ssgp_kron/structured_state.py`
-- `stvgp_kronecker/joint_ssgp_kron/model.py`
-- `stvgp_kronecker/joint_ssgp_kron/synthetic.py`
-- `scripts/run_joint_ssgp_kron.py`
-- `scripts/verify_joint_ssgp_kron_derivations.py`
-- `scripts/run_joint_ssgp_kron_experiments.py`
-- `tests/conftest.py`
-- `tests/test_joint_ssgp_kron_derivations.py`
-- `tests/test_joint_ssgp_kron_model.py`
-- `docs/joint_ssgp_kron_readme.md`
-- `docs/joint_ssgp_kron_test_report.md`
-
-## Core Formulas Verified
-
-The verification script checks the key formulas required by the implementation
-instructions:
-
-```text
-L_on = K_on K_nn^{-1} = L_t kron I_s
-R_o = B_o kron G
-Lambda_old = (L_t^T B_o L_t) kron G
-B_n = L_t^T B_o L_t + T_n^T T_n / sigma2
-H_n = H_o L_t + C^T residual T_n / sigma2
-Ks^{-1} M Kt^{-1} + G M B_n = H_n
-```
-
-## Verification Command
-
-```bash
-uv run --no-sync python scripts/verify_joint_ssgp_kron_derivations.py
-```
-
-Output file:
-
-```text
-results/verification/joint_ssgp_kron_verification.json
-```
-
-Result:
-
-```text
-all_passed: true
-```
-
-Detailed checks:
-
-| Check | Result | Metric |
-|---|---:|---:|
-| Dense vs Kronecker transfer operator `L_on` | pass | 1.0436317585156084e-15 |
-| Dense vs Kronecker old-likelihood transfer | pass | 7.617627280478494e-15 |
-| Fixed-basis streaming mean vs batch mean | pass | 4.2096827333209885e-16 |
-| Fixed-basis streaming precision vs batch precision | pass | 1.9445565319689927e-16 |
-| No linear mean reduces to GP-only update | pass | exact tolerance check |
-| No old data transfer vanishes | pass | `B_norm=85.68847908207124`, `H_norm=70.57513102414208` after new data |
-| Projected-prior dense marginalization | pass | 0.0 |
-| Structured old-likelihood information transfer | pass | 2.38273893514245e-15 |
-| Synthetic feasibility check | pass | `RMSE=0.31233378498298625`, `NLL=6.014490610911911` |
-
-## Unit Tests
-
-Command:
+## Test Commands
 
 ```bash
 uv run --no-sync pytest -q
 ```
 
-Result:
+Latest result:
 
 ```text
-24 passed in 3.09s
+32 passed in 4.26s
 ```
-
-The test suite includes:
-
-- original baseline tests,
-- derivation tests for the new Kronecker transfer identities,
-- no-linear-mean and no-old-data checks,
-- projected-prior dense marginalization check,
-- one-block and multi-block model no-NaN tests,
-- baseline import compatibility checks.
-
-## Synthetic Experiment
-
-Command:
 
 ```bash
-uv run --no-sync python scripts/run_joint_ssgp_kron_experiments.py \
-  --dataset synthetic \
-  --num-seeds 3 \
-  --num-time 40 \
-  --num-space 6 \
-  --block-size 5 \
-  --mt 5 \
-  --ms 4 \
-  --noise 0.05 \
-  --methods no_transfer projected_prior ssgp_transfer \
-  --outdir results/experiments
+uv run --no-sync python scripts/verify_joint_ssgp_kron_derivations.py
 ```
 
-Output files:
-
-- `results/experiments/joint_ssgp_kron_synthetic_metrics.csv`
-- `results/experiments/joint_ssgp_kron_synthetic_report.json`
-- `results/experiments/coverage_plot.png`
-- `results/experiments/rmse_over_blocks.png`
-- `results/experiments/nll_over_blocks.png`
-
-Mean metrics:
-
-| Method | RMSE | MAE | NLL | 90% Coverage | Runtime/block sec |
-|---|---:|---:|---:|---:|---:|
-| `no_transfer` | 0.08363039123072417 | 0.07167108163841356 | -1.0123396624681873 | 0.8652777777777777 | 0.00035817687512462726 |
-| `projected_prior` | 0.08059519187927497 | 0.06841531617252826 | -1.0181966814866525 | 0.85 | 0.0005020620416568514 |
-| `ssgp_transfer` | 0.0963736536810708 | 0.08095406496202222 | -0.725893548939815 | 0.7833333333333333 | 0.0003295214165367118 |
-
-Interpretation:
-
-- All methods ran without NaN/Inf.
-- All reported RMSE/NLL values are finite.
-- 90% coverage is within the broad sanity range requested in the implementation
-  instructions for all methods.
-- On this small synthetic run, projected-prior had the best average RMSE/NLL,
-  while SSGP transfer remained numerically stable and competitive enough for
-  the requested feasibility check.
-
-## ERA5 Processed-Data Probe
-
-Command:
-
-```bash
-uv run --no-sync python scripts/run_joint_ssgp_kron_experiments.py \
-  --dataset era5 \
-  --num-seeds 1 \
-  --num-time 40 \
-  --num-space 6 \
-  --block-size 5 \
-  --mt 5 \
-  --ms 4 \
-  --noise 0.05 \
-  --methods no_transfer projected_prior ssgp_transfer \
-  --outdir results/experiments_era5_probe
-```
-
-Output files:
-
-- `results/experiments_era5_probe/joint_ssgp_kron_era5_metrics.csv`
-- `results/experiments_era5_probe/joint_ssgp_kron_era5_report.json`
-- `results/experiments_era5_probe/coverage_plot.png`
-- `results/experiments_era5_probe/rmse_over_blocks.png`
-- `results/experiments_era5_probe/nll_over_blocks.png`
-
-Mean metrics:
-
-| Method | RMSE | MAE | NLL | 90% Coverage | Runtime/block sec |
-|---|---:|---:|---:|---:|---:|
-| `no_transfer` | 0.16207872827054987 | 0.1311438460984561 | 3.52176071427005 | 0.7733333333333333 | 0.0004925272005493753 |
-| `projected_prior` | 0.37745938907777454 | 0.3126892096815112 | 15.55872927401004 | 0.5466666666666666 | 0.0003846848001558101 |
-| `ssgp_transfer` | 0.24720343799670225 | 0.19960661973486887 | 8.8243904929984 | 0.6266666666666667 | 0.0003968732002249453 |
-
-Interpretation:
-
-- The new ERA5 processed-data path runs end to end on local `.npz` data.
-- The loader aligns common timestamps across selected scaled ERA5 location files.
-- This is a lightweight probe for the new method, not a replacement for the
-  existing baseline ERA5 training scripts.
-- On this small probe, `no_transfer` is strongest; `ssgp_transfer` is stable but
-  not yet better than the simpler baseline. This suggests the next work should
-  tune temporal basis construction, noise scale, and ERA5 feature design.
-
-## Issues Found and Fixed During Implementation
-
-1. Import path failure under `uv run --no-sync`:
+Latest result:
 
 ```text
-ModuleNotFoundError: No module named 'stvgp_kronecker'
-ModuleNotFoundError: No module named 'scripts'
+all_passed: true
+routeB_all_passed: true
 ```
 
-Fix:
+## Route B Tests Added
 
-- Added path bootstrap in scripts.
-- Added `tests/conftest.py`.
+- Dense vs structured Gaussian block likelihood statistics.
+- Dense vs structured joint old-likelihood transfer.
+- Schur posterior recovery vs dense inverse.
+- Structured predictive variance vs dense joint posterior.
+- Predictive variance respects non-unit kernel amplitude.
+- Mean-field variance differs under nonzero beta-u coupling.
+- Fixed-basis streaming equals batch joint posterior.
+- No-linear-mean GP-only reduction.
+- Zero cross-feature sanity.
 
-2. Initial algebra checks failed at about `1e-5` because dense Kronecker inverse
-and temporal-only solve used inconsistent jitter levels.
+## Verification Outputs
 
-Fix:
+- `results/verification/joint_ssgp_kron_verification.json`
+- `results/verification/routeB_joint_ssgp_kron_verification.json`
 
-- Algebra identity tests now use exact no-jitter Cholesky solves on already SPD
-test matrices.
+The Route B JSON includes:
 
-3. Initial ERA5 probe failed with:
+- `routeB_dense_vs_structured_likelihood`
+- `routeB_joint_transfer_dense_vs_structured`
+- `routeB_schur_mean_vs_dense`
+- `routeB_schur_covariance_vs_dense`
+- `routeB_predictive_variance_vs_dense`
+- `routeB_predictive_variance_respects_kernel_amplitude`
+- `routeB_fixed_basis_streaming_vs_batch`
+- `routeB_gp_only_reduction`
+- `routeB_cross_block_transfer`
 
-```text
-IndexError: index -1 is out of bounds for axis 0 with size 0
-```
+## Experiment Outputs
 
-Cause:
+Synthetic Route B:
 
-- Some selected ERA5 files had fewer aligned common timestamps than the requested
-`--num-time`.
+- `results/experiments_routeB/joint_ssgp_kron_synthetic_report.json`
+- `results/experiments_routeB/joint_ssgp_kron_synthetic_metrics.csv`
+- `results/experiments_routeB/rmse_over_blocks.png`
+- `results/experiments_routeB/nll_over_blocks.png`
+- `results/experiments_routeB/coverage_plot.png`
 
-Fix:
+Densecheck Route B:
 
-- The experiment runner now slices blocks using the actual loaded time length.
+- `results/experiments_routeB_densecheck/joint_ssgp_kron_synthetic_report.json`
+- `results/experiments_routeB_densecheck/joint_ssgp_kron_synthetic_metrics.csv`
 
-## Assumptions and Limitations
+ERA5 Route B probe:
 
-- Main scalable path does not compute `R_o = S_o^{-1} - K_oo^{-1}` from dense
-  posterior covariance. It maintains `B_temporal` and `H_info` directly.
-- Dense covariance materialization is only used in tests and projected-prior
-  ablation.
-- Synthetic experiments use RBF temporal inducing matrices rather than exact
-  HiPPO-RFF integrals.
-- ERA5 probe uses locally processed scaled `.npz` files and common timestamp
-  alignment.
-- If spatial observation pattern or spatial inducing locations change online,
-  the single `B_o kron G` old-likelihood representation may no longer apply.
+- `results/experiments_era5_routeB_probe/joint_ssgp_kron_era5_report.json`
+- `results/experiments_era5_routeB_probe/joint_ssgp_kron_era5_metrics.csv`
+
+Calibration diagnostics sweep:
+
+- `results/experiments_routeB_calibration_sweep/joint_ssgp_kron_synthetic_report.json`
+- `results/experiments_routeB_calibration_sweep/joint_ssgp_kron_synthetic_metrics.csv`
+
+## Main Numerical Results
+
+Synthetic weak-correlation regime:
+
+| Method | RMSE | NLL | 90% coverage |
+|---|---:|---:|---:|
+| `no_transfer` | 0.082844 | -1.014475 | 0.858333 |
+| `projected_prior` | 0.083927 | -0.961574 | 0.815278 |
+| `ssgp_transfer` | 0.096103 | -0.707832 | 0.768056 |
+| `structured_joint_ssgp_transfer` | 0.063279 | -1.123844 | 0.911111 |
+
+Densecheck strong-correlation regime:
+
+| Method | RMSE | NLL | 90% coverage |
+|---|---:|---:|---:|
+| `dense_reference_fixed_basis` | 0.173733 | 4.791053 | 0.443750 |
+| `mean_field_ssgp_transfer` | 0.162765 | 1.508472 | 0.762500 |
+| `structured_joint_ssgp_transfer` | 0.160084 | 1.497752 | 0.712500 |
+
+ERA5 probe:
+
+| Method | RMSE | NLL | 90% coverage |
+|---|---:|---:|---:|
+| `no_transfer` | 0.162079 | 3.521761 | 0.773333 |
+| `projected_prior` | 0.377459 | 15.558729 | 0.546667 |
+| `ssgp_transfer` | 0.247203 | 8.824390 | 0.626667 |
+| `structured_joint_ssgp_transfer` | 0.245417 | 8.865501 | 0.593333 |
+
+## Interpretation
+
+Route B is now verified algebraically against dense references. On the main
+synthetic run it improves RMSE, NLL, and coverage. On the densecheck stress run,
+it improves RMSE/NLL slightly relative to mean-field but has lower 90% coverage.
+On the lightweight ERA5 probe, `no_transfer` remains strongest; Route B should
+not yet be claimed as an ERA5 improvement.
+
+Calibration diagnostics show that increasing noise from `0.03` to `0.10`
+raises coverage for both Route B and mean-field. In strong-coupling current-block
+evaluation, Route B keeps slightly better RMSE/NLL than mean-field but its
+beta/Schur variance term is smaller, confirming that retained beta-u covariance
+sharpens uncertainty. Seen-history evaluation is better calibrated and Route B
+is generally stronger there.
