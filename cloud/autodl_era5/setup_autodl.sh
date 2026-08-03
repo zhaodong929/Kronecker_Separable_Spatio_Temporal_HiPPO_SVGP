@@ -29,7 +29,7 @@ create_base_env() {
   fi
 }
 
-"${ROOT}/cloud/autodl_era5/clone_official_baselines.sh"
+bash "${ROOT}/cloud/autodl_era5/clone_official_baselines.sh"
 
 create_base_env routeb 3.11
 ROUTEB_PY="${ENV_ROOT}/routeb/bin/python"
