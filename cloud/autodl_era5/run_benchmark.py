@@ -654,6 +654,8 @@ def stage3_jobs(
                         str(online["maddox_ms"]),
                         "--jitter",
                         str(online["maddox_jitter"]),
+                        "--resample-ratio",
+                        str(online["maddox_resample_ratio"]),
                         "--seed",
                         str(seed),
                         "--device",

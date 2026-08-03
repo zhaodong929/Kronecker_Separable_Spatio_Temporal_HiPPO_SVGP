@@ -151,6 +151,7 @@ def main():
     parser.add_argument("--mt", type=int, default=2)
     parser.add_argument("--ms", type=int, default=64)
     parser.add_argument("--jitter", type=float, default=1e-4)
+    parser.add_argument("--resample-ratio", type=float, default=0.2)
     parser.add_argument("--prediction-chunk-size", type=int, default=4096)
     parser.add_argument("--max-blocks", type=int, default=0)
     parser.add_argument("--seed", type=int, required=True)
@@ -226,8 +227,12 @@ def main():
                 if block_id == 0:
                     model.update_variational_distribution(x_train, y_train)
                     model.num_data = x_train.shape[0]
-                else:
+                elif args.resample_ratio == 0.0:
                     model = fixed_inducing_fantasy_model(model, x_train, y_train)
+                else:
+                    model = model.get_fantasy_model(
+                        x_train, y_train, resample_ratio=args.resample_ratio
+                    )
                     model = model.to(device=runtime.device, dtype=runtime.dtype)
                     for parameter in model.covar_module.parameters():
                         parameter.requires_grad_(False)
@@ -289,7 +294,12 @@ def main():
         "protocol": "strict online; new-block-only labels; no history replay",
         "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
         "hyperparameters": "Route-B Task-1 empirical-Bayes theta, frozen",
-        "inducing_policy": "fixed global Cartesian coordinates; official fantasy equations without the upstream unconditional perturbation",
+        "inducing_policy": (
+            "fixed global Cartesian coordinates with the official fantasy equations"
+            if args.resample_ratio == 0.0
+            else "official online inducing-point resampling"
+        ),
+        "inducing_resample_ratio": args.resample_ratio,
         "numerical_jitter": args.jitter,
         "split_seed": args.seed,
         "num_stream_times": int(times.size),
