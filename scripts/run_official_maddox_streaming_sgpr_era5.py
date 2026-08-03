@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from copy import deepcopy
 import csv
 import json
 from pathlib import Path
@@ -112,6 +113,25 @@ def state_bytes(model):
     return int(sum(value.numel() * value.element_size() for value in tensors))
 
 
+def fixed_inducing_fantasy_model(model, x_new, y_new):
+    """Apply the official fantasy equations without perturbing fixed inducing points."""
+    z_fixed = model.variational_strategy.inducing_points.clone().detach()
+    fantasy_model = StreamingSGPR(
+        inducing_points=z_fixed,
+        likelihood=deepcopy(model.likelihood),
+        covar_module=deepcopy(model.covar_module),
+        old_strat=model.variational_strategy,
+        old_kernel=model.covar_module,
+        old_C_matrix=model.current_C_matrix(x_new),
+        learn_inducing_locations=False,
+        num_data=model.num_data + x_new.size(0),
+        jitter=model._jitter,
+    )
+    with torch.no_grad():
+        fantasy_model.update_variational_distribution(x_new, y_new)
+    return fantasy_model
+
+
 def write_csv(rows, path):
     path.parent.mkdir(parents=True, exist_ok=True)
     fields = sorted({key for row in rows for key in row})
@@ -130,7 +150,7 @@ def main():
     parser.add_argument("--predictions-output", type=Path, default=None)
     parser.add_argument("--mt", type=int, default=2)
     parser.add_argument("--ms", type=int, default=64)
-    parser.add_argument("--jitter", type=float, default=1e-3)
+    parser.add_argument("--jitter", type=float, default=1e-4)
     parser.add_argument("--prediction-chunk-size", type=int, default=4096)
     parser.add_argument("--max-blocks", type=int, default=0)
     parser.add_argument("--seed", type=int, required=True)
@@ -207,9 +227,7 @@ def main():
                     model.update_variational_distribution(x_train, y_train)
                     model.num_data = x_train.shape[0]
                 else:
-                    model = model.get_fantasy_model(
-                        x_train, y_train, resample_ratio=0.0
-                    )
+                    model = fixed_inducing_fantasy_model(model, x_train, y_train)
                     model = model.to(device=runtime.device, dtype=runtime.dtype)
                     for parameter in model.covar_module.parameters():
                         parameter.requires_grad_(False)
@@ -271,7 +289,7 @@ def main():
         "protocol": "strict online; new-block-only labels; no history replay",
         "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
         "hyperparameters": "Route-B Task-1 empirical-Bayes theta, frozen",
-        "inducing_policy": "global Cartesian initialization; official fantasy update with resample_ratio=0",
+        "inducing_policy": "fixed global Cartesian coordinates; official fantasy equations without the upstream unconditional perturbation",
         "numerical_jitter": args.jitter,
         "split_seed": args.seed,
         "num_stream_times": int(times.size),
