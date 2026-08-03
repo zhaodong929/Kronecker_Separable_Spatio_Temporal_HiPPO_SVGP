@@ -130,6 +130,7 @@ def main():
     parser.add_argument("--predictions-output", type=Path, default=None)
     parser.add_argument("--mt", type=int, default=2)
     parser.add_argument("--ms", type=int, default=64)
+    parser.add_argument("--jitter", type=float, default=1e-3)
     parser.add_argument("--prediction-chunk-size", type=int, default=4096)
     parser.add_argument("--max-blocks", type=int, default=0)
     parser.add_argument("--seed", type=int, required=True)
@@ -172,7 +173,7 @@ def main():
         ),
         learn_inducing_locations=False,
         num_data=0,
-        jitter=1e-4,
+        jitter=args.jitter,
     ).to(device=runtime.device, dtype=runtime.dtype)
     model.likelihood.noise = float(theta["noise_std"]) ** 2
     for parameter in model.covar_module.parameters():
@@ -230,6 +231,12 @@ def main():
             )
             mean += offset_test
         prediction_seconds = prediction_timer.elapsed
+        if not np.all(np.isfinite(mean)) or not np.all(np.isfinite(variance)):
+            raise FloatingPointError(
+                "Maddox StreamingSGPR produced non-finite predictions at "
+                f"block {block_id} ({block.start}:{block.stop}) with "
+                f"jitter={args.jitter:g}"
+            )
         block_metrics = metric_row(y_test, mean, variance)
         block_length = block.stop - block.start
         mean_grid[block] = mean.reshape(block_length, test_indices.size)
@@ -265,6 +272,7 @@ def main():
         "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
         "hyperparameters": "Route-B Task-1 empirical-Bayes theta, frozen",
         "inducing_policy": "global Cartesian initialization; official fantasy update with resample_ratio=0",
+        "numerical_jitter": args.jitter,
         "split_seed": args.seed,
         "num_stream_times": int(times.size),
         "num_blocks": len(blocks),

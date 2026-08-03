@@ -8,6 +8,7 @@ from copy import deepcopy
 import csv
 import json
 import math
+import os
 from pathlib import Path
 import sys
 import time
@@ -416,6 +417,13 @@ def main():
             times=times[:stop],
         )
     print(json.dumps(payload, indent=2, allow_nan=False), flush=True)
+
+    # The pinned upstream CUDA objects can segfault during interpreter teardown
+    # after every result artifact has been closed and serialized.
+    if runtime.uses_cuda:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os._exit(0)
 
 
 if __name__ == "__main__":

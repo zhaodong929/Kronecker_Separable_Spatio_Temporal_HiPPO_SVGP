@@ -652,6 +652,8 @@ def stage3_jobs(
                         str(online["maddox_mt"]),
                         "--ms",
                         str(online["maddox_ms"]),
+                        "--jitter",
+                        str(online["maddox_jitter"]),
                         "--seed",
                         str(seed),
                         "--device",
