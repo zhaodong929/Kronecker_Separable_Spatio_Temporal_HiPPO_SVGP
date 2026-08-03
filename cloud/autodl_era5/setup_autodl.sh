@@ -61,7 +61,8 @@ MADDOX_PY="${ENV_ROOT}/maddox/bin/python"
   torch==2.0.1 torchvision==0.15.2 \
   --index-url https://download.pytorch.org/whl/cu118
 "${MADDOX_PY}" -m pip install \
-  gpytorch==1.9.1 numpy==1.24.4 scipy==1.10.1 psutil==6.1.1
+  gpytorch==1.9.1 botorch==0.8.1 \
+  numpy==1.24.4 scipy==1.10.1 psutil==6.1.1
 "${MADDOX_PY}" -m pip install -e "${ROOT}" --no-deps
 
 if [[ "${INCLUDE_LEGACY}" == "1" ]]; then
