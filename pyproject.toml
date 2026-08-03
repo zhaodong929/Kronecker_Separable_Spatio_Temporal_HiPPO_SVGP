@@ -15,3 +15,7 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 include = ["stvgp_kronecker*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "stvgp_kronecker/tests"]
+norecursedirs = ["baselines/external", ".envs", ".tools", "tmp"]

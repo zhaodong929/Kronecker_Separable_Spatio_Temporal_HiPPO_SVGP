@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import numpy as np
+import pytest
 
 from stvgp_kronecker.joint_ssgp_kron.kron_utils import (
     dense_A_from_factors,
@@ -15,6 +16,7 @@ from stvgp_kronecker.joint_ssgp_kron.kron_utils import (
 )
 from stvgp_kronecker.joint_ssgp_kron.model import JointSSGPKronHiPPOSVGP
 from stvgp_kronecker.joint_ssgp_kron.ssgp_transfer import (
+    compute_whitened_orthogonal_Lt,
     compute_Lt,
     joint_likelihood_stats,
     transfer_R_beta_u,
@@ -27,9 +29,7 @@ from stvgp_kronecker.joint_ssgp_kron.synthetic import (
     make_spatial_projection,
     make_synthetic_dataset,
     temporal_inducing_for_block,
-)
-
-
+        )
 def _random_routeB_block(seed: int = 0):
     rng = np.random.default_rng(seed)
     ns, nt, ms, mt, d = 3, 4, 2, 3, 2
@@ -186,7 +186,13 @@ def test_routeB_predictive_variance_matches_dense_joint_posterior_and_differs_fr
     c = rng.normal(size=ms)
     t = rng.normal(size=mt)
     q = vec_f(np.outer(c, t))
-    pred = model.predict(phi_star=phi, c_proj_star=c, t_proj_star=t, state=state)
+    pred = model.predict(
+        phi_star=phi,
+        c_proj_star=c,
+        t_proj_star=t,
+        state=state,
+        include_conditional_residual_variance=True,
+    )
     nu = max(0.0, model.prior_point_variance - float((c @ Ks @ c) * (t @ Kt @ t)))
     x = np.concatenate([phi, q])
     dense_var = sigma2 + nu + float(x @ cov @ x)
@@ -281,7 +287,13 @@ def test_routeB_zero_cross_feature_sanity() -> None:
     phi = np.array([0.2, -0.3])
     c = np.ones(C.shape[1]) / C.shape[1]
     t = np.ones(T.shape[1]) / T.shape[1]
-    pred = model.predict(phi_star=phi, c_proj_star=c, t_proj_star=t, state=state)
+    pred = model.predict(
+        phi_star=phi,
+        c_proj_star=c,
+        t_proj_star=t,
+        state=state,
+        include_conditional_residual_variance=True,
+    )
     q = vec_f(np.outer(c, t))
     nu = max(0.0, model.prior_point_variance - float((c @ Ks @ c) * (t @ Kt @ t)))
     separate = sigma2 + nu + float(phi @ state.S_beta_beta @ phi) + float(q @ model.solve_Du(state, q))
@@ -321,7 +333,52 @@ def test_predictive_variance_respects_kernel_amplitude() -> None:
         c = C[0]
         t = factors.T[0]
         q = vec_f(np.outer(c, t))
-        pred = model.predict(phi_star=phi, c_proj_star=c, t_proj_star=t, state=state)
+        pred = model.predict(
+            phi_star=phi,
+            c_proj_star=c,
+            t_proj_star=t,
+            state=state,
+            include_conditional_residual_variance=True,
+        )
         nu = max(0.0, kernel_variance - float((c @ Ks @ c) * (t @ factors.Kt @ t)))
         dense_var = dataset.sigma2 + nu + float(np.concatenate([phi, q]) @ cov @ np.concatenate([phi, q]))
         assert np.allclose(pred.variance, dense_var, atol=1e-7)
+def test_whitened_orthogonal_transfer_is_finite_and_whitened_orthogonal() -> None:
+    K_oo = make_spd_matrix(4, seed=101)
+    K_nn = make_spd_matrix(4, seed=102)
+    rng = np.random.default_rng(103)
+    K_on = np.linalg.cholesky(K_oo) @ rng.normal(size=(4, 4)) @ np.linalg.cholesky(K_nn).T
+    L = compute_whitened_orthogonal_Lt(K_oo, K_on, K_nn, jitter=0.0)
+    chol_old = np.linalg.cholesky(K_oo)
+    chol_new = np.linalg.cholesky(K_nn)
+    whitened_map = np.linalg.solve(chol_old, L @ chol_new)
+    assert L.shape == (4, 4)
+    assert np.isfinite(L).all()
+    assert np.allclose(whitened_map.T @ whitened_map, np.eye(4), atol=1e-8)
+
+
+def test_routeB_transfer_override_shape_is_checked() -> None:
+    _, _, _, _, _, _, C, T, _, y, sigma2 = _random_routeB_block(seed=104)
+    Ks = make_spd_matrix(C.shape[1], seed=105)
+    Kt = make_spd_matrix(T.shape[1], seed=106)
+    model = JointSSGPKronHiPPOSVGP(
+        Ks=Ks,
+        C=C,
+        sigma2=sigma2,
+        beta_prior_mean=np.zeros(2),
+        beta_prior_cov=np.eye(2),
+        jitter=0.0,
+    )
+    Phi = np.zeros((y.size, 2))
+    state = model.update_block_structured_joint_ssgp_transfer(
+        y_vec=y, Phi=Phi, T_n=T, Kt_new=Kt
+    )
+    with pytest.raises(ValueError, match="L_t_override"):
+        model.update_block_structured_joint_ssgp_transfer(
+            y_vec=y,
+            Phi=Phi,
+            T_n=T,
+            Kt_new=Kt,
+            state=state,
+            L_t_override=np.eye(T.shape[1] + 1),
+        )

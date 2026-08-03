@@ -3,7 +3,14 @@
   "protocol_target": {
     "calibration": "task_1 initial full-GP MLL grid for ell_t, sigma2, kernel variance",
     "online_evaluation": "task_2 held-out seen-history",
-    "main_metrics": ["NLL/NLPD", "RMSE", "Cov90", "ECE", "runtime/block", "forgetting"],
+    "main_metrics": [
+      "NLL/NLPD",
+      "RMSE",
+      "Cov90",
+      "ECE",
+      "runtime/block",
+      "forgetting"
+    ],
     "routeB_reference": "Rich-v3 Phi + Matern-3/2 + Mt=32 + Ms=256"
   },
   "repositories": [
@@ -11,7 +18,10 @@
       "name": "streaming_sparse_gp",
       "local_folder": "thangbui_streaming_sparse_gp",
       "url": "https://github.com/thangbui/streaming_sparse_gp",
-      "intended_methods": ["OSVGP", "OSGPR"],
+      "intended_methods": [
+        "OSVGP",
+        "OSGPR"
+      ],
       "download_status": "downloaded",
       "checked_commit": "d95081b",
       "unified_era5_runner_status": "not_integrated"
@@ -20,7 +30,10 @@
       "name": "online_vargp",
       "local_folder": "wjmaddox_online_vargp",
       "url": "https://github.com/wjmaddox/online_vargp",
-      "intended_methods": ["OVC-fixedZ", "OVC-optZ"],
+      "intended_methods": [
+        "OVC-fixedZ",
+        "OVC-optZ"
+      ],
       "download_status": "downloaded",
       "checked_commit": "7bd3da5",
       "unified_era5_runner_status": "not_integrated"
@@ -29,7 +42,11 @@
       "name": "online_gp",
       "local_folder": "wjmaddox_online_gp",
       "url": "https://github.com/wjmaddox/online_gp",
-      "intended_methods": ["online SGPR", "online SVGP", "WISKI"],
+      "intended_methods": [
+        "online SGPR",
+        "online SVGP",
+        "WISKI"
+      ],
       "download_status": "downloaded",
       "checked_commit": "3bff4c3",
       "unified_era5_runner_status": "not_integrated"
@@ -38,7 +55,9 @@
       "name": "HIPPOSVGP",
       "local_folder": "harrisonzhu508_HIPPOSVGP",
       "url": "https://github.com/harrisonzhu508/HIPPOSVGP",
-      "intended_methods": ["OHSVGP-style temporal baseline"],
+      "intended_methods": [
+        "OHSVGP-style temporal baseline"
+      ],
       "download_status": "downloaded",
       "checked_commit": "a1bff1b",
       "unified_era5_runner_status": "not_integrated"
@@ -47,23 +66,46 @@
       "name": "markovflow",
       "local_folder": "secondmind_labs_markovflow",
       "url": "https://github.com/secondmind-labs/markovflow",
-      "intended_methods": ["Markovian GP", "Sparse Markovian GP"],
+      "intended_methods": [
+        "Markovian GP",
+        "Sparse Markovian GP"
+      ],
       "download_status": "downloaded",
       "checked_commit": "6a80d54",
+      "paper_release": "v0.0.13",
+      "paper_release_folder": "secondmind_labs_markovflow_v0.0.13",
+      "paper_release_reason": "The develop HEAD mixes modern pyproject requirements with a stale legacy setup.py; v0.0.13 contains the requested spatio-temporal classes under the published TensorFlow 2.2.1 / GPflow 2.1.3 stack.",
       "unified_era5_runner_status": "not_integrated"
     },
     {
       "name": "s2VGP_STVGP",
       "local_folder": null,
       "url": null,
-      "intended_methods": ["s2VGP", "STVGP"],
+      "intended_methods": [
+        "s2VGP",
+        "STVGP"
+      ],
       "download_status": "no_public_official_repository_found",
       "unified_era5_runner_status": "not_integrated"
+    },
+    {
+      "name": "spatio_temporal_variational_gps",
+      "local_folder": "aaltoml_spatio_temporal_gps",
+      "url": "https://github.com/AaltoML/spatio-temporal-GPs",
+      "intended_methods": [
+        "STVGP",
+        "s2VGP",
+        "spatio-temporal variational GP"
+      ],
+      "download_status": "downloaded",
+      "checked_commit": "c5b929e",
+      "unified_era5_runner_status": "pending_wrapper"
     }
   ],
   "notes": [
     "Reference repositories are not automatically comparable until wrapped by the same OnlineBaseline interface.",
     "The local SGPR/SVGP wrappers are the first same-kernel/frozen-hyperparameter baselines to run under the unified ERA5 protocol.",
-    "Lag-Phi should not be used for future claims unless the lag features are constructed without reading labels inside the future block."
+    "Lag-Phi should not be used for future claims unless the lag features are constructed without reading labels inside the future block.",
+    "AaltoML/spatio-temporal-GPs was cloned for the ICLR Formal experiment baseline integration."
   ]
 }

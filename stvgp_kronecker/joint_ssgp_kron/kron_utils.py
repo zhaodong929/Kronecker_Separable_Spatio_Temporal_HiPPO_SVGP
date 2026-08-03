@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Literal
 
 import numpy as np
-from scipy.linalg import cho_factor, cho_solve, eigh
+from scipy.linalg import LinAlgError, cho_factor, cho_solve, eigh
 
 
 def symmetrize(matrix: np.ndarray) -> np.ndarray:
@@ -23,9 +23,19 @@ def add_jitter(matrix: np.ndarray, jitter: float = 1e-6) -> np.ndarray:
 
 
 def solve_spd(matrix: np.ndarray, rhs: np.ndarray, jitter: float = 1e-6) -> np.ndarray:
-    matrix_j = add_jitter(matrix, jitter)
-    factor = cho_factor(matrix_j, lower=True, check_finite=False)
-    return cho_solve(factor, rhs, check_finite=False)
+    """Solve an SPD system with reference-style scaled jitter and Cholesky retry."""
+
+    matrix = symmetrize(np.asarray(matrix, dtype=float))
+    eye = np.eye(matrix.shape[0])
+    base = stable_jitter(matrix, jitter)
+    last_error: Exception | None = None
+    for multiplier in (1.0, 10.0, 100.0, 1000.0, 10000.0):
+        try:
+            factor = cho_factor(matrix + (base * multiplier) * eye, lower=True, check_finite=False)
+            return cho_solve(factor, rhs, check_finite=False)
+        except LinAlgError as exc:
+            last_error = exc
+    raise LinAlgError(f"Cholesky failed after jitter escalation from {base:g}") from last_error
 
 
 def inv_spd(matrix: np.ndarray, jitter: float = 1e-6) -> np.ndarray:
@@ -180,21 +190,26 @@ def solve_Du_sylvester(
     rhs = np.asarray(rhs, dtype=float)
     M_s = Ks_inv.shape[0]
     M_t = Kt_inv.shape[0]
-    if rhs.ndim == 1:
-        Z = solve_sylvester_precision(
-            Kt_inv,
-            Ks_inv,
-            B,
-            G,
-            unvec_f(rhs, (M_s, M_t)),
-            jitter=jitter,
-        )
-        return vec_f(Z)
-    cols = [
-        solve_Du_sylvester(Kt_inv, Ks_inv, B, G, rhs[:, i], jitter=jitter)
-        for i in range(rhs.shape[1])
-    ]
-    return np.column_stack(cols)
+    vector_input = rhs.ndim == 1
+    rhs = rhs[:, None] if vector_input else rhs
+
+    kt_system = add_jitter(Kt_inv, jitter)
+    ks_system = add_jitter(Ks_inv, jitter)
+    left_vals, P = eigh(symmetrize(G), ks_system, check_finite=False)
+    right_vals, Q = eigh(symmetrize(B), kt_system, check_finite=False)
+    denom = 1.0 + np.outer(left_vals, right_vals)
+    denom = np.where(
+        np.abs(denom) < jitter,
+        np.sign(denom) * jitter + (denom == 0) * jitter,
+        denom,
+    )
+
+    solved = np.empty_like(rhs, dtype=float)
+    for index in range(rhs.shape[1]):
+        rhs_matrix = unvec_f(rhs[:, index], (M_s, M_t))
+        transformed = P.T @ rhs_matrix @ Q
+        solved[:, index] = vec_f(P @ (transformed / denom) @ Q.T)
+    return solved[:, 0] if vector_input else solved
 
 
 def schur_recover_posterior(
@@ -230,8 +245,17 @@ def schur_recover_posterior(
             "m_u": v_h,
         }
 
-    W = solve_Du_sylvester(Kt_inv, Ks_inv, B_temporal, G, B_beta_u.T, jitter=jitter)
-    v_h = solve_Du_sylvester(Kt_inv, Ks_inv, B_temporal, G, h_u, jitter=jitter)
+    joint_rhs = np.column_stack([B_beta_u.T, h_u])
+    joint_solution = solve_Du_sylvester(
+        Kt_inv,
+        Ks_inv,
+        B_temporal,
+        G,
+        joint_rhs,
+        jitter=jitter,
+    )
+    W = joint_solution[:, :d]
+    v_h = joint_solution[:, d]
     Lambda_beta_given_u = symmetrize(A_beta - B_beta_u @ W)
     rhs_beta = h_beta - B_beta_u @ v_h
     m_beta = solve_spd(Lambda_beta_given_u, rhs_beta, jitter=jitter)

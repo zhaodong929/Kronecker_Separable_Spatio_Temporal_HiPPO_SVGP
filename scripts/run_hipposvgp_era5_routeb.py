@@ -17,7 +17,7 @@ import time
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,13 +27,20 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from stvgp_kronecker.data.hipposvgp_era5 import HippoERA5Dataset, load_hipposvgp_era5, to_routeb_synthetic_dataset
-from stvgp_kronecker.joint_ssgp_kron.kron_utils import add_jitter, dense_A_from_factors, dense_Du_for_tests, inv_spd, symmetrize, vec_f
+from stvgp_kronecker.data.hipposvgp_era5 import (
+    SPLIT_KEYS,
+    HippoERA5Dataset,
+    _split_names,
+    load_hipposvgp_era5,
+    to_routeb_synthetic_dataset,
+)
+from stvgp_kronecker.joint_ssgp_kron.kron_utils import add_jitter, dense_A_from_factors, dense_Du_for_tests, inv_spd, solve_spd, symmetrize, vec_f
 from stvgp_kronecker.joint_ssgp_kron.kron_utils import unvec_f
 from stvgp_kronecker.joint_ssgp_kron.model import JointSSGPKronHiPPOSVGP
 from stvgp_kronecker.joint_ssgp_kron.synthetic import (
     BlockFactors,
     covariance_kernel,
+    make_block_factors_analytic_hippo,
     make_block_factors,
     make_spatial_projection,
     temporal_inducing_for_block,
@@ -46,6 +53,89 @@ METHOD_LABELS = {
     "mean_field": "mean_field",
     "structured_joint": "structured_joint",
 }
+
+
+def _load_spectral_mixture_params(path: str | None) -> dict[str, Any] | None:
+    if not path:
+        return None
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"spectral mixture parameter file not found: {p}")
+    payload = json.loads(p.read_text(encoding="utf-8"))
+    return payload
+
+
+def _default_spectral_mixture_params(num_mixtures: int) -> dict[str, list[float]]:
+    q = max(int(num_mixtures), 1)
+    weights = np.ones(q, dtype=float) / float(q)
+    means = np.linspace(0.0, 2.0, q, dtype=float)
+    scales = np.geomspace(0.25, 1.0, q).astype(float)
+    return {
+        "weights": weights.tolist(),
+        "means": means.tolist(),
+        "scales": scales.tolist(),
+    }
+
+
+def _sm_kwargs(args: argparse.Namespace) -> dict[str, Any]:
+    params = getattr(args, "spectral_mixture_params", None) or {}
+    defaults = _default_spectral_mixture_params(getattr(args, "num_mixtures", 4))
+    return {
+        "spectral_mixture_weights": params.get("temporal_weights", defaults["weights"]),
+        "spectral_mixture_means": params.get("temporal_means", defaults["means"]),
+        "spectral_mixture_scales": params.get("temporal_scales", defaults["scales"]),
+    }
+
+
+def _sm_spatial_kwargs(args: argparse.Namespace) -> dict[str, Any]:
+    params = getattr(args, "spectral_mixture_params", None) or {}
+    defaults = _default_spectral_mixture_params(getattr(args, "num_mixtures", 4))
+    return {
+        "spectral_mixture_weights": params.get("spatial_weights", defaults["weights"]),
+        "spectral_mixture_means": params.get("spatial_means", defaults["means"]),
+        "spectral_mixture_scales": params.get("spatial_scales", defaults["scales"]),
+    }
+
+ERA5_VARIABLE_NAMES = {
+    0: "2m_dewpoint_temperature",
+    1: "2m_temperature",
+    2: "skin_temperature",
+    3: "soil_temperature_level_1",
+    4: "soil_temperature_level_2",
+    5: "soil_temperature_level_3",
+    6: "soil_temperature_level_4",
+    7: "skin_reservoir_content",
+    8: "volumetric_soil_water_layer_1",
+    9: "volumetric_soil_water_layer_2",
+    10: "volumetric_soil_water_layer_3",
+    11: "volumetric_soil_water_layer_4",
+    12: "forecast_albedo",
+    13: "surface_latent_heat_flux",
+    14: "surface_net_solar_radiation",
+    15: "surface_net_thermal_radiation",
+    16: "surface_sensible_heat_flux",
+    17: "surface_solar_radiation_downwards",
+    18: "surface_thermal_radiation_downwards",
+    19: "evaporation_from_bare_soil",
+    20: "evaporation_from_open_water_surfaces_excluding_oceans",
+    21: "evaporation_from_the_top_of_canopy",
+    22: "evaporation_from_vegetation_transpiration",
+    23: "potential_evaporation",
+    24: "runoff",
+    25: "snow_evaporation",
+    26: "sub_surface_runoff",
+    27: "surface_runoff",
+    28: "total_evaporation",
+    29: "10m_u_component_of_wind",
+    30: "10m_v_component_of_wind",
+    31: "surface_pressure",
+    32: "total_precipitation",
+    33: "leaf_area_index_high_vegetation",
+    34: "leaf_area_index_low_vegetation",
+}
+
+SURFACE_METEOROLOGY_INDICES = (1, 2, 29, 30, 31, 32)
+STATIC_LAND_PROXY_INDICES = (33, 34)
 
 
 def spatial_kernel_lengthscale(args: argparse.Namespace) -> float | np.ndarray:
@@ -343,6 +433,41 @@ def _time_space_tiles(dataset: HippoERA5Dataset) -> dict[str, np.ndarray]:
     }
 
 
+def minimal_columns(dataset: HippoERA5Dataset) -> tuple[np.ndarray, list[str]]:
+    """Minimal climatology Phi without a linear time trend."""
+
+    z = _time_space_tiles(dataset)
+    columns = np.column_stack(
+        [
+            np.ones(dataset.Y.size),
+            z["sin1"],
+            z["cos1"],
+            z["sin2"],
+            z["cos2"],
+            z["lat_tile"],
+            z["lon_tile"],
+        ]
+    )
+    names = [
+        "1",
+        "sin_doy",
+        "cos_doy",
+        "sin_2doy",
+        "cos_2doy",
+        "lat_scaled",
+        "lon_scaled",
+    ]
+    metadata = dict(dataset.metadata or {})
+    missing_static = []
+    if not metadata.get("elevation_available", False):
+        missing_static.append("elevation")
+    if not metadata.get("land_sea_mask_available", False):
+        missing_static.append("land_sea_mask")
+    if missing_static:
+        metadata["missing_requested_static_features"] = missing_static
+    return columns, names
+
+
 def rich_v1_columns(dataset: HippoERA5Dataset) -> tuple[np.ndarray, list[str]]:
     """Current rich Phi without explicit seasonal-spatial interaction terms."""
 
@@ -429,6 +554,146 @@ def rich_seasonal_spatial_columns(dataset: HippoERA5Dataset) -> tuple[np.ndarray
     return columns, names
 
 
+def _read_multivar_one_file(path: Path, variable_indices: Sequence[int], split: str) -> tuple[np.ndarray, np.ndarray]:
+    times_chunks: list[np.ndarray] = []
+    value_chunks: list[np.ndarray] = []
+    with np.load(path, allow_pickle=True) as data:
+        for split_name in _split_names(split):
+            data_key, time_key = SPLIT_KEYS[split_name]
+            values = np.asarray(data[data_key][list(variable_indices)], dtype=float)
+            times = np.asarray(data[time_key], dtype=float).reshape(-1)
+            if values.shape[1] != times.shape[0]:
+                raise ValueError(f"{path.name}: {data_key} and {time_key} lengths do not match")
+            order = np.argsort(times)
+            times_chunks.append(times[order])
+            value_chunks.append(values[:, order].T)
+    times_full = np.concatenate(times_chunks)
+    values_full = np.concatenate(value_chunks, axis=0)
+    order = np.argsort(times_full)
+    return times_full[order], values_full[order]
+
+
+def _read_aligned_multivar_for_selected_files(
+    dataset: HippoERA5Dataset,
+    variable_indices: Sequence[int],
+) -> np.ndarray:
+    if not variable_indices:
+        return np.empty((dataset.Y.shape[0], dataset.Y.shape[1], 0), dtype=float)
+    split = str((dataset.metadata or {}).get("split", "all"))
+    series = []
+    metadata = dict(dataset.metadata or {})
+    align_times = np.asarray(dataset.times, dtype=float)
+    if "routeb_raw_time_scale" in metadata and "routeb_raw_time_start" in metadata:
+        align_times = align_times * float(metadata["routeb_raw_time_scale"]) + float(metadata["routeb_raw_time_start"])
+    for path in dataset.selected_files:
+        times, values = _read_multivar_one_file(path, variable_indices, split)
+        lookup = {float(t): values[i] for i, t in enumerate(times)}
+        try:
+            aligned = np.asarray([lookup[float(t)] for t in align_times], dtype=float)
+        except KeyError as exc:
+            raise ValueError(f"{path.name}: missing aligned timestamp {exc}") from exc
+        series.append(aligned)
+    # [S,T,V] -> [T,S,V]
+    return np.stack(series, axis=0).transpose(1, 0, 2)
+
+
+def _standardize_3d_columns(values: np.ndarray) -> np.ndarray:
+    arr = np.asarray(values, dtype=float)
+    flat = arr.reshape((-1, arr.shape[-1]))
+    flat = _standardize_columns(flat)
+    return flat.reshape(arr.shape)
+
+
+def era5_covariate_columns(
+    dataset: HippoERA5Dataset,
+    variable_indices: Sequence[int],
+    *,
+    prefix: str,
+) -> tuple[np.ndarray, list[str]]:
+    values = _read_aligned_multivar_for_selected_files(dataset, variable_indices)
+    if values.shape[-1] == 0:
+        return np.empty((dataset.Y.size, 0), dtype=float), []
+    values = _standardize_3d_columns(values)
+    names = [f"{prefix}_{ERA5_VARIABLE_NAMES.get(int(idx), f'var_{idx}')}" for idx in variable_indices]
+    return values.reshape((dataset.Y.size, values.shape[-1])), names
+
+
+def era5_xlag_covariate_columns(
+    dataset: HippoERA5Dataset,
+    variable_indices: Sequence[int],
+    *,
+    prefix: str,
+    lag_length: int = 1,
+) -> tuple[np.ndarray, list[str]]:
+    """Current, lagged and differenced exogenous ERA5 covariates."""
+
+    values = _read_aligned_multivar_for_selected_files(dataset, variable_indices)
+    if values.shape[-1] == 0:
+        return np.empty((dataset.Y.size, 0), dtype=float), []
+    lag_length = max(int(lag_length), 1)
+    lagged_values = []
+    differenced_values = []
+    time_index = np.arange(values.shape[0])
+    for lag in range(1, lag_length + 1):
+        lag_idx = np.maximum(time_index - lag, 0)
+        lagged = values[lag_idx]
+        lagged_values.append(lagged)
+        differenced_values.append(values - lagged)
+    stacked = np.concatenate([values, *lagged_values, *differenced_values], axis=-1)
+    stacked = _standardize_3d_columns(stacked)
+    base_names = [ERA5_VARIABLE_NAMES.get(int(idx), f"var_{idx}") for idx in variable_indices]
+    names = (
+        [f"{prefix}_current_{name}" for name in base_names]
+        + [f"{prefix}_lag{lag}_{name}" for lag in range(1, lag_length + 1) for name in base_names]
+        + [
+            f"{prefix}_diff_current_lag{lag}_{name}"
+            for lag in range(1, lag_length + 1)
+            for name in base_names
+        ]
+    )
+    return stacked.reshape((dataset.Y.size, stacked.shape[-1])), names
+
+
+def era5_pca_columns(
+    dataset: HippoERA5Dataset,
+    variable_indices: Sequence[int],
+    *,
+    n_components: int,
+    prefix: str,
+) -> tuple[np.ndarray, list[str]]:
+    values = _read_aligned_multivar_for_selected_files(dataset, variable_indices)
+    if values.shape[-1] == 0 or n_components <= 0:
+        return np.empty((dataset.Y.size, 0), dtype=float), []
+    flat = _standardize_columns(values.reshape((-1, values.shape[-1])))
+    _, _, vt = np.linalg.svd(flat, full_matrices=False)
+    n_components = min(int(n_components), vt.shape[0])
+    scores = flat @ vt[:n_components].T
+    scores = _standardize_columns(scores)
+    names = [f"{prefix}_pc{i + 1}" for i in range(n_components)]
+    return scores, names
+
+
+def medium_era5_columns(dataset: HippoERA5Dataset) -> tuple[np.ndarray, list[str]]:
+    lag_cols = lag_ar_columns_for_times(dataset.Y, range(dataset.Y.shape[0]))
+    lag_names = ["lag_y_t_minus_1", "lag_y_t_minus_2", "lag_y_diff_1_2"]
+    covariate_indices = [idx for idx in SURFACE_METEOROLOGY_INDICES if idx != dataset.variable_index]
+    cov_cols, cov_names = era5_covariate_columns(dataset, covariate_indices, prefix="surface")
+    return np.column_stack([lag_cols, cov_cols]), lag_names + cov_names
+
+
+def medium_era5_xlag_columns(dataset: HippoERA5Dataset, *, lag_length: int = 1) -> tuple[np.ndarray, list[str]]:
+    covariate_indices = [idx for idx in SURFACE_METEOROLOGY_INDICES if idx != dataset.variable_index]
+    return era5_xlag_covariate_columns(dataset, covariate_indices, prefix="surface_x", lag_length=lag_length)
+
+
+def rich_era5_columns(dataset: HippoERA5Dataset, *, n_components: int = 6) -> tuple[np.ndarray, list[str]]:
+    medium_cols, medium_names = medium_era5_columns(dataset)
+    used = {dataset.variable_index, *SURFACE_METEOROLOGY_INDICES}
+    pca_indices = [idx for idx in ERA5_VARIABLE_NAMES if idx not in used]
+    pca_cols, pca_names = era5_pca_columns(dataset, pca_indices, n_components=n_components, prefix="era5_remaining")
+    return np.column_stack([medium_cols, pca_cols]), medium_names + pca_names
+
+
 def rich_v3_rbf_columns(dataset: HippoERA5Dataset, *, n_centers: int = 8) -> tuple[np.ndarray, list[str]]:
     """Rich v2 plus non-leaking spatial RBF region features."""
 
@@ -452,11 +717,25 @@ def rich_v3_rbf_columns(dataset: HippoERA5Dataset, *, n_centers: int = 8) -> tup
     return np.column_stack([rich_cols, rbf_cols]), names
 
 
-def augment_dataset_phi(dataset: HippoERA5Dataset, *, phi_mode: str) -> HippoERA5Dataset:
+def augment_dataset_phi(dataset: HippoERA5Dataset, *, phi_mode: str, xlag_length: int = 1) -> HippoERA5Dataset:
+    if phi_mode == "direct_y":
+        metadata = dict(dataset.metadata or {})
+        metadata["phi_mode"] = "direct_y"
+        metadata["phi_columns"] = []
+        return replace(dataset, Phi=np.zeros((dataset.Y.size, 0), dtype=float), metadata=metadata)
+    if phi_mode == "minimal":
+        phi, names = minimal_columns(dataset)
+        metadata = dict(dataset.metadata or {})
+        metadata["phi_mode"] = "minimal"
+        metadata["phi_columns"] = names
+        metadata.setdefault("missing_requested_static_features", ["elevation", "land_sea_mask"])
+        return replace(dataset, Phi=phi, metadata=metadata)
     if phi_mode == "base":
         return dataset
-    if phi_mode in {"rich_v1", "rich_v2", "rich_v3", "rich_seasonal_spatial", "rich_v3_lag_ar"}:
+    if phi_mode in {"rich_v1", "rich_v2", "rich_v3", "rich_seasonal_spatial", "engineered", "rich_v3_lag_ar"}:
         base_rich_mode = "rich_v3" if phi_mode == "rich_v3_lag_ar" else phi_mode
+        if base_rich_mode == "engineered":
+            base_rich_mode = "rich_seasonal_spatial"
         if base_rich_mode == "rich_v1":
             rich_cols, rich_names = rich_v1_columns(dataset)
         elif base_rich_mode == "rich_v3":
@@ -471,6 +750,25 @@ def augment_dataset_phi(dataset: HippoERA5Dataset, *, phi_mode: str) -> HippoERA
         metadata = dict(dataset.metadata or {})
         metadata["phi_mode"] = phi_mode
         metadata["phi_columns"] = list(metadata.get("phi_columns", [])) + rich_names
+        return replace(dataset, Phi=phi, metadata=metadata)
+    if phi_mode in {"medium_era5", "medium_era5_xlag", "medium_era5_oracle_ylag", "rich_era5"}:
+        base_phi, base_names = minimal_columns(dataset)
+        if phi_mode in {"medium_era5", "medium_era5_oracle_ylag"}:
+            extra_cols, extra_names = medium_era5_columns(dataset)
+        elif phi_mode == "medium_era5_xlag":
+            extra_cols, extra_names = medium_era5_xlag_columns(dataset, lag_length=xlag_length)
+        else:
+            extra_cols, extra_names = rich_era5_columns(dataset)
+        phi = np.column_stack([base_phi, extra_cols])
+        metadata = dict(dataset.metadata or {})
+        metadata["phi_mode"] = phi_mode
+        metadata["phi_columns"] = base_names + extra_names
+        metadata["era5_covariates_in_phi_only"] = True
+        if phi_mode == "medium_era5_xlag":
+            metadata["xlag_length"] = int(xlag_length)
+        metadata.setdefault("missing_requested_static_features", ["elevation", "land_sea_mask"])
+        if phi_mode == "rich_era5":
+            metadata["rich_era5_pressure_level_status"] = "pressure-level variables unavailable in processed_timeseries_4; PCA uses remaining available ERA5 single-level variables"
         return replace(dataset, Phi=phi, metadata=metadata)
     if phi_mode != "lag_ar":
         raise ValueError(f"Unknown phi_mode: {phi_mode}")
@@ -488,7 +786,19 @@ def replace_factors_phi(factors: BlockFactors, phi: np.ndarray) -> BlockFactors:
 
 def phi_for_eval_block(dataset: HippoERA5Dataset, block: slice, *, phi_mode: str, future_context_stop: int | None = None) -> np.ndarray:
     base_phi = phi_for_slice(dataset, block)
-    if phi_mode in {"base", "rich_v1", "rich_v2", "rich_v3", "rich_seasonal_spatial"}:
+    if phi_mode in {
+        "base",
+        "minimal",
+        "rich_v1",
+        "rich_v2",
+        "rich_v3",
+        "rich_seasonal_spatial",
+        "engineered",
+        "medium_era5",
+        "medium_era5_xlag",
+        "medium_era5_oracle_ylag",
+        "rich_era5",
+    }:
         return base_phi
     if phi_mode == "rich_v3_lag_ar":
         # The dataset has already been augmented with rich-v3 and lag columns.
@@ -499,6 +809,248 @@ def phi_for_eval_block(dataset: HippoERA5Dataset, block: slice, *, phi_mode: str
     stop = block.stop or dataset.Y.shape[0]
     lag_cols = lag_ar_columns_for_times(dataset.Y, range(start, stop), future_context_stop=future_context_stop)
     return np.column_stack([base_phi, lag_cols])
+
+
+def _safe_lag_phi_template(dataset: HippoERA5Dataset, block: slice, spatial_indices: np.ndarray) -> np.ndarray:
+    """Return Phi rows for a held-out spatial subset in time-major order."""
+
+    spatial_indices = np.asarray(spatial_indices, dtype=int)
+    start = block.start or 0
+    stop = block.stop or dataset.Y.shape[0]
+    s_count_full = dataset.Y.shape[1]
+    row_idx: list[int] = []
+    for t_idx in range(start, stop):
+        row_idx.extend((t_idx * s_count_full + spatial_indices).tolist())
+    return np.asarray(dataset.Phi[np.asarray(row_idx, dtype=int)], dtype=float)
+
+
+def _safe_lag_column_indices(dataset: HippoERA5Dataset) -> tuple[int, int, int] | None:
+    names = list((dataset.metadata or {}).get("phi_columns", []))
+    required = ["lag_y_t_minus_1", "lag_y_t_minus_2", "lag_y_diff_1_2"]
+    try:
+        return tuple(names.index(name) for name in required)  # type: ignore[return-value]
+    except ValueError:
+        return None
+
+
+def _lag_noise_column_indices(dataset: HippoERA5Dataset) -> list[int]:
+    names = list((dataset.metadata or {}).get("phi_columns", []))
+    return [i for i, name in enumerate(names) if name in {"lag_y_t_minus_1", "lag_y_t_minus_2", "lag_y_diff_1_2"}]
+
+
+def maybe_add_lag_training_noise(dataset: HippoERA5Dataset, *, args: argparse.Namespace, seed: int) -> HippoERA5Dataset:
+    std = float(getattr(args, "lag_train_noise_std", 0.0) or 0.0)
+    if std <= 0.0:
+        return dataset
+    cols = _lag_noise_column_indices(dataset)
+    if not cols:
+        return dataset
+    rng = np.random.default_rng(int(seed) + int(getattr(args, "lag_train_noise_seed_offset", 10000)))
+    phi = np.asarray(dataset.Phi, dtype=float).copy()
+    phi[:, cols] += rng.normal(0.0, std, size=(phi.shape[0], len(cols)))
+    metadata = dict(dataset.metadata or {})
+    metadata["lag_train_noise_std"] = std
+    metadata["lag_train_noise_columns"] = [list((dataset.metadata or {}).get("phi_columns", []))[i] for i in cols]
+    return replace(dataset, Phi=phi, metadata=metadata)
+
+
+def beta_prior_cov_for_dataset(dataset: HippoERA5Dataset, *, args: argparse.Namespace) -> np.ndarray:
+    dim = int(dataset.Phi.shape[1])
+    cov = float(args.beta_prior_variance) * np.eye(dim)
+    lag_var = getattr(args, "lag_beta_prior_variance", None)
+    if lag_var is None:
+        return cov
+    lag_var = float(lag_var)
+    if lag_var <= 0.0:
+        return cov
+    for idx in _lag_noise_column_indices(dataset):
+        cov[idx, idx] = lag_var
+    return cov
+
+
+def _replace_safe_lag_columns(
+    phi: np.ndarray,
+    *,
+    dataset: HippoERA5Dataset,
+    block: slice,
+    spatial_indices: np.ndarray,
+    y_history: np.ndarray,
+) -> np.ndarray:
+    """Replace target-lag columns with no-test-label values for held-out points.
+
+    ``y_history`` is updated by the recursive predictor: train-visible history is
+    initialized from observed values, while held-out future rows are filled with
+    model predictions before later lags are constructed.
+    """
+
+    lag_idx = _safe_lag_column_indices(dataset)
+    if lag_idx is None:
+        return phi
+    lag1_col, lag2_col, diff_col = lag_idx
+    spatial_indices = np.asarray(spatial_indices, dtype=int)
+    start = block.start or 0
+    stop = block.stop or dataset.Y.shape[0]
+    s_count = spatial_indices.size
+    safe_phi = np.asarray(phi, dtype=float).copy()
+    for local_t, t_idx in enumerate(range(start, stop)):
+        lag1_idx = max(t_idx - 1, 0)
+        lag2_idx = max(t_idx - 2, 0)
+        rows = slice(local_t * s_count, (local_t + 1) * s_count)
+        lag1 = np.nan_to_num(y_history[lag1_idx, spatial_indices], nan=0.0)
+        lag2 = np.nan_to_num(y_history[lag2_idx, spatial_indices], nan=0.0)
+        safe_phi[rows, lag1_col] = lag1
+        safe_phi[rows, lag2_col] = lag2
+        safe_phi[rows, diff_col] = lag1 - lag2
+    return safe_phi
+
+
+def _predict_with_safe_heldout_lags(
+    model: JointSSGPKronHiPPOSVGP,
+    state,
+    factors: BlockFactors,
+    *,
+    dataset: HippoERA5Dataset,
+    routeb_dataset,
+    eval_block: slice,
+    spatial_indices: np.ndarray,
+    c_eval: np.ndarray,
+    ell_t: float,
+    kernel_variance: float,
+    kernel_type: str,
+    prediction_mode: str,
+    chunk_size: int,
+    args: argparse.Namespace,
+    variance_scale: float = 1.0,
+    variance_add: float = 0.0,
+) -> tuple[np.ndarray, np.ndarray, dict[str, float], BlockFactors]:
+    """Recursive prediction for held-out locations without test-label lag leakage."""
+
+    start = eval_block.start or 0
+    stop = eval_block.stop or dataset.Y.shape[0]
+    spatial_indices = np.asarray(spatial_indices, dtype=int)
+    y_history = np.asarray(dataset.Y, dtype=float).copy()
+    # Held-out labels must never be available when their lag features are built.
+    # We recursively predict from the beginning of the online task up to the end
+    # of the requested evaluation block, then return only the requested block.
+    # The first online time point has no held-out target history, so missing lag
+    # values are cold-started to zero by _replace_safe_lag_columns().
+    if stop > 0:
+        y_history[:stop, spatial_indices] = np.nan
+
+    all_mean: list[np.ndarray] = []
+    phi_parts: list[np.ndarray] = []
+    t_parts: list[np.ndarray] = []
+    y_parts: list[np.ndarray] = []
+    for t_idx in range(0, stop):
+        one_block = slice(t_idx, t_idx + 1)
+        phi_one = _safe_lag_phi_template(dataset, one_block, spatial_indices)
+        phi_one = _replace_safe_lag_columns(
+            phi_one,
+            dataset=dataset,
+            block=one_block,
+            spatial_indices=spatial_indices,
+            y_history=y_history,
+        )
+        if factors.temporal_backend == "analytic_hippo_rff":
+            if factors.temporal_builder is None or factors.temporal_basis_spec is None:
+                raise ValueError("analytic safe-lag rollout requires temporal builder and basis spec")
+            kfu = (
+                factors.temporal_builder.compute_kfu_t(
+                    routeb_dataset.times[one_block],
+                    factors.temporal_basis_spec,
+                )
+                .detach()
+                .cpu()
+                .numpy()
+            )
+            t_one = solve_spd(factors.Kt, kfu.T).T
+        else:
+            kfu = covariance_kernel(
+                routeb_dataset.times[one_block],
+                factors.inducing_times,
+                lengthscale=ell_t,
+                variance=kernel_variance,
+                kernel_type=kernel_type,
+            )
+            # Recompute only the temporal interpolation row; the inducing grid and
+            # spatial projection are the same as the actual prediction factors.
+            t_one = solve_spd(factors.Kt, kfu.T).T
+        y_one = routeb_dataset.Y[spatial_indices, one_block]
+        gp_mean_one = np.einsum("ij,jk,k->i", c_eval, state.M_u, t_one[0])
+        mean_one = phi_one @ state.beta_mean + gp_mean_one
+        y_history[t_idx, spatial_indices] = mean_one
+        if start <= t_idx < stop:
+            all_mean.append(mean_one)
+            phi_parts.append(phi_one)
+            t_parts.append(t_one)
+            y_parts.append(y_one)
+
+    safe_factors = replace(
+        factors,
+        y_vec=vec_f(np.concatenate(y_parts, axis=1)) if y_parts else factors.y_vec[:0],
+        Phi=np.vstack(phi_parts) if phi_parts else factors.Phi[:0],
+        Y=np.concatenate(y_parts, axis=1) if y_parts else factors.Y[:, :0],
+        T=np.vstack(t_parts) if t_parts else factors.T[:0],
+    )
+    mean, var, diagnostics = vectorized_predict_with_C(
+        model,
+        state,
+        safe_factors,
+        c_eval,
+        prediction_mode=prediction_mode,
+        chunk_size=chunk_size,
+    )
+    variance_scale = float(variance_scale)
+    variance_add = float(variance_add)
+    if variance_scale != 1.0 or variance_add != 0.0:
+        var = np.maximum(variance_scale * var + variance_add, 1e-10)
+        diagnostics = dict(diagnostics)
+        diagnostics["safe_lag_variance_scale"] = variance_scale
+        diagnostics["safe_lag_variance_add"] = variance_add
+    return mean, var, diagnostics, safe_factors
+
+
+def predict_with_eval_phi_policy(
+    model: JointSSGPKronHiPPOSVGP,
+    state,
+    factors: BlockFactors,
+    *,
+    dataset: HippoERA5Dataset,
+    routeb_dataset,
+    eval_block: slice,
+    ell_t: float,
+    args: argparse.Namespace,
+    c_eval: np.ndarray,
+    spatial_indices: np.ndarray | None = None,
+) -> tuple[np.ndarray, np.ndarray, dict[str, float], BlockFactors]:
+    if spatial_indices is not None and args.phi_mode in {"medium_era5", "rich_era5"}:
+        return _predict_with_safe_heldout_lags(
+            model,
+            state,
+            factors,
+            dataset=dataset,
+            routeb_dataset=routeb_dataset,
+            eval_block=eval_block,
+            spatial_indices=np.asarray(spatial_indices, dtype=int),
+            c_eval=c_eval,
+            ell_t=ell_t,
+            kernel_variance=args.kernel_variance,
+            kernel_type=args.kernel_type,
+            prediction_mode=args.prediction_mode,
+            chunk_size=args.prediction_chunk_size,
+            args=args,
+            variance_scale=float(getattr(args, "safe_lag_variance_scale", 1.0) or 1.0),
+            variance_add=float(getattr(args, "safe_lag_variance_add", 0.0) or 0.0),
+        )
+    mean, var, diagnostics = vectorized_predict_with_C(
+        model,
+        state,
+        factors,
+        c_eval,
+        prediction_mode=args.prediction_mode,
+        chunk_size=args.prediction_chunk_size,
+    )
+    return mean, var, diagnostics, factors
 
 
 def transfer_structured_joint_state_for_prediction(
@@ -833,6 +1385,8 @@ def eval_blocks(blocks: list[slice], block_id: int, mode: str) -> list[slice]:
         return [blocks[block_id]]
     if mode == "seen_history":
         return [slice(0, blocks[block_id].stop)]
+    if mode == "batch":
+        return [slice(0, blocks[-1].stop)] if block_id == len(blocks) - 1 else []
     if mode == "future":
         return [] if block_id + 1 >= len(blocks) else [blocks[block_id + 1]]
     raise ValueError(f"Unknown eval mode: {mode}")
@@ -859,7 +1413,12 @@ def normalise_time_dataset_with_scale(dataset: HippoERA5Dataset, *, scale: float
             scaled=dataset.scaled,
             selected_files=dataset.selected_files,
             Y_unscaled=dataset.Y_unscaled,
-            metadata={**(dataset.metadata or {}), "routeb_time_normalization": source, "routeb_raw_time_scale": scale},
+            metadata={
+                **(dataset.metadata or {}),
+                "routeb_time_normalization": source,
+                "routeb_raw_time_scale": scale,
+                "routeb_raw_time_start": float(raw[0]),
+            },
         )
     )
 
@@ -901,18 +1460,41 @@ def fixed_spatial_train_test_split(num_space: int, *, test_fraction: float, seed
     return train_idx.astype(int), test_idx.astype(int)
 
 
-def make_block_factors_subset(
+def temporal_backend(args: argparse.Namespace) -> str:
+    return str(getattr(args, "temporal_backend", "analytic_hippo_rff"))
+
+
+def routeb_block_factors(
     dataset,
     *,
     block: slice,
+    basis_block: slice,
+    old_basis_block: slice | None,
     z_t: np.ndarray,
     z_t_old: np.ndarray | None,
     lengthscale: float,
     kernel_variance: float,
     kernel_type: str,
-    spatial_indices: np.ndarray,
+    args: argparse.Namespace,
 ) -> BlockFactors:
-    base = make_block_factors(
+    """Build temporal Route-B factors from the selected shared backend."""
+
+    if temporal_backend(args) == "analytic_hippo_rff":
+        return make_block_factors_analytic_hippo(
+            dataset,
+            block=block,
+            basis_block=basis_block,
+            old_basis_block=old_basis_block,
+            mt=int(args.mt),
+            lengthscale=lengthscale,
+            kernel_variance=kernel_variance,
+            rff_sample_size=int(getattr(args, "temporal_rff_sample_size", 256)),
+            seed=int(getattr(args, "temporal_rff_seed", 0)),
+            moving=True,
+            kernel_type=kernel_type,
+            **_sm_kwargs(args),
+        )
+    return make_block_factors(
         dataset,
         block=block,
         z_t=z_t,
@@ -920,7 +1502,47 @@ def make_block_factors_subset(
         lengthscale=lengthscale,
         kernel_variance=kernel_variance,
         kernel_type=kernel_type,
+        **_sm_kwargs(args),
     )
+
+
+def make_block_factors_subset(
+    dataset,
+    *,
+    block: slice,
+    basis_block: slice | None = None,
+    old_basis_block: slice | None = None,
+    z_t: np.ndarray,
+    z_t_old: np.ndarray | None,
+    lengthscale: float,
+    kernel_variance: float,
+    kernel_type: str,
+    spatial_indices: np.ndarray,
+    args: argparse.Namespace | None = None,
+) -> BlockFactors:
+    if args is None:
+        base = make_block_factors(
+            dataset,
+            block=block,
+            z_t=z_t,
+            z_t_old=z_t_old,
+            lengthscale=lengthscale,
+            kernel_variance=kernel_variance,
+            kernel_type=kernel_type,
+        )
+    else:
+        base = routeb_block_factors(
+            dataset,
+            block=block,
+            basis_block=block if basis_block is None else basis_block,
+            old_basis_block=old_basis_block,
+            z_t=z_t,
+            z_t_old=z_t_old,
+            lengthscale=lengthscale,
+            kernel_variance=kernel_variance,
+            kernel_type=kernel_type,
+            args=args,
+        )
     spatial_indices = np.asarray(spatial_indices, dtype=int)
     start = block.start or 0
     stop = block.stop or dataset.Y.shape[1]
@@ -938,6 +1560,9 @@ def make_block_factors_subset(
         K_on_t=base.K_on_t,
         block_slice=block,
         inducing_times=base.inducing_times,
+        temporal_backend=base.temporal_backend,
+        temporal_builder=base.temporal_builder,
+        temporal_basis_spec=base.temporal_basis_spec,
     )
 
 
@@ -1113,9 +1738,16 @@ def vectorized_predict_with_C(
     *,
     prediction_mode: str = "streaming_sylvester",
     chunk_size: int = 8192,
+    include_conditional_residual_variance: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, float]]:
     if prediction_mode == "dense":
-        return vectorized_predict_with_C_dense(model, state, factors, C_eval)
+        return vectorized_predict_with_C_dense(
+            model,
+            state,
+            factors,
+            C_eval,
+            include_conditional_residual_variance=include_conditional_residual_variance,
+        )
     if prediction_mode == "streaming_sylvester":
         return vectorized_predict_with_C_streaming_sylvester(
             model,
@@ -1123,6 +1755,7 @@ def vectorized_predict_with_C(
             factors,
             C_eval,
             chunk_size=chunk_size,
+            include_conditional_residual_variance=include_conditional_residual_variance,
         )
     raise ValueError(f"Unknown prediction_mode: {prediction_mode}")
 
@@ -1132,6 +1765,8 @@ def vectorized_predict_with_C_dense(
     state,
     factors,
     C_eval: np.ndarray,
+    *,
+    include_conditional_residual_variance: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, float]]:
     C_eval = np.asarray(C_eval, dtype=float)
     a_mat = dense_A_from_factors(factors.T, C_eval)
@@ -1153,11 +1788,13 @@ def vectorized_predict_with_C_dense(
     t_var = np.sum((factors.T @ state.Kt_current) * factors.T, axis=1)
     s_var = np.sum((C_eval @ model.Ks) * C_eval, axis=1)
     projected_prior = np.repeat(t_var, C_eval.shape[0]) * np.tile(s_var, factors.T.shape[0])
-    nu = np.maximum(0.0, model.prior_point_variance - projected_prior)
+    nu_raw = np.maximum(0.0, model.prior_point_variance - projected_prior)
+    nu = nu_raw if include_conditional_residual_variance else np.zeros_like(nu_raw)
     var = np.maximum(model.sigma2 + nu + u_terms + beta_terms, model.jitter)
     diagnostics = {
         "avg_sigma2": float(model.sigma2),
         "avg_nu_star": float(np.mean(nu)),
+        "avg_nu_star_raw": float(np.mean(nu_raw)),
         "avg_u_posterior_term": float(np.mean(u_terms)),
         "avg_beta_schur_term": float(np.mean(beta_terms)),
     }
@@ -1199,6 +1836,7 @@ def vectorized_predict_with_C_streaming_sylvester(
     C_eval: np.ndarray,
     *,
     chunk_size: int = 8192,
+    include_conditional_residual_variance: bool = False,
 ) -> tuple[np.ndarray, np.ndarray, dict[str, float]]:
     """Predict without dense ``A``, dense ``D_u`` or explicit ``D_u^{-1}``.
 
@@ -1270,13 +1908,17 @@ def vectorized_predict_with_C_streaming_sylvester(
         beta_terms_all[start:stop] = beta_terms
 
         projected_prior = t_var_all[time_idx] * s_var_all[space_idx]
-        nu = np.maximum(0.0, model.prior_point_variance - projected_prior)
+        nu_raw = np.maximum(0.0, model.prior_point_variance - projected_prior)
+        nu = nu_raw if include_conditional_residual_variance else np.zeros_like(nu_raw)
         nu_all[start:stop] = nu
         var[start:stop] = np.maximum(model.sigma2 + nu + u_terms + beta_terms, model.jitter)
 
     diagnostics = {
         "avg_sigma2": float(model.sigma2),
         "avg_nu_star": float(np.mean(nu_all)),
+        "avg_nu_star_raw": float(
+            np.mean(np.maximum(0.0, model.prior_point_variance - np.repeat(t_var_all, n_s) * np.tile(s_var_all, n_t)))
+        ),
         "avg_u_posterior_term": float(np.mean(u_terms_all)),
         "avg_beta_schur_term": float(np.mean(beta_terms_all)),
     }
@@ -1385,7 +2027,8 @@ def run_routeb_method(
     raw_time_scale: float,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
     dataset_base = normalise_time_dataset_with_scale(dataset_raw, scale=raw_time_scale, source="calibration_task_span")
-    dataset = augment_dataset_phi(dataset_base, phi_mode=args.phi_mode)
+    dataset = augment_dataset_phi(dataset_base, phi_mode=args.phi_mode, xlag_length=args.xlag_length)
+    dataset = maybe_add_lag_training_noise(dataset, args=args, seed=seed)
     routeb_dataset = routeb_dataset_from_era5(dataset, sigma2=sigma2, args=args)
     blocks = [slice(start, min(dataset.Y.shape[0], start + args.block_size)) for start in range(0, dataset.Y.shape[0], args.block_size)]
     routeb_dataset = SimpleNamespace(**{**routeb_dataset.__dict__, "sigma2": sigma2})
@@ -1397,6 +2040,8 @@ def run_routeb_method(
         args.ms,
         lengthscale=spatial_kernel_lengthscale(args),
         kernel_type=args.kernel_type,
+        inducing_selection=args.spatial_inducing_selection,
+        **_sm_spatial_kwargs(args),
     )
     if args.ohsvgp_heldout_eval:
         train_spatial_idx, test_spatial_idx = fixed_spatial_train_test_split(
@@ -1414,7 +2059,7 @@ def run_routeb_method(
         C=c_model,
         sigma2=sigma2,
         beta_prior_mean=np.zeros(routeb_dataset.Phi.shape[1]),
-        beta_prior_cov=args.beta_prior_variance * np.eye(routeb_dataset.Phi.shape[1]),
+        beta_prior_cov=beta_prior_cov_for_dataset(dataset, args=args),
         prior_point_variance=args.kernel_variance,
     )
     rows: list[dict[str, Any]] = []
@@ -1424,29 +2069,38 @@ def run_routeb_method(
     per_location_rows: list[dict[str, Any]] = []
     state = None
     old_z = None
+    old_block = None
     method_key = METHOD_LABELS[method]
     for block_id, block in enumerate(blocks):
-        z_t = temporal_inducing_for_block(routeb_dataset.times, block, args.mt, moving=True)
+        block_wall_started = time.perf_counter()
+        inducing_moving = str(getattr(args, "temporal_inducing_mode", "moving")) == "moving"
+        z_t = temporal_inducing_for_block(routeb_dataset.times, block, args.mt, moving=inducing_moving)
         if args.ohsvgp_heldout_eval:
             factors = make_block_factors_subset(
                 routeb_dataset,
                 block=block,
+                basis_block=block,
+                old_basis_block=old_block,
                 z_t=z_t,
                 z_t_old=old_z,
                 lengthscale=ell_t,
                 kernel_variance=args.kernel_variance,
                 kernel_type=args.kernel_type,
                 spatial_indices=train_spatial_idx,
+                args=args,
             )
         else:
-            factors = make_block_factors(
+            factors = routeb_block_factors(
                 routeb_dataset,
                 block=block,
+                basis_block=block,
+                old_basis_block=old_block,
                 z_t=z_t,
                 z_t_old=old_z,
                 lengthscale=ell_t,
                 kernel_variance=args.kernel_variance,
                 kernel_type=args.kernel_type,
+                args=args,
             )
         start = time.perf_counter()
         kwargs = {
@@ -1469,29 +2123,70 @@ def run_routeb_method(
 
         for mode in args.eval_modes:
             for eval_block in eval_blocks(blocks, block_id, mode):
-                eval_factors = make_block_factors(
-                    routeb_dataset,
-                    block=eval_block,
-                    z_t=z_t,
-                    z_t_old=None,
-                    lengthscale=ell_t,
-                    kernel_variance=args.kernel_variance,
-                    kernel_type=args.kernel_type,
-                )
+                if args.ohsvgp_heldout_eval:
+                    eval_factors = make_block_factors_subset(
+                        routeb_dataset,
+                        block=eval_block,
+                        basis_block=block,
+                        old_basis_block=None,
+                        z_t=z_t,
+                        z_t_old=None,
+                        lengthscale=ell_t,
+                        kernel_variance=args.kernel_variance,
+                        kernel_type=args.kernel_type,
+                        spatial_indices=test_spatial_idx,
+                        args=args,
+                    )
+                else:
+                    eval_factors = routeb_block_factors(
+                        routeb_dataset,
+                        block=eval_block,
+                        basis_block=block,
+                        old_basis_block=None,
+                        z_t=z_t,
+                        z_t_old=None,
+                        lengthscale=ell_t,
+                        kernel_variance=args.kernel_variance,
+                        kernel_type=args.kernel_type,
+                        args=args,
+                    )
                 prediction_state = state
                 future_basis_applied = "observed"
                 if mode == "future" and args.future_basis_mode == "extended" and method == "structured_joint":
                     horizon_block = slice(0, eval_block.stop or routeb_dataset.Y.shape[1])
-                    z_pred = temporal_inducing_for_block(routeb_dataset.times, horizon_block, args.mt, moving=True)
-                    eval_factors = make_block_factors(
-                        routeb_dataset,
-                        block=eval_block,
-                        z_t=z_pred,
-                        z_t_old=z_t,
-                        lengthscale=ell_t,
-                        kernel_variance=args.kernel_variance,
-                        kernel_type=args.kernel_type,
+                    z_pred = temporal_inducing_for_block(
+                        routeb_dataset.times,
+                        horizon_block,
+                        args.mt,
+                        moving=inducing_moving,
                     )
+                    if args.ohsvgp_heldout_eval:
+                        eval_factors = make_block_factors_subset(
+                            routeb_dataset,
+                            block=eval_block,
+                            basis_block=horizon_block,
+                            old_basis_block=block,
+                            z_t=z_pred,
+                            z_t_old=z_t,
+                            lengthscale=ell_t,
+                            kernel_variance=args.kernel_variance,
+                            kernel_type=args.kernel_type,
+                            spatial_indices=test_spatial_idx,
+                            args=args,
+                        )
+                    else:
+                        eval_factors = routeb_block_factors(
+                            routeb_dataset,
+                            block=eval_block,
+                            basis_block=horizon_block,
+                            old_basis_block=block,
+                            z_t=z_pred,
+                            z_t_old=z_t,
+                            lengthscale=ell_t,
+                            kernel_variance=args.kernel_variance,
+                            kernel_type=args.kernel_type,
+                            args=args,
+                        )
                     prediction_state = transfer_structured_joint_state_for_prediction(
                         model,
                         state,
@@ -1509,15 +2204,23 @@ def run_routeb_method(
                             future_context_stop=block.stop or dataset_base.Y.shape[0],
                         ),
                     )
-                c_eval = c_mat if args.ohsvgp_heldout_eval else model.C
-                mean, var, diagnostics = vectorized_predict_with_C(
+                c_eval = c_mat[test_spatial_idx] if args.ohsvgp_heldout_eval else model.C
+                prediction_started = time.perf_counter()
+                mean, var, diagnostics, eval_factors = predict_with_eval_phi_policy(
                     model,
                     prediction_state,
                     eval_factors,
-                    c_eval,
-                    prediction_mode=args.prediction_mode,
-                    chunk_size=args.prediction_chunk_size,
+                    dataset=dataset,
+                    routeb_dataset=routeb_dataset,
+                    eval_block=eval_block,
+                    ell_t=ell_t,
+                    args=args,
+                    c_eval=c_eval,
+                    spatial_indices=test_spatial_idx if args.ohsvgp_heldout_eval else None,
                 )
+                prediction_runtime = time.perf_counter() - prediction_started
+                diagnostics["prediction_runtime"] = prediction_runtime
+                diagnostics["block_incremental_runtime"] = time.perf_counter() - block_wall_started
                 diagnostics.update(state_coupling_diagnostics(model, prediction_state))
                 y = eval_factors.y_vec
                 save_pointwise = args.save_per_location_predictions and (mode != "seen_history" or block_id == len(blocks) - 1)
@@ -1641,14 +2344,17 @@ def run_routeb_method(
         if args.save_forgetting_block_pairs:
             for eval_block_id in range(block_id + 1):
                 eval_block = blocks[eval_block_id]
-                eval_factors = make_block_factors(
+                eval_factors = routeb_block_factors(
                     routeb_dataset,
                     block=eval_block,
+                    basis_block=block,
+                    old_basis_block=None,
                     z_t=z_t,
                     z_t_old=None,
                     lengthscale=ell_t,
                     kernel_variance=args.kernel_variance,
                     kernel_type=args.kernel_type,
+                    args=args,
                 )
                 c_eval = c_mat if args.ohsvgp_heldout_eval else model.C
                 mean, var, diagnostics = vectorized_predict_with_C(
@@ -1681,26 +2387,33 @@ def run_routeb_method(
                 pair_row["eval_block_id"] = eval_block_id
                 pair_row["routeb_raw_time_scale"] = raw_time_scale
                 block_pair_rows.append(pair_row)
-        if args.ohsvgp_heldout_eval:
+        if args.ohsvgp_heldout_eval and not getattr(args, "skip_heldout_block_pairs", False):
             for eval_block_id in range(block_id + 1):
                 eval_block = blocks[eval_block_id]
                 eval_factors = make_block_factors_subset(
                     routeb_dataset,
                     block=eval_block,
+                    basis_block=block,
+                    old_basis_block=None,
                     z_t=z_t,
                     z_t_old=None,
                     lengthscale=ell_t,
                     kernel_variance=args.kernel_variance,
                     kernel_type=args.kernel_type,
                     spatial_indices=test_spatial_idx,
+                    args=args,
                 )
-                mean, var, diagnostics = vectorized_predict_with_C(
+                mean, var, diagnostics, eval_factors = predict_with_eval_phi_policy(
                     model,
                     state,
                     eval_factors,
-                    c_mat[test_spatial_idx],
-                    prediction_mode=args.prediction_mode,
-                    chunk_size=args.prediction_chunk_size,
+                    dataset=dataset,
+                    routeb_dataset=routeb_dataset,
+                    eval_block=eval_block,
+                    ell_t=ell_t,
+                    args=args,
+                    c_eval=c_mat[test_spatial_idx],
+                    spatial_indices=test_spatial_idx,
                 )
                 diagnostics.update(state_coupling_diagnostics(model, state))
                 y = eval_factors.y_vec
@@ -1734,6 +2447,7 @@ def run_routeb_method(
                 pair_row["ell_t_grid_scores"] = ell_grid_scores
                 ohsvgp_pair_rows.append(pair_row)
         old_z = z_t
+        old_block = block
     return rows, block_pair_rows, horizon_rows, ohsvgp_pair_rows, per_location_rows
 
 
@@ -2331,9 +3045,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-time", type=int, default=None)
     parser.add_argument("--block-size", type=int, default=None)
     parser.add_argument("--routeb-methods", nargs="+", choices=["no_transfer", "mean_field", "structured_joint"], default=["no_transfer", "mean_field", "structured_joint"])
-    parser.add_argument("--eval-modes", nargs="+", choices=["current", "seen_history", "future"], default=None)
+    parser.add_argument("--eval-modes", nargs="+", choices=["current", "seen_history", "batch", "future"], default=None)
     parser.add_argument("--mt", type=int, default=8)
     parser.add_argument("--ms", type=int, default=16)
+    parser.add_argument("--temporal-backend", choices=["analytic_hippo_rff", "inducing_points"], default="analytic_hippo_rff")
+    parser.add_argument("--temporal-inducing-mode", choices=["moving", "global"], default="moving")
+    parser.add_argument("--temporal-rff-sample-size", type=int, default=256)
+    parser.add_argument("--temporal-rff-seed", type=int, default=0)
     parser.add_argument("--capacity-sweep", action="store_true")
     parser.add_argument("--mt-grid", nargs="+", type=int, default=[8, 12, 16])
     parser.add_argument("--ms-grid", nargs="+", type=int, default=[16, 32, 64])
@@ -2347,14 +3065,38 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--hyperparam-fit-max-time", type=int, default=30)
     parser.add_argument("--hyperparam-fit-max-locations", type=int, default=30)
     parser.add_argument("--kernel-variance", type=float, default=1.0)
-    parser.add_argument("--kernel-type", choices=["rbf", "matern32", "ard_rbf"], default="rbf")
+    parser.add_argument("--kernel-type", choices=["rbf", "matern32", "ard_rbf", "spectral_mixture"], default="rbf")
+    parser.add_argument("--num-mixtures", type=int, default=4)
+    parser.add_argument("--spectral-mixture-param-path", default=None)
     parser.add_argument("--spatial-lengthscale", type=float, default=0.35)
+    parser.add_argument("--spatial-inducing-selection", choices=["linspace", "farthest", "kmeans"], default="linspace")
     parser.add_argument("--spatial-ard-lengthscales", nargs=2, type=float, default=None)
     parser.add_argument("--beta-prior-variance", type=float, default=10.0)
+    parser.add_argument("--lag-train-noise-std", type=float, default=0.0)
+    parser.add_argument("--xlag-length", type=int, default=1)
+    parser.add_argument("--lag-train-noise-seed-offset", type=int, default=10000)
+    parser.add_argument("--lag-beta-prior-variance", type=float, default=None)
+    parser.add_argument("--safe-lag-variance-scale", type=float, default=1.0)
+    parser.add_argument("--safe-lag-variance-add", type=float, default=0.0)
     parser.add_argument("--inner-iters", type=int, default=2)
     parser.add_argument(
         "--phi-mode",
-        choices=["base", "rich_v1", "rich_v2", "rich_v3", "rich_seasonal_spatial", "lag_ar", "rich_v3_lag_ar"],
+        choices=[
+            "base",
+            "direct_y",
+            "minimal",
+            "rich_v1",
+            "rich_v2",
+            "rich_v3",
+            "rich_seasonal_spatial",
+            "engineered",
+            "lag_ar",
+            "rich_v3_lag_ar",
+            "medium_era5",
+            "medium_era5_xlag",
+            "medium_era5_oracle_ylag",
+            "rich_era5",
+        ],
         default="base",
     )
     parser.add_argument("--future-basis-mode", choices=["observed", "extended"], default="observed")
@@ -2363,6 +3105,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--save-forgetting-block-pairs", action="store_true")
     parser.add_argument("--save-future-horizon-metrics", action="store_true")
     parser.add_argument("--ohsvgp-heldout-eval", action="store_true")
+    parser.add_argument(
+        "--skip-heldout-block-pairs",
+        action="store_true",
+        help="Skip the quadratic held-out train/eval block-pair diagnostic when only per-block seen-history metrics are required.",
+    )
     parser.add_argument("--heldout-test-fraction", type=float, default=0.2)
     parser.add_argument("--heldout-split-seeds", nargs="+", type=int, default=None)
     parser.add_argument("--ohsvgp-panel-blocks", nargs="+", type=int, default=[1, 2, 4, 8])
@@ -2410,6 +3157,9 @@ def resolve_args(args: argparse.Namespace) -> argparse.Namespace:
     args.ell_t_fit_dataset = "calibration_task_full" if args.ell_t_fit_mode == "initial_task_fullgp" else "manual"
     if args.map_snapshot_eval_modes is None:
         args.map_snapshot_eval_modes = [args.map_snapshot_eval_mode]
+    args.spectral_mixture_params = _load_spectral_mixture_params(args.spectral_mixture_param_path)
+    if args.spectral_mixture_params is not None and args.kernel_type != "spectral_mixture":
+        raise ValueError("--spectral-mixture-param-path requires --kernel-type spectral_mixture")
     return args
 
 
@@ -2451,7 +3201,7 @@ def main() -> None:
                 max_time=args.max_time,
             )
             calibration_dataset, calibration_time_scale = normalise_time_dataset(calibration_raw)
-            calibration_dataset = augment_dataset_phi(calibration_dataset, phi_mode=args.phi_mode)
+            calibration_dataset = augment_dataset_phi(calibration_dataset, phi_mode=args.phi_mode, xlag_length=args.xlag_length)
             if args.hyperparam_fit_mode == "initial_task_fullgp_grid":
                 ell_t, sigma2, selected_kernel_variance, ell_score, ell_grid_scores = select_hyperparams_from_calibration_fullgp_mll(
                     calibration_dataset,
@@ -2467,7 +3217,12 @@ def main() -> None:
                 sigma2 = float(args.routeb_noise) ** 2
                 args.sigma2_source = "manual_routeb_noise"
                 ell_t, ell_score, ell_grid_scores = select_ell_t_from_calibration_task(calibration_dataset, args, sigma2)
-            dataset_shape = {"T": online_raw.Y.shape[0], "S": online_raw.Y.shape[1], "p": online_raw.Phi.shape[1]}
+            dataset_shape = {
+                "T": online_raw.Y.shape[0],
+                "S": online_raw.Y.shape[1],
+                "p_raw": online_raw.Phi.shape[1],
+                "p": augment_dataset_phi(online_raw, phi_mode=args.phi_mode, xlag_length=args.xlag_length).Phi.shape[1],
+            }
             split_seeds = args.heldout_split_seeds if args.ohsvgp_heldout_eval else [int(seed)]
             for heldout_split_seed in split_seeds:
                 for method in args.routeb_methods:
@@ -2510,7 +3265,7 @@ def main() -> None:
         write_csv(horizon_summary, outdir / "era5_routeb_future_horizon_summary.csv")
         plot_future_horizon_curves(horizon_summary, outdir)
         write_future_horizon_report(outdir, horizon_summary, args)
-    if args.ohsvgp_heldout_eval:
+    if args.ohsvgp_heldout_eval and not args.skip_heldout_block_pairs:
         ohsvgp_summary = summarize_heldout_seen_history(ohsvgp_pair_rows)
         ohsvgp_forgetting_rows = forgetting_curve_rows(ohsvgp_pair_rows)
         ohsvgp_forgetting_summary = summarize_forgetting_rows(ohsvgp_forgetting_rows)

@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "split_seeds": [0, 1, 2, 3, 4],
+  "scopes": ["task1_2", "task1_10"],
+  "primary_device": "cuda",
+  "primary_dtype": "float64",
+  "cuda_visible_devices": "0",
+  "paths": {
+    "environment_root": "${AUTODL_ENV_ROOT:-/root/autodl-tmp/stvgp_envs}",
+    "benchmark_root": "${BENCHMARK_ROOT:-/root/autodl-tmp/iclr_era5_stage2plus}",
+    "routeb_python": "${AUTODL_ENV_ROOT:-/root/autodl-tmp/stvgp_envs}/routeb/bin/python",
+    "gpflow_python": "${AUTODL_ENV_ROOT:-/root/autodl-tmp/stvgp_envs}/gpflow/bin/python",
+    "maddox_python": "${AUTODL_ENV_ROOT:-/root/autodl-tmp/stvgp_envs}/maddox/bin/python",
+    "markovflow_python": "${AUTODL_ENV_ROOT:-/root/autodl-tmp/stvgp_envs}/markovflow/bin/python",
+    "stvgp_python": "${AUTODL_ENV_ROOT:-/root/autodl-tmp/stvgp_envs}/stvgp_legacy/bin/python"
+  },
+  "data": {
+    "short_root": "data/era5/processed_timeseries_4",
+    "long_root": "data/era5/processed_timeseries_4_task1_10_extension"
+  },
+  "routeb": {
+    "mt": 128,
+    "ms": 128,
+    "rff_sample_size": 256,
+    "iterations": 100,
+    "learning_rate": 0.02,
+    "validation_every": 5,
+    "prediction_chunk_size": 8192,
+    "temporal_factor_device": {
+      "analytic_hippo_rff": "cpu",
+      "inducing_points": "solver"
+    },
+    "warmup_steps": 1,
+    "beta_prior_variance": 1000.0
+  },
+  "gpflow_svgp": {
+    "mt": 8,
+    "ms": 64,
+    "iterations": 100,
+    "batch_size": 2048,
+    "learning_rate": 0.01,
+    "natgrad_gamma": 0.1,
+    "validation_every": 10,
+    "prediction_chunk_size": 8192
+  },
+  "strict_online": {
+    "shared_theta_representation": "inducing_points",
+    "bui_mt": 2,
+    "bui_ms": 64,
+    "maddox_mt": 2,
+    "maddox_ms": 64,
+    "ohsvgp_inducing_size": 32,
+    "ohsvgp_rff_sample_size": 128,
+    "ohsvgp_microbatch_size": 200,
+    "ohsvgp_update_steps": 1
+  },
+  "legacy": {
+    "enabled_by_default": false,
+    "stsvgp_spatial_inducing": [30, 64, 128],
+    "mf_stsvgp_spatial_inducing": [30],
+    "stsvgp_iterations": 300,
+    "markovflow_configurations": [
+      {"model_kind": "sparse_variational", "mt": 32, "ms": 128},
+      {"model_kind": "sparse_cvi", "mt": 32, "ms": 128}
+    ]
+  },
+  "timeouts_seconds": {
+    "calibration": 14400,
+    "batch": 21600,
+    "online": 21600,
+    "legacy": 43200,
+    "report": 1800
+  }
+}

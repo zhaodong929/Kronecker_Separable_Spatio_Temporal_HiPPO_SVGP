@@ -60,8 +60,8 @@ def _miller_recurrence_python(x_safe: torch.Tensor, lmax: int, n_start: int) -> 
     return f, log_s
 
 
-def spherical_bessel_j(lmax: int, x: torch.Tensor) -> torch.Tensor:
-    """Pure-torch spherical Bessel `j_0, ..., j_lmax` via Miller recurrence.
+def _spherical_bessel_j_values(lmax: int, x: torch.Tensor) -> torch.Tensor:
+    """Evaluate spherical Bessel values via the stable Miller recurrence.
 
     This logic is adapted from the existing analytic solar prototype under
     `scripts/onedim/solar/test_ohsgp_analytic_solar.py`.
@@ -77,8 +77,14 @@ def spherical_bessel_j(lmax: int, x: torch.Tensor) -> torch.Tensor:
 
     f, log_s = _miller_recurrence_python(x_safe, lmax=lmax, n_start=n_start)
     true_j0 = torch.sin(x_safe) / x_safe
-    scale0 = true_j0 / (f[0] + 1e-300)
-    corr = torch.exp(torch.clamp(log_s - log_s[0].unsqueeze(0), min=-700.0, max=700.0))
+    tiny = torch.finfo(x_safe.dtype).tiny
+    scale0 = true_j0 / (f[0] + tiny)
+    max_log = 80.0 if x_safe.dtype == torch.float32 else 700.0
+    corr = torch.exp(
+        torch.clamp(
+            log_s - log_s[0].unsqueeze(0), min=-max_log, max=max_log
+        )
+    )
     j = f * corr * scale0.unsqueeze(0)
 
     parity = torch.where(
@@ -91,6 +97,52 @@ def spherical_bessel_j(lmax: int, x: torch.Tensor) -> torch.Tensor:
     j_at_0 = torch.zeros_like(j)
     j_at_0[0] = 1.0
     return torch.where(mask_nonzero.unsqueeze(0), j, j_at_0)
+
+
+class _SphericalBesselJ(torch.autograd.Function):
+    """Miller-recursion forward with an analytic first derivative."""
+
+    @staticmethod
+    def forward(ctx, x: torch.Tensor, lmax: int) -> torch.Tensor:  # type: ignore[override]
+        values = _spherical_bessel_j_values(int(lmax), x)
+        ctx.save_for_backward(x, values)
+        ctx.lmax = int(lmax)
+        return values
+
+    @staticmethod
+    def backward(ctx, grad_output: torch.Tensor) -> tuple[torch.Tensor, None]:  # type: ignore[override]
+        x, values = ctx.saved_tensors
+        lmax = ctx.lmax
+        near_zero = x.abs() <= 1e-6
+        x_safe = torch.where(near_zero, torch.ones_like(x), x)
+        derivatives = torch.zeros_like(values)
+        if lmax == 0:
+            j1 = _spherical_bessel_j_values(1, x)[1]
+            derivatives[0] = -j1
+        else:
+            derivatives[0] = -values[1]
+            levels = torch.arange(
+                1, lmax + 1, dtype=x.dtype, device=x.device
+            ).view(-1, *([1] * x.ndim))
+            derivatives[1:] = values[:-1] - (
+                (levels + 1.0) * values[1:] / x_safe.unsqueeze(0)
+            )
+        zero_limit = torch.zeros_like(derivatives)
+        if lmax >= 1:
+            zero_limit[1] = 1.0 / 3.0
+        derivatives = torch.where(
+            near_zero.unsqueeze(0), zero_limit, derivatives
+        )
+        grad_x = torch.sum(grad_output * derivatives, dim=0)
+        return grad_x, None
+
+
+def spherical_bessel_j(lmax: int, x: torch.Tensor) -> torch.Tensor:
+    """Pure-torch spherical Bessel values with stable first derivatives."""
+
+    if lmax < 0:
+        raise ValueError("lmax must be non-negative")
+    return _SphericalBesselJ.apply(x, int(lmax))
 
 
 @dataclass
@@ -114,8 +166,17 @@ class TemporalBlockSpec:
         times = torch.as_tensor(times, dtype=torch.float64).reshape(-1)
         if times.numel() == 0:
             raise ValueError("Cannot build a TemporalBlockSpec from an empty time tensor.")
-        start = float(times.min().item()) - padding
-        end = float(times.max().item()) + padding
+        sorted_times = torch.sort(times).values
+        if sorted_times.numel() > 1:
+            dt = float(torch.median(sorted_times[1:] - sorted_times[:-1]).item())
+        else:
+            dt = 1.0
+        # Match the reference analytic HiPPO-SVGP convention: start/end are
+        # continuous interval boundaries, and timestamps are
+        # start + step * (1, ..., num_steps).  For observed points this makes the
+        # first boundary one grid step before the first observation.
+        start = float(sorted_times[0].item()) - dt - padding
+        end = float(sorted_times[-1].item()) + padding
         if math.isclose(start, end):
             end = start + 1.0
         num_steps = int(num_discrete_steps or max(times.numel(), 1))
@@ -136,6 +197,7 @@ class TemporalAnalyticConfig:
     rff_sample_size: int = 256
     variance: float = 1.0
     lengthscale: float = 1.0
+    kernel_type: str = "rbf"
     globalstart_wt_mode: str = "w"
     phase_origin_mode: str = "global_start"
     num_discrete_steps: Optional[int] = None
@@ -144,6 +206,9 @@ class TemporalAnalyticConfig:
     device: str = "cpu"
     jitter: float = 1e-6
     seed: int = 0
+    spectral_mixture_means: tuple[float, ...] = (0.0, 1.5, 4.0)
+    spectral_mixture_scales: tuple[float, ...] = (1.0, 0.8, 0.45)
+    spectral_mixture_weights: tuple[float, ...] = (0.55, 0.30, 0.15)
 
 
 class AnalyticTemporalBuilder(nn.Module):
@@ -154,15 +219,57 @@ class AnalyticTemporalBuilder(nn.Module):
         self.config = config
         generator = torch.Generator(device="cpu")
         generator.manual_seed(int(config.seed))
-        base_freq = torch.randn(
-            1,
-            config.rff_sample_size,
-            generator=generator,
-            dtype=config.dtype,
-        )
+        base_freq = self._sample_base_frequencies(config, generator)
         self.register_buffer("base_frequencies", base_freq)
         self.log_variance = nn.Parameter(torch.log(torch.as_tensor(config.variance, dtype=config.dtype)))
         self.log_lengthscale = nn.Parameter(torch.log(torch.as_tensor(config.lengthscale, dtype=config.dtype)))
+
+    def _apply(self, fn):
+        result = super()._apply(fn)
+        # nn.Module.to() moves tensors but cannot update this dataclass itself.
+        # Keeping these fields synchronized prevents newly-created basis tensors
+        # from silently returning to CPU/float64 after a CUDA or float32 move.
+        self.config.dtype = self.base_frequencies.dtype
+        self.config.device = str(self.base_frequencies.device)
+        return result
+
+    @staticmethod
+    def _sample_base_frequencies(config: TemporalAnalyticConfig, generator: torch.Generator) -> torch.Tensor:
+        kernel_type = config.kernel_type.lower()
+        if kernel_type in {"rbf", "ard_rbf"}:
+            return torch.randn(1, config.rff_sample_size, generator=generator, dtype=config.dtype)
+        if kernel_type in {"matern32", "matern_32", "matern3/2"}:
+            # Matern-3/2 in 1D has Student-t spectral density with df=3.
+            normal = torch.randn(1, config.rff_sample_size, generator=generator, dtype=config.dtype)
+            chi2 = torch.distributions.Chi2(df=torch.as_tensor(3.0, dtype=config.dtype)).sample(
+                (1, config.rff_sample_size)
+            )
+            return normal / torch.sqrt(chi2 / 3.0)
+        if kernel_type == "spectral_mixture":
+            means = torch.as_tensor(config.spectral_mixture_means, dtype=config.dtype)
+            scales = torch.as_tensor(config.spectral_mixture_scales, dtype=config.dtype)
+            weights = torch.as_tensor(config.spectral_mixture_weights, dtype=config.dtype)
+            weights = weights / torch.clamp(weights.sum(), min=torch.finfo(config.dtype).eps)
+            comp = torch.multinomial(weights, config.rff_sample_size, replacement=True, generator=generator)
+            signs = torch.where(
+                torch.rand(config.rff_sample_size, generator=generator, dtype=config.dtype) < 0.5,
+                torch.ones(config.rff_sample_size, dtype=config.dtype),
+                -torch.ones(config.rff_sample_size, dtype=config.dtype),
+            )
+            freq = signs * means[comp] + scales[comp] * torch.randn(
+                config.rff_sample_size, generator=generator, dtype=config.dtype
+            )
+            return freq.reshape(1, -1)
+        raise ValueError(f"Unsupported analytic temporal kernel_type: {config.kernel_type}")
+
+    def scaled_jitter(self, matrix: torch.Tensor) -> torch.Tensor:
+        diag_mean = torch.mean(torch.diagonal(matrix)).detach()
+        scale = torch.clamp(diag_mean.abs(), min=torch.as_tensor(1.0, dtype=matrix.dtype, device=matrix.device))
+        return self.config.jitter * scale
+
+    def add_jitter(self, matrix: torch.Tensor) -> torch.Tensor:
+        eye = torch.eye(matrix.shape[0], dtype=matrix.dtype, device=matrix.device)
+        return matrix + self.scaled_jitter(matrix) * eye
 
     @property
     def variance(self) -> torch.Tensor:
@@ -273,6 +380,62 @@ class AnalyticTemporalBuilder(nn.Module):
     def compute_ktt_diag(self, query_times: torch.Tensor) -> torch.Tensor:
         query_times = self._to_device(query_times).reshape(-1)
         return self.variance.expand(query_times.shape[0])
+
+    def compute_block_covariances(
+        self,
+        query_times: torch.Tensor,
+        horizon: torch.Tensor | TemporalBlockSpec,
+        old_horizon: torch.Tensor | TemporalBlockSpec | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None]:
+        """Build ``Kfu``, ``Kuu`` and optional ``K_on`` from one new basis.
+
+        The separate public covariance methods remain available, but invoking
+        them independently repeats the sequential spherical-Bessel recurrence.
+        Online inference needs all three matrices together, so this fused entry
+        point reuses ``Z_new`` without changing any covariance formula.
+        """
+
+        kfu, kuu, k_on, _ = self.compute_block_covariances_with_basis(
+            query_times,
+            horizon,
+            old_horizon,
+        )
+        return kfu, kuu, k_on
+
+    def compute_block_covariances_with_basis(
+        self,
+        query_times: torch.Tensor,
+        horizon: torch.Tensor | TemporalBlockSpec,
+        old_horizon: torch.Tensor | TemporalBlockSpec | None = None,
+        *,
+        old_basis: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None, torch.Tensor]:
+        """Build one covariance bundle and return the reusable new basis.
+
+        ``old_basis`` is the feature-space HiPPO matrix returned for the
+        preceding horizon. Supplying it avoids a second spherical-Bessel
+        recurrence when constructing the changing-basis cross-covariance.
+        """
+
+        resolved = self.resolve_horizon(horizon)
+        z_new, _ = self.compute_temporal_basis(resolved)
+        z_query = self.compute_feature_matrix(query_times)
+        kfu = self.variance * (z_query @ z_new)
+        kuu = self.variance * (z_new.transpose(0, 1) @ z_new)
+        k_on = None
+        if old_basis is not None:
+            z_old = self._to_device(old_basis)
+            if z_old.shape != z_new.shape:
+                raise ValueError(
+                    f"old_basis must have shape {tuple(z_new.shape)}, "
+                    f"got {tuple(z_old.shape)}"
+                )
+            k_on = self.variance * (z_old.transpose(0, 1) @ z_new)
+        elif old_horizon is not None:
+            old_resolved = self.resolve_horizon(old_horizon)
+            z_old, _ = self.compute_temporal_basis(old_resolved)
+            k_on = self.variance * (z_old.transpose(0, 1) @ z_new)
+        return kfu, kuu, k_on, z_new
 
 
 def compute_kuu_t(

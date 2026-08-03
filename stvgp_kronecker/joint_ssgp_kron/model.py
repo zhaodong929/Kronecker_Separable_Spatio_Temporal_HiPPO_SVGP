@@ -157,6 +157,7 @@ class JointSSGPKronHiPPOSVGP:
         *,
         no_transfer: bool = False,
         beta_dim: int,
+        L_t_override: np.ndarray | None = None,
     ) -> dict[str, np.ndarray]:
         """Transfer Route-B old likelihood statistics to the new temporal basis."""
 
@@ -170,7 +171,13 @@ class JointSSGPKronHiPPOSVGP:
                 "B_temporal": np.zeros((mt_new, mt_new)),
                 "H_info": np.zeros((ms, mt_new)),
             }
-        if K_on_t is None:
+        if L_t_override is not None:
+            L_t = np.asarray(L_t_override, dtype=float)
+            if L_t.shape != (state.mt, mt_new):
+                raise ValueError(
+                    f"L_t_override must have shape {(state.mt, mt_new)}, got {L_t.shape}"
+                )
+        elif K_on_t is None:
             if state.mt != mt_new:
                 raise ValueError("K_on_t is required when temporal basis size changes")
             L_t = np.eye(mt_new)
@@ -312,6 +319,7 @@ class JointSSGPKronHiPPOSVGP:
         K_on_t: np.ndarray | None = None,
         beta_drift: np.ndarray | None = None,
         no_transfer: bool = False,
+        L_t_override: np.ndarray | None = None,
     ) -> StructuredKronState:
         """Route-B structured joint update.
 
@@ -341,6 +349,7 @@ class JointSSGPKronHiPPOSVGP:
             K_on_t,
             no_transfer=no_transfer,
             beta_dim=d,
+            L_t_override=L_t_override,
         )
         new_stats = joint_likelihood_stats(y_vec, Phi, T_n, self.C, self.sigma2)
         R_beta_beta = symmetrize(old_stats["R_beta_beta"] + new_stats["R_beta_beta"])
@@ -496,6 +505,7 @@ class JointSSGPKronHiPPOSVGP:
         c_proj_star: np.ndarray,
         state: StructuredKronState,
         include_variance: bool = True,
+        include_conditional_residual_variance: bool = False,
     ) -> Prediction:
         phi_star = np.asarray(phi_star, dtype=float).reshape(-1)
         t_proj_star = np.asarray(t_proj_star, dtype=float).reshape(-1)
@@ -504,12 +514,15 @@ class JointSSGPKronHiPPOSVGP:
         gp_mean = float(c_proj_star @ state.M_u @ t_proj_star)
         variance = self.sigma2
         if include_variance:
-            variance = self.predictive_variance_decomposition(
+            decomposition = self.predictive_variance_decomposition(
                 phi_star=phi_star,
                 t_proj_star=t_proj_star,
                 c_proj_star=c_proj_star,
                 state=state,
-            ).total_variance
+            )
+            variance = decomposition.total_variance
+            if not include_conditional_residual_variance:
+                variance -= decomposition.nu_star
         return Prediction(mean=beta_mean + gp_mean, variance=max(float(variance), self.jitter))
 
     def predictive_variance_decomposition(

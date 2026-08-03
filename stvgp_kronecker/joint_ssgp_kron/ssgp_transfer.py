@@ -13,6 +13,36 @@ def compute_Lt(K_on_t: np.ndarray, K_nn_t: np.ndarray, jitter: float = 1e-6) -> 
     return solve_spd(K_nn_t, K_on_t.T, jitter=jitter).T
 
 
+def compute_whitened_orthogonal_Lt(
+    K_oo_t: np.ndarray,
+    K_on_t: np.ndarray,
+    K_nn_t: np.ndarray,
+    jitter: float = 1e-6,
+) -> np.ndarray:
+    """Map new to old inducing coordinates through whitened Procrustes alignment.
+
+    In whitened coordinates the cross-covariance is
+    ``W = chol(K_oo)^-1 K_on chol(K_nn)^-T``.  Replacing its singular values by
+    one retains the closest orthogonal alignment while avoiding repeated
+    conditional-correlation shrinkage across changing bases.
+    """
+
+    K_oo_t = symmetrize(np.asarray(K_oo_t, dtype=float))
+    K_on_t = np.asarray(K_on_t, dtype=float)
+    K_nn_t = symmetrize(np.asarray(K_nn_t, dtype=float))
+    eye_old = np.eye(K_oo_t.shape[0])
+    eye_new = np.eye(K_nn_t.shape[0])
+    scale_old = max(float(np.mean(np.diag(K_oo_t))), 1.0)
+    scale_new = max(float(np.mean(np.diag(K_nn_t))), 1.0)
+    chol_old = np.linalg.cholesky(K_oo_t + jitter * scale_old * eye_old)
+    chol_new = np.linalg.cholesky(K_nn_t + jitter * scale_new * eye_new)
+    whitened = np.linalg.solve(chol_old, K_on_t)
+    whitened = np.linalg.solve(chol_new, whitened.T).T
+    left, _, right_t = np.linalg.svd(whitened, full_matrices=False)
+    orthogonal = left @ right_t
+    return chol_old @ orthogonal @ np.linalg.solve(chol_new, eye_new)
+
+
 def transfer_temporal_precision(B_old: np.ndarray, L_t: np.ndarray) -> np.ndarray:
     return symmetrize(L_t.T @ B_old @ L_t)
 
