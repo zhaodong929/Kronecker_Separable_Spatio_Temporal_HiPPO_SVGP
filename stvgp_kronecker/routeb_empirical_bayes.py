@@ -179,6 +179,118 @@ class JointObjectiveDiagnostics:
     vfe_trace_residual_per_observation: torch.Tensor
     logdet_per_observation: torch.Tensor
     quadratic_per_observation: torch.Tensor
+    beta_mean: torch.Tensor | None = None
+    u_mean: torch.Tensor | None = None
+    beta_precision: torch.Tensor | None = None
+
+
+@dataclass(frozen=True)
+class JointSufficientStatistics:
+    """Kernel-independent statistics that may be cached across EB steps."""
+
+    phi_phi: torch.Tensor
+    phi_y: torch.Tensor
+    y_y: torch.Tensor
+    num_observations: int
+    num_features: int
+
+
+def joint_sufficient_statistics(
+    y_matrix: torch.Tensor,
+    phi_tensor: torch.Tensor,
+) -> JointSufficientStatistics:
+    """Compute detached fixed-data statistics for the collapsed joint objective."""
+
+    num_space, num_time = y_matrix.shape
+    num_features = phi_tensor.shape[-1]
+    phi_flat = phi_tensor.permute(1, 0, 2).reshape(
+        num_space * num_time, num_features
+    )
+    y_flat = y_matrix.transpose(0, 1).reshape(-1)
+    return JointSufficientStatistics(
+        phi_phi=(phi_flat.transpose(0, 1) @ phi_flat).detach(),
+        phi_y=(phi_flat.transpose(0, 1) @ y_flat).detach(),
+        y_y=torch.dot(y_flat, y_flat).detach(),
+        num_observations=int(y_flat.numel()),
+        num_features=int(num_features),
+    )
+
+
+def feature_gp_cross(
+    spatial_projection: torch.Tensor,
+    phi_tensor: torch.Tensor,
+    temporal_projection: torch.Tensor,
+    *,
+    order: str = "einsum",
+    feature_block_size: int | None = None,
+) -> torch.Tensor:
+    """Contract the feature/GP cross tensor with an explicit contraction order."""
+
+    if order not in {"auto", "einsum", "spatial_first", "temporal_first"}:
+        raise ValueError(f"Unsupported cross contraction order: {order}")
+    num_features = phi_tensor.shape[-1]
+    if num_features == 0:
+        return phi_tensor.new_zeros(
+            (0, spatial_projection.shape[1], temporal_projection.shape[1])
+        )
+    block_size = num_features if not feature_block_size else feature_block_size
+    if block_size <= 0:
+        raise ValueError("Feature block size must be positive")
+    if order == "auto":
+        num_space, num_time = phi_tensor.shape[:2]
+        num_spatial_inducing = spatial_projection.shape[1]
+        num_temporal_inducing = temporal_projection.shape[1]
+        spatial_first_cost = (
+            num_space
+            * num_spatial_inducing
+            * num_time
+            * num_features
+            + num_spatial_inducing
+            * num_time
+            * num_features
+            * num_temporal_inducing
+        )
+        temporal_first_cost = (
+            num_space
+            * num_time
+            * num_features
+            * num_temporal_inducing
+            + num_space
+            * num_spatial_inducing
+            * num_features
+            * num_temporal_inducing
+        )
+        order = (
+            "spatial_first"
+            if spatial_first_cost <= temporal_first_cost
+            else "temporal_first"
+        )
+    outputs = []
+    for start in range(0, num_features, block_size):
+        block = phi_tensor[..., start : start + block_size]
+        if order == "einsum":
+            output = torch.einsum(
+                "sa,stp,tb->pab",
+                spatial_projection,
+                block,
+                temporal_projection,
+            )
+        elif order == "spatial_first":
+            intermediate = torch.einsum(
+                "sa,stp->atp", spatial_projection, block
+            )
+            output = torch.einsum(
+                "atp,tb->pab", intermediate, temporal_projection
+            )
+        else:
+            intermediate = torch.einsum(
+                "stp,tb->spb", block, temporal_projection
+            )
+            output = torch.einsum(
+                "sa,spb->pab", spatial_projection, intermediate
+            )
+        outputs.append(output)
+    return outputs[0] if len(outputs) == 1 else torch.cat(outputs, dim=0)
 
 
 def separable_vfe_trace_residual(
@@ -224,18 +336,29 @@ def _solve_du(
     eigvec_s: torch.Tensor,
     eigvec_t: torch.Tensor,
     denominator: torch.Tensor,
+    combined_s: torch.Tensor | None = None,
+    combined_t: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply the inverse structured u precision to [M_s,M_t] or batched RHS."""
 
-    transformed = torch.matmul(chol_s.transpose(0, 1), rhs)
-    transformed = torch.matmul(transformed, chol_t)
-    transformed = torch.matmul(eigvec_s.transpose(0, 1), transformed)
-    transformed = torch.matmul(transformed, eigvec_t)
+    if (combined_s is None) != (combined_t is None):
+        raise ValueError("Combined spatial and temporal bases must be supplied together")
+    if combined_s is None:
+        transformed = torch.matmul(chol_s.transpose(0, 1), rhs)
+        transformed = torch.matmul(transformed, chol_t)
+        transformed = torch.matmul(eigvec_s.transpose(0, 1), transformed)
+        transformed = torch.matmul(transformed, eigvec_t)
+    else:
+        transformed = torch.matmul(combined_s.transpose(0, 1), rhs)
+        transformed = torch.matmul(transformed, combined_t)
     transformed = transformed / denominator
-    solved = torch.matmul(eigvec_s, transformed)
-    solved = torch.matmul(solved, eigvec_t.transpose(0, 1))
-    solved = torch.matmul(chol_s, solved)
-    return torch.matmul(solved, chol_t.transpose(0, 1))
+    if combined_s is None:
+        solved = torch.matmul(eigvec_s, transformed)
+        solved = torch.matmul(solved, eigvec_t.transpose(0, 1))
+        solved = torch.matmul(chol_s, solved)
+        return torch.matmul(solved, chol_t.transpose(0, 1))
+    solved = torch.matmul(combined_s, transformed)
+    return torch.matmul(solved, combined_t.transpose(0, 1))
 
 
 def _solve_du_thin_temporal_woodbury(
@@ -247,6 +370,7 @@ def _solve_du_thin_temporal_woodbury(
     eigvec_s: torch.Tensor,
     whitened_temporal_design: torch.Tensor,
     temporal_system_cholesky: torch.Tensor,
+    combined_s: torch.Tensor | None = None,
 ) -> torch.Tensor:
     """Apply the precision inverse in observation space via Woodbury.
 
@@ -258,9 +382,13 @@ def _solve_du_thin_temporal_woodbury(
     eigenvectors.
     """
 
-    transformed = torch.matmul(chol_s.transpose(0, 1), rhs)
-    transformed = torch.matmul(transformed, chol_t)
-    transformed = torch.matmul(eigvec_s.transpose(0, 1), transformed)
+    if combined_s is None:
+        transformed = torch.matmul(chol_s.transpose(0, 1), rhs)
+        transformed = torch.matmul(transformed, chol_t)
+        transformed = torch.matmul(eigvec_s.transpose(0, 1), transformed)
+    else:
+        transformed = torch.matmul(combined_s.transpose(0, 1), rhs)
+        transformed = torch.matmul(transformed, chol_t)
     leading_shape = transformed.shape[:-2]
     num_space = transformed.shape[-2]
     num_temporal = transformed.shape[-1]
@@ -277,8 +405,12 @@ def _solve_du_thin_temporal_woodbury(
     )
     flat = flat - correction * eigval_s[None, :, None]
     transformed = flat.reshape(*leading_shape, num_space, num_temporal)
-    solved = torch.matmul(eigvec_s, transformed)
-    solved = torch.matmul(chol_s, solved)
+    solved = torch.matmul(
+        eigvec_s if combined_s is None else combined_s,
+        transformed,
+    )
+    if combined_s is None:
+        solved = torch.matmul(chol_s, solved)
     return torch.matmul(solved, chol_t.transpose(0, 1))
 
 
@@ -292,6 +424,11 @@ def finite_joint_nlml_from_factors(
     spatial_prior: torch.Tensor,
     noise_variance: torch.Tensor,
     beta_prior_variance: float,
+    sufficient_statistics: JointSufficientStatistics | None = None,
+    combine_basis_transforms: bool = False,
+    remove_redundant_solve: bool = False,
+    cross_contraction: str = "einsum",
+    feature_block_size: int | None = None,
 ) -> JointObjectiveDiagnostics:
     """Exact finite-model NLML after jointly integrating beta and u.
 
@@ -310,11 +447,18 @@ def finite_joint_nlml_from_factors(
     num_features = phi.shape[-1]
     num_obs = y.numel()
 
-    phi_flat = phi.permute(1, 0, 2).reshape(num_space * num_time, num_features)
-    y_flat = y.transpose(0, 1).reshape(-1)
-    phi_phi = phi_flat.transpose(0, 1) @ phi_flat
-    phi_y = phi_flat.transpose(0, 1) @ y_flat
-    y_y = torch.dot(y_flat, y_flat)
+    if sufficient_statistics is None:
+        statistics = joint_sufficient_statistics(y, phi)
+    else:
+        statistics = sufficient_statistics
+        if statistics.num_observations != num_obs or statistics.num_features != num_features:
+            raise ValueError("Cached sufficient-statistic dimensions do not match y/Phi")
+        tensors = (statistics.phi_phi, statistics.phi_y, statistics.y_y)
+        if any(tensor.device != y.device or tensor.dtype != y.dtype for tensor in tensors):
+            raise ValueError("Cached sufficient statistics must match y device and dtype")
+    phi_phi = statistics.phi_phi
+    phi_y = statistics.phi_y
+    y_y = statistics.y_y
 
     g_space = c_mat.transpose(0, 1) @ c_mat
     chol_s = robust_cholesky(spatial_prior)
@@ -340,6 +484,7 @@ def finite_joint_nlml_from_factors(
         logdet_latent = 2.0 * torch.log(
             torch.diagonal(temporal_system_cholesky, dim1=-2, dim2=-1)
         ).sum()
+        combined_s = chol_s @ vec_s if combine_basis_transforms else None
 
         def solve_du(rhs: torch.Tensor) -> torch.Tensor:
             return _solve_du_thin_temporal_woodbury(
@@ -350,6 +495,7 @@ def finite_joint_nlml_from_factors(
                 eigvec_s=vec_s,
                 whitened_temporal_design=whitened_temporal_design,
                 temporal_system_cholesky=temporal_system_cholesky,
+                combined_s=combined_s,
             )
 
     else:
@@ -359,6 +505,8 @@ def finite_joint_nlml_from_factors(
         eig_t = torch.clamp(eig_t, min=0.0)
         denominator = 1.0 + eig_s[:, None] * eig_t[None, :]
         logdet_latent = torch.log(denominator).sum()
+        combined_s = chol_s @ vec_s if combine_basis_transforms else None
+        combined_t = chol_t @ vec_t if combine_basis_transforms else None
 
         def solve_du(rhs: torch.Tensor) -> torch.Tensor:
             return _solve_du(
@@ -368,6 +516,8 @@ def finite_joint_nlml_from_factors(
                 eigvec_s=vec_s,
                 eigvec_t=vec_t,
                 denominator=denominator,
+                combined_s=combined_s,
+                combined_t=combined_t,
             )
 
     h_u = (c_mat.transpose(0, 1) @ y @ t_mat) / sigma2
@@ -386,9 +536,18 @@ def finite_joint_nlml_from_factors(
             vfe_trace_residual_per_observation=torch.zeros_like(nlml),
             logdet_per_observation=logdet / num_obs,
             quadratic_per_observation=quadratic / num_obs,
+            beta_mean=phi.new_zeros((0,)),
+            u_mean=u_mean,
+            beta_precision=phi.new_zeros((0, 0)),
         )
 
-    cross = torch.einsum("sa,stp,tb->pab", c_mat, phi, t_mat) / sigma2
+    cross = feature_gp_cross(
+        c_mat,
+        phi,
+        t_mat,
+        order=cross_contraction,
+        feature_block_size=feature_block_size,
+    ) / sigma2
     d_inv_cross = solve_du(cross)
 
     beta_precision = (
@@ -399,8 +558,11 @@ def finite_joint_nlml_from_factors(
     beta_rhs = phi_y / sigma2 - torch.einsum("pab,ab->p", cross, d_inv_h)
     chol_beta = robust_cholesky(schur, base_jitter=1e-9)
     beta_mean = torch.cholesky_solve(beta_rhs[:, None], chol_beta).squeeze(1)
-    u_rhs = h_u - torch.einsum("p,pab->ab", beta_mean, cross)
-    u_mean = solve_du(u_rhs)
+    if remove_redundant_solve:
+        u_mean = d_inv_h - torch.einsum("p,pab->ab", beta_mean, d_inv_cross)
+    else:
+        u_rhs = h_u - torch.einsum("p,pab->ab", beta_mean, cross)
+        u_mean = solve_du(u_rhs)
 
     h_dot_mean = torch.dot(phi_y / sigma2, beta_mean) + torch.sum(h_u * u_mean)
     quadratic = y_y / sigma2 - h_dot_mean
@@ -419,6 +581,9 @@ def finite_joint_nlml_from_factors(
         vfe_trace_residual_per_observation=torch.zeros_like(nlml),
         logdet_per_observation=logdet / num_obs,
         quadratic_per_observation=quadratic / num_obs,
+        beta_mean=beta_mean,
+        u_mean=u_mean,
+        beta_precision=schur,
     )
 
 
@@ -433,6 +598,11 @@ def vfe_corrected_joint_nlml_from_factors(
     noise_variance: torch.Tensor,
     beta_prior_variance: float,
     prior_point_variance: torch.Tensor,
+    sufficient_statistics: JointSufficientStatistics | None = None,
+    combine_basis_transforms: bool = False,
+    remove_redundant_solve: bool = False,
+    cross_contraction: str = "einsum",
+    feature_block_size: int | None = None,
 ) -> JointObjectiveDiagnostics:
     """Negative collapsed Gaussian VFE bound for structured-joint Route B."""
 
@@ -445,6 +615,11 @@ def vfe_corrected_joint_nlml_from_factors(
         spatial_prior=spatial_prior,
         noise_variance=noise_variance,
         beta_prior_variance=beta_prior_variance,
+        sufficient_statistics=sufficient_statistics,
+        combine_basis_transforms=combine_basis_transforms,
+        remove_redundant_solve=remove_redundant_solve,
+        cross_contraction=cross_contraction,
+        feature_block_size=feature_block_size,
     )
     trace_residual = separable_vfe_trace_residual(
         temporal_projection=temporal_projection,
@@ -462,6 +637,9 @@ def vfe_corrected_joint_nlml_from_factors(
         vfe_trace_residual_per_observation=trace_residual / num_obs,
         logdet_per_observation=finite.logdet_per_observation,
         quadratic_per_observation=finite.quadratic_per_observation,
+        beta_mean=finite.beta_mean,
+        u_mean=finite.u_mean,
+        beta_precision=finite.beta_precision,
     )
 
 
@@ -601,6 +779,11 @@ class BatchRouteBEmpiricalBayes(nn.Module):
         phi_tensor: torch.Tensor,
         spatial_coordinates: torch.Tensor,
         beta_prior_variance: float,
+        sufficient_statistics: JointSufficientStatistics | None = None,
+        combine_basis_transforms: bool = False,
+        remove_redundant_solve: bool = False,
+        cross_contraction: str = "einsum",
+        feature_block_size: int | None = None,
     ) -> JointObjectiveDiagnostics:
         t_mat, c_mat, kt, ks = self.factor_matrices(spatial_coordinates)
         kwargs = {
@@ -612,6 +795,11 @@ class BatchRouteBEmpiricalBayes(nn.Module):
             "spatial_prior": ks,
             "noise_variance": self.noise_std.square(),
             "beta_prior_variance": beta_prior_variance,
+            "sufficient_statistics": sufficient_statistics,
+            "combine_basis_transforms": combine_basis_transforms,
+            "remove_redundant_solve": remove_redundant_solve,
+            "cross_contraction": cross_contraction,
+            "feature_block_size": feature_block_size,
         }
         if self.objective_type == "vfe":
             return vfe_corrected_joint_nlml_from_factors(

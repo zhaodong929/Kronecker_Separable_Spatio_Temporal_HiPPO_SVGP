@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+from dataclasses import dataclass
 import json
 from pathlib import Path
 import sys
@@ -33,7 +34,31 @@ from stvgp_kronecker.benchmark_runtime import (
     resolve_torch_runtime,
 )
 from stvgp_kronecker.data.hipposvgp_era5 import load_hipposvgp_era5
-from stvgp_kronecker.routeb_empirical_bayes import BatchRouteBEmpiricalBayes
+from stvgp_kronecker.routeb_empirical_bayes import (
+    BatchRouteBEmpiricalBayes,
+    joint_sufficient_statistics,
+)
+
+
+@dataclass
+class ValidationEarlyStopping:
+    """Track validation progress independently of the absolute best checkpoint."""
+
+    patience: int
+    min_delta: float
+    reference_nll: float = float("inf")
+    checks_without_improvement: int = 0
+
+    def observe(self, validation_nll: float) -> bool:
+        if validation_nll < self.reference_nll - self.min_delta:
+            self.reference_nll = validation_nll
+            self.checks_without_improvement = 0
+        else:
+            self.checks_without_improvement += 1
+        return (
+            self.patience > 0
+            and self.checks_without_improvement >= self.patience
+        )
 
 
 def load_protocol(
@@ -67,14 +92,16 @@ def load_joint_phi(
     *,
     arrays: np.lib.npyio.NpzFile,
     protocol_json: Path,
+    data_root: Path | None,
     xlag_length: int,
     data_part: str,
 ) -> tuple[np.ndarray, float]:
     metadata = json.loads(protocol_json.read_text(encoding="utf-8"))
+    root = Path(metadata["root"]) if data_root is None else data_root
     if data_part == "calibration":
         started = time.perf_counter()
         raw = load_hipposvgp_era5(
-            metadata["root"], tasks=("task_1",), variable_index=0, split="all"
+            root, tasks=("task_1",), variable_index=0, split="all"
         )
         augmented = augment_dataset_phi(
             raw, phi_mode="medium_era5_xlag", xlag_length=xlag_length
@@ -87,7 +114,7 @@ def load_joint_phi(
         return phi, time.perf_counter() - started
 
     y = np.asarray(arrays["stream_y"], dtype=np.float64)
-    cache = TaskPhiCache(metadata["root"], y, xlag_length)
+    cache = TaskPhiCache(root, y, xlag_length)
     blocks = [
         slice(int(start), int(stop))
         for start, stop in zip(arrays["block_start"], arrays["block_stop"])
@@ -107,6 +134,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--protocol-npz", type=Path, required=True)
     parser.add_argument("--protocol-json", type=Path)
+    parser.add_argument("--data-root", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
         "--data-part", choices=["calibration", "stream"], default="stream"
@@ -120,11 +148,44 @@ def main() -> None:
     parser.add_argument("--mt", type=int, default=128)
     parser.add_argument("--ms", type=int, default=128)
     parser.add_argument("--iterations", type=int, default=100)
+    parser.add_argument(
+        "--training-objective",
+        choices=["finite_dtc", "vfe"],
+        default="finite_dtc",
+    )
+    parser.add_argument(
+        "--include-conditional-residual-variance",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Use the full conditional predictive variance independently of the "
+            "training objective. Use --no-include-conditional-residual-variance "
+            "only to reproduce the historical DTC-only prediction protocol."
+        ),
+    )
     parser.add_argument("--learning-rate", type=float, default=0.02)
     parser.add_argument("--validation-every", type=int, default=5)
+    parser.add_argument(
+        "--early-stopping-patience-validations",
+        type=int,
+        default=0,
+        help="Stop after this many validation checks without a min-delta improvement; 0 disables.",
+    )
+    parser.add_argument("--early-stopping-min-delta", type=float, default=0.0)
+    parser.add_argument(
+        "--max-training-seconds",
+        type=float,
+        default=0.0,
+        help="Stop after completing the current iteration once this training budget is reached; 0 disables.",
+    )
     parser.add_argument("--beta-prior-variance", type=float, default=1000.0)
     parser.add_argument("--rff-sample-size", type=int, default=256)
     parser.add_argument("--xlag-length", type=int, default=10)
+    parser.add_argument(
+        "--joint-phi-npy",
+        type=Path,
+        help="Optional precomputed float32 joint-X-lag tensor for this data part.",
+    )
     parser.add_argument("--initial-ell-t", type=float, default=0.05)
     parser.add_argument("--initial-ell-s", nargs=2, type=float, default=[0.35, 0.35])
     parser.add_argument("--initial-kernel-variance", type=float, default=1.0)
@@ -144,7 +205,32 @@ def main() -> None:
     )
     parser.add_argument("--warmup-steps", type=int, default=1)
     parser.add_argument("--profile-flops", action="store_true")
+    parser.add_argument(
+        "--objective-optimization-version",
+        choices=["E0", "E1", "E2", "E3"],
+        default="E0",
+    )
+    parser.add_argument(
+        "--cross-contraction",
+        choices=["auto", "einsum", "spatial_first", "temporal_first"],
+        default="einsum",
+    )
+    parser.add_argument("--feature-block-size", type=int)
+    parser.add_argument(
+        "--feature-projection-npz",
+        type=Path,
+        help="Optional shared orthonormal feature basis stored under the 'basis' key.",
+    )
     args = parser.parse_args()
+    if args.early_stopping_patience_validations < 0:
+        raise ValueError("Early-stopping patience must be non-negative")
+    if args.early_stopping_min_delta < 0.0:
+        raise ValueError("Early-stopping min delta must be non-negative")
+    if args.max_training_seconds < 0.0:
+        raise ValueError("Maximum training seconds must be non-negative")
+    include_conditional_residual_variance = (
+        args.include_conditional_residual_variance
+    )
 
     process_started = time.perf_counter()
     runtime = resolve_torch_runtime(args.device, args.dtype)
@@ -170,11 +256,41 @@ def main() -> None:
     if args.target_mode == "joint_xlag":
         if args.protocol_json is None:
             raise ValueError("--protocol-json is required for joint_xlag")
-        data.phi, feature_loading_seconds = load_joint_phi(
-            arrays=arrays,
-            protocol_json=args.protocol_json,
-            xlag_length=args.xlag_length,
-            data_part=args.data_part,
+        if args.joint_phi_npy is None:
+            data.phi, feature_loading_seconds = load_joint_phi(
+                arrays=arrays,
+                protocol_json=args.protocol_json,
+                data_root=args.data_root,
+                xlag_length=args.xlag_length,
+                data_part=args.data_part,
+            )
+        else:
+            started = time.perf_counter()
+            data.phi = np.load(args.joint_phi_npy, mmap_mode="r")
+            expected_shape = (*data.y.shape, 133)
+            if data.phi.shape != expected_shape:
+                raise ValueError(
+                    f"Cached Phi shape mismatch: expected {expected_shape}, got {data.phi.shape}"
+                )
+            feature_loading_seconds = time.perf_counter() - started
+    feature_projection = None
+    if args.feature_projection_npz is not None:
+        if args.target_mode != "joint_xlag":
+            raise ValueError("Feature projection is only valid for joint_xlag")
+        with np.load(args.feature_projection_npz) as projection_payload:
+            feature_projection = np.asarray(
+                projection_payload["basis"], dtype=np.float64
+            )
+        if feature_projection.ndim != 2 or feature_projection.shape[0] != data.phi.shape[-1]:
+            raise ValueError(
+                "Feature projection must have shape "
+                f"({data.phi.shape[-1]}, rank), got {feature_projection.shape}"
+            )
+        data.phi = np.einsum(
+            "stp,pr->str",
+            np.asarray(data.phi, dtype=np.float64),
+            feature_projection,
+            optimize=True,
         )
     if args.target_mode == "shared_xlag_residual":
         offset_key = (
@@ -206,9 +322,22 @@ def main() -> None:
         initial_noise_std=args.initial_noise,
         rff_sample_size=args.rff_sample_size,
         seed=args.model_seed,
-        objective_type="finite_dtc",
+        objective_type=args.training_objective,
     ).to(device=runtime.device, dtype=runtime.dtype)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    version_index = int(args.objective_optimization_version[1])
+    cached_statistics = (
+        joint_sufficient_statistics(y_train, phi_train)
+        if version_index >= 1
+        else None
+    )
+    objective_options = {
+        "sufficient_statistics": cached_statistics,
+        "combine_basis_transforms": version_index >= 2,
+        "remove_redundant_solve": version_index >= 3,
+        "cross_contraction": args.cross_contraction,
+        "feature_block_size": args.feature_block_size,
+    }
     initial_spatial_inducing = model.spatial_inducing.detach().clone()
     initial_temporal_support = model.temporal.z_t.detach().clone()
     initial_rff = (
@@ -232,6 +361,7 @@ def main() -> None:
                         phi_tensor=phi_train,
                         spatial_coordinates=coordinates_train,
                         beta_prior_variance=args.beta_prior_variance,
+                        **objective_options,
                     )
                     profile_objective.nlml_per_observation.backward()
                 profiled_step_flops = int(counter.get_total_flops())
@@ -250,6 +380,7 @@ def main() -> None:
                     phi_tensor=phi_train,
                     spatial_coordinates=coordinates_train,
                     beta_prior_variance=args.beta_prior_variance,
+                    **objective_options,
                 )
                 warmup_objective.nlml_per_observation.backward()
             optimizer.zero_grad(set_to_none=True)
@@ -263,6 +394,12 @@ def main() -> None:
     trace = []
     iteration_times = []
     validation_seconds = 0.0
+    early_stopping = ValidationEarlyStopping(
+        patience=args.early_stopping_patience_validations,
+        min_delta=args.early_stopping_min_delta,
+    )
+    stop_reason = "max_iterations"
+    iterations_completed = 0
     training_started = time.perf_counter()
     for iteration in range(1, args.iterations + 1):
         with SynchronizedTimer(runtime.synchronize) as iteration_timer:
@@ -272,6 +409,7 @@ def main() -> None:
                 phi_tensor=phi_train,
                 spatial_coordinates=coordinates_train,
                 beta_prior_variance=args.beta_prior_variance,
+                **objective_options,
             )
             loss = objective.nlml_per_observation
             if not torch.isfinite(loss):
@@ -288,10 +426,20 @@ def main() -> None:
         row = {
             "iteration": iteration,
             "train_nlml_per_observation": float(loss.detach()),
+            "finite_nlml_per_observation": float(
+                objective.finite_nlml_per_observation.detach()
+            ),
+            "vfe_trace_correction_per_observation": float(
+                objective.vfe_trace_correction_per_observation.detach()
+            ),
+            "vfe_trace_residual_per_observation": float(
+                objective.vfe_trace_residual_per_observation.detach()
+            ),
             "gradient_norm_before_clip": gradient_norm,
             "iteration_seconds": iteration_seconds,
             **model.theta(),
         }
+        should_stop_early = False
         if iteration == 1 or iteration % args.validation_every == 0 or iteration == args.iterations:
             started = time.perf_counter()
             validation, _, _ = evaluate(
@@ -306,7 +454,9 @@ def main() -> None:
                 posterior_phi_override=zero_phi,
                 evaluation_phi_override=zero_phi,
                 evaluation_mean_offset=offset,
-                include_conditional_residual_variance=False,
+                include_conditional_residual_variance=(
+                    include_conditional_residual_variance
+                ),
                 collect_pointwise=False,
                 solver_backend=evaluation_backend,
                 solver_device=runtime.device,
@@ -325,9 +475,24 @@ def main() -> None:
                 best_iteration = iteration
                 best_elapsed = time.perf_counter() - training_started
                 best_state = copy.deepcopy(model.state_dict())
+            should_stop_early = early_stopping.observe(validation["nll"])
+            row["validation_checks_without_improvement"] = (
+                early_stopping.checks_without_improvement
+            )
+        row["training_elapsed_seconds"] = time.perf_counter() - training_started
         trace.append(row)
+        iterations_completed = iteration
         if iteration == 1 or iteration % args.validation_every == 0 or iteration == args.iterations:
             print(json.dumps(row), flush=True)
+        if should_stop_early:
+            stop_reason = "validation_early_stopping"
+            break
+        if (
+            args.max_training_seconds > 0.0
+            and row["training_elapsed_seconds"] >= args.max_training_seconds
+        ):
+            stop_reason = "wall_clock_budget"
+            break
 
     if best_state is None:
         raise RuntimeError("No validation checkpoint was recorded")
@@ -353,7 +518,7 @@ def main() -> None:
         posterior_phi_override=zero_phi,
         evaluation_phi_override=zero_phi,
         evaluation_mean_offset=offset,
-        include_conditional_residual_variance=False,
+        include_conditional_residual_variance=include_conditional_residual_variance,
         collect_pointwise=collect_pointwise,
         solver_backend=evaluation_backend,
         solver_device=runtime.device,
@@ -362,7 +527,10 @@ def main() -> None:
     )
     checkpoint_bytes = serialized_training_state_bytes(model, optimizer)
     payload = {
-        "implementation": "Route B finite-DTC structured empirical Bayes",
+        "implementation": (
+            f"Route B {args.training_objective} structured empirical Bayes"
+        ),
+        "training_objective": args.training_objective,
         "protocol": "controlled batch/full-history with spatial held-out validation",
         "data_part": args.data_part,
         "target_mode": args.target_mode,
@@ -379,8 +547,31 @@ def main() -> None:
         "num_xlag_features": int(data.phi.shape[-1]),
         "active_joint_mean_features": int(phi_train.shape[-1]),
         "hyperparameters": "learned by Route B marginal likelihood; fixed inducing locations",
-        "predictive_variance": "finite projected DTC; no conditional residual variance",
+        "objective_optimization": {
+            "version": args.objective_optimization_version,
+            "cached_statistics": version_index >= 1,
+            "combined_basis_transforms": version_index >= 2,
+            "removed_redundant_final_solve": version_index >= 3,
+            "cross_contraction": args.cross_contraction,
+            "feature_block_size": args.feature_block_size,
+            "feature_projection": (
+                None
+                if args.feature_projection_npz is None
+                else str(args.feature_projection_npz)
+            ),
+            "feature_dimension": int(phi_train.shape[-1]),
+        },
+        "predictive_variance": (
+            "full structured-joint conditional; conditional residual included"
+            if include_conditional_residual_variance
+            else "finite projected DTC; no conditional residual variance"
+        ),
         "best_iteration": best_iteration,
+        "iterations_completed": iterations_completed,
+        "stop_reason": stop_reason,
+        "validation_checks_without_improvement": (
+            early_stopping.checks_without_improvement
+        ),
         "best_validation_nll": best_nll,
         "time_to_best_validation_seconds": best_elapsed,
         "learned_theta": model.theta(),
@@ -408,7 +599,7 @@ def main() -> None:
             "history_replay_buffer_bytes": int(data.y[:, data.train_indices].nbytes),
             "profiled_forward_backward_flops_per_step": profiled_step_flops,
             "estimated_training_flops": (
-                profiled_step_flops * args.iterations
+                profiled_step_flops * iterations_completed
                 if profiled_step_flops is not None
                 else None
             ),
@@ -452,6 +643,13 @@ def main() -> None:
                 pred_var=np.asarray([row["pred_var"] for row in pointwise]).reshape(shape),
                 test_indices=data.test_indices,
                 times=data.times,
+                variance_mode=np.asarray(
+                    "full_joint_conditional"
+                    if include_conditional_residual_variance
+                    else "current_dtc"
+                ),
+                mt=np.asarray(args.mt),
+                ms=np.asarray(args.ms),
             )
     (args.output_dir / "result.json").write_text(
         json.dumps(payload, indent=2, allow_nan=False), encoding="utf-8"

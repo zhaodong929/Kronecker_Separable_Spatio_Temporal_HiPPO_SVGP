@@ -511,6 +511,7 @@ class TorchJointSSGPKronHiPPOSVGP:
         C_eval: TensorLike,
         chunk_size: int = 8192,
         include_conditional_residual_variance: bool = False,
+        validate_conditional_residual_variance: bool = False,
         return_numpy: bool = True,
     ) -> tuple[np.ndarray | torch.Tensor, np.ndarray | torch.Tensor, dict[str, float]]:
         """Chunked prediction using the same Sylvester diagonalization as NumPy."""
@@ -596,7 +597,14 @@ class TorchJointSSGPKronHiPPOSVGP:
                 )
             beta_terms_all[start:stop] = beta_terms
             projected_prior = t_var_all[time_index] * s_var_all[space_index]
-            nu_raw = torch.clamp(self.prior_point_variance - projected_prior, min=0.0)
+            nu_unclamped = self.prior_point_variance - projected_prior
+            minimum_residual = float(nu_unclamped.min().detach().cpu())
+            if validate_conditional_residual_variance and minimum_residual < -1e-8:
+                raise FloatingPointError(
+                    "Conditional residual variance is materially negative: "
+                    f"{minimum_residual:.6e}. Check the K_xu/K_uu/kernel construction."
+                )
+            nu_raw = torch.clamp(nu_unclamped, min=0.0)
             nu_raw_all[start:stop] = nu_raw
             nu = nu_raw if include_conditional_residual_variance else 0.0
             variance[start:stop] = torch.clamp(

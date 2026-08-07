@@ -37,6 +37,7 @@ from stvgp_kronecker.data.hipposvgp_era5 import (
 from stvgp_kronecker.joint_ssgp_kron.kron_utils import add_jitter, dense_A_from_factors, dense_Du_for_tests, inv_spd, solve_spd, symmetrize, vec_f
 from stvgp_kronecker.joint_ssgp_kron.kron_utils import unvec_f
 from stvgp_kronecker.joint_ssgp_kron.model import JointSSGPKronHiPPOSVGP
+from stvgp_kronecker.joint_ssgp_kron.variance_modes import validated_conditional_residual
 from stvgp_kronecker.joint_ssgp_kron.synthetic import (
     BlockFactors,
     covariance_kernel,
@@ -1788,7 +1789,12 @@ def vectorized_predict_with_C_dense(
     t_var = np.sum((factors.T @ state.Kt_current) * factors.T, axis=1)
     s_var = np.sum((C_eval @ model.Ks) * C_eval, axis=1)
     projected_prior = np.repeat(t_var, C_eval.shape[0]) * np.tile(s_var, factors.T.shape[0])
-    nu_raw = np.maximum(0.0, model.prior_point_variance - projected_prior)
+    nu_unclamped = model.prior_point_variance - projected_prior
+    nu_raw = (
+        validated_conditional_residual(nu_unclamped)
+        if include_conditional_residual_variance
+        else np.maximum(0.0, nu_unclamped)
+    )
     nu = nu_raw if include_conditional_residual_variance else np.zeros_like(nu_raw)
     var = np.maximum(model.sigma2 + nu + u_terms + beta_terms, model.jitter)
     diagnostics = {
@@ -1908,7 +1914,12 @@ def vectorized_predict_with_C_streaming_sylvester(
         beta_terms_all[start:stop] = beta_terms
 
         projected_prior = t_var_all[time_idx] * s_var_all[space_idx]
-        nu_raw = np.maximum(0.0, model.prior_point_variance - projected_prior)
+        nu_unclamped = model.prior_point_variance - projected_prior
+        nu_raw = (
+            validated_conditional_residual(nu_unclamped)
+            if include_conditional_residual_variance
+            else np.maximum(0.0, nu_unclamped)
+        )
         nu = nu_raw if include_conditional_residual_variance else np.zeros_like(nu_raw)
         nu_all[start:stop] = nu
         var[start:stop] = np.maximum(model.sigma2 + nu + u_terms + beta_terms, model.jitter)
@@ -1917,7 +1928,18 @@ def vectorized_predict_with_C_streaming_sylvester(
         "avg_sigma2": float(model.sigma2),
         "avg_nu_star": float(np.mean(nu_all)),
         "avg_nu_star_raw": float(
-            np.mean(np.maximum(0.0, model.prior_point_variance - np.repeat(t_var_all, n_s) * np.tile(s_var_all, n_t)))
+            np.mean(
+                validated_conditional_residual(
+                    model.prior_point_variance
+                    - np.repeat(t_var_all, n_s) * np.tile(s_var_all, n_t)
+                )
+                if include_conditional_residual_variance
+                else np.maximum(
+                    0.0,
+                    model.prior_point_variance
+                    - np.repeat(t_var_all, n_s) * np.tile(s_var_all, n_t),
+                )
+            )
         ),
         "avg_u_posterior_term": float(np.mean(u_terms_all)),
         "avg_beta_schur_term": float(np.mean(beta_terms_all)),

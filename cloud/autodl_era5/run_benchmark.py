@@ -61,6 +61,7 @@ class Job:
     device_class: str
     dependencies: tuple[Path, ...] = field(default_factory=tuple)
     legacy: bool = False
+    status_path: Path | None = None
 
     @property
     def identifier(self) -> str:
@@ -77,6 +78,92 @@ def result_dir(
     benchmark: Path, scope: str, branch: str, method: str, seed: int
 ) -> Path:
     return benchmark / "runs" / scope / branch / method / f"seed{seed}"
+
+
+def _manifest_path(value: str | Path) -> Path:
+    path = Path(expand_value(str(value)))
+    return path if path.is_absolute() else ROOT / path
+
+
+def load_manifest_jobs(path: Path) -> list[Job]:
+    """Load deterministic JSONL job entries produced by an A100 builder."""
+    jobs: list[Job] = []
+    required = {
+        "schema_version",
+        "job_id",
+        "stage",
+        "scope",
+        "method",
+        "seed",
+        "python",
+        "argv",
+        "output_dir",
+        "expected",
+        "dependencies",
+        "timeout_seconds",
+        "device_class",
+    }
+    for line_number, raw_line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        if not raw_line.strip():
+            continue
+        try:
+            entry = json.loads(raw_line)
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid JSONL at {path}:{line_number}: {exc}") from exc
+        if not isinstance(entry, dict):
+            raise ValueError(f"Manifest entry at {path}:{line_number} must be an object")
+        missing = sorted(required.difference(entry))
+        if missing:
+            raise ValueError(f"Manifest entry at {path}:{line_number} is missing {missing}")
+        if entry["schema_version"] != 1:
+            raise ValueError(
+                f"Unsupported manifest schema {entry['schema_version']} at {path}:{line_number}"
+            )
+        argv = entry["argv"]
+        if not isinstance(argv, list) or not argv or not all(
+            isinstance(value, str) and value for value in argv
+        ):
+            raise ValueError(f"Manifest argv at {path}:{line_number} must be a non-empty string list")
+        expected = entry["expected"]
+        dependencies = entry["dependencies"]
+        if not isinstance(expected, list) or not all(isinstance(value, str) for value in expected):
+            raise ValueError(f"Manifest expected artifacts at {path}:{line_number} must be a string list")
+        if not isinstance(dependencies, list) or not all(
+            isinstance(value, str) for value in dependencies
+        ):
+            raise ValueError(f"Manifest dependencies at {path}:{line_number} must be a string list")
+        seed_value = entry["seed"]
+        if seed_value is not None and (isinstance(seed_value, bool) or not isinstance(seed_value, int)):
+            raise ValueError(f"Manifest seed at {path}:{line_number} must be an integer or null")
+        jobs.append(
+            Job(
+                stage=str(entry["stage"]),
+                scope=str(entry["scope"]),
+                method=str(entry["method"]),
+                seed=seed_value,
+                python=_manifest_path(entry["python"]),
+                command=[expand_value(value) for value in argv],
+                output_dir=_manifest_path(entry["output_dir"]),
+                expected=tuple(_manifest_path(value) for value in expected),
+                dependencies=tuple(_manifest_path(value) for value in dependencies),
+                timeout_seconds=int(entry["timeout_seconds"]),
+                device_class=str(entry["device_class"]),
+                legacy=bool(entry.get("legacy", False)),
+                status_path=(
+                    _manifest_path(entry["status_path"])
+                    if entry.get("status_path") is not None
+                    else None
+                ),
+            )
+        )
+    if not jobs:
+        raise ValueError(f"Manifest contains no jobs: {path}")
+    return jobs
+
+
+def manifest_jobs(path: Path) -> list[Job]:
+    """Compatibility-facing alias for loading a JSONL manifest."""
+    return load_manifest_jobs(path)
 
 
 def common_routeb_args(config: dict[str, Any]) -> list[str]:
@@ -903,10 +990,18 @@ def python_environment(python: Path) -> dict[str, Any]:
 
 
 def run_job(job: Job, *, force: bool, dry_run: bool, env: dict[str, str]) -> str:
-    status_path = job.output_dir / "status.json"
-    if not force and all(path.is_file() and path.stat().st_size > 0 for path in job.expected):
+    status_path = job.status_path or job.output_dir / "status.json"
+    metadata_dir = status_path.parent
+    if not force and job.expected and all(
+        path.is_file() and path.stat().st_size > 0 for path in job.expected
+    ):
         print(f"SKIP complete {job.identifier}")
         return "skipped"
+
+    printable = shlex.join(job.command)
+    if dry_run:
+        print(f"DRY-RUN {job.identifier}\n  {printable}")
+        return "dry_run"
 
     missing = [str(path) for path in job.dependencies if not path.exists()]
     if missing:
@@ -917,24 +1012,19 @@ def run_job(job: Job, *, force: bool, dry_run: bool, env: dict[str, str]) -> str
             "missing_dependencies": missing,
             "updated_at": utc_now(),
         }
-        if not dry_run:
-            atomic_json(status_path, payload)
+        atomic_json(status_path, payload)
         print(f"BLOCKED {job.identifier}: {missing}")
         return "blocked_dependency"
-
-    printable = shlex.join(job.command)
-    if dry_run:
-        print(f"DRY-RUN {job.identifier}\n  {printable}")
-        return "dry_run"
 
     if not job.python.is_file():
         raise FileNotFoundError(f"Python environment is missing: {job.python}")
     job.output_dir.mkdir(parents=True, exist_ok=True)
-    (job.output_dir / "command.txt").write_text(printable + "\n", encoding="utf-8")
-    atomic_json(job.output_dir / "environment.json", python_environment(job.python))
-    log_path = job.output_dir / "run.log"
-    time_path = job.output_dir / "resource_usage.txt"
-    monitor = NvidiaMonitor(job.output_dir / "nvidia_smi.csv")
+    metadata_dir.mkdir(parents=True, exist_ok=True)
+    (metadata_dir / "command.txt").write_text(printable + "\n", encoding="utf-8")
+    atomic_json(metadata_dir / "environment.json", python_environment(job.python))
+    log_path = metadata_dir / "run.log"
+    time_path = metadata_dir / "resource_usage.txt"
+    monitor = NvidiaMonitor(metadata_dir / "nvidia_smi.csv")
     command = list(job.command)
     if Path("/usr/bin/time").is_file():
         command = ["/usr/bin/time", "-v", "-o", str(time_path), *command]
@@ -991,8 +1081,9 @@ def run_job(job: Job, *, force: bool, dry_run: bool, env: dict[str, str]) -> str
         "expected_artifacts": [str(path) for path in job.expected],
         "missing_artifacts": [str(path) for path in job.expected if not path.is_file()],
         "log": str(log_path),
-        "nvidia_smi": str(job.output_dir / "nvidia_smi.csv"),
+        "nvidia_smi": str(metadata_dir / "nvidia_smi.csv"),
         "resource_usage": str(time_path),
+        "status_path": str(status_path),
     }
     atomic_json(status_path, payload)
     print(f"{status.upper()} {job.identifier} ({payload['wall_seconds']:.1f} s)")
@@ -1065,6 +1156,11 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument(
+        "--manifest",
+        type=Path,
+        help="Run jobs from a deterministic JSONL manifest instead of the default matrix.",
+    )
+    parser.add_argument(
         "--stage",
         choices=["all", "prepare", "stage2", "stage3", "stage4", "stage5"],
         default="all",
@@ -1109,14 +1205,20 @@ def main() -> None:
         "stvgp": paths["stvgp_python"],
     }
     include_legacy = bool(args.include_legacy)
-    jobs = [
-        *prepare_jobs(config, benchmark, pythons["routeb"], include_legacy),
-        *stage2_jobs(config, benchmark, pythons),
-    ]
-    if include_legacy:
-        jobs.extend(legacy_stage2_jobs(config, benchmark, pythons))
-    jobs.extend(stage3_jobs(config, benchmark, pythons))
-    jobs.extend(utility_jobs(config, benchmark, pythons["routeb"], args.config.resolve()))
+    if args.manifest is not None:
+        manifest_path = _manifest_path(args.manifest)
+        jobs = load_manifest_jobs(manifest_path)
+        if manifest_path.parent.name == "manifests":
+            benchmark = manifest_path.parent.parent
+    else:
+        jobs = [
+            *prepare_jobs(config, benchmark, pythons["routeb"], include_legacy),
+            *stage2_jobs(config, benchmark, pythons),
+        ]
+        if include_legacy:
+            jobs.extend(legacy_stage2_jobs(config, benchmark, pythons))
+        jobs.extend(stage3_jobs(config, benchmark, pythons))
+        jobs.extend(utility_jobs(config, benchmark, pythons["routeb"], args.config.resolve()))
     jobs = filter_jobs(jobs, args)
     if args.list:
         for job in jobs:

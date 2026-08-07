@@ -136,13 +136,15 @@ def tensor_training_data(
     device: torch.device | str | None = None,
     dtype: torch.dtype = DTYPE,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    y_source = data.y if y_override is None else np.asarray(y_override, dtype=float)
-    phi_source = data.phi if phi_override is None else np.asarray(phi_override, dtype=float)
+    y_source = data.y if y_override is None else y_override
+    phi_source = data.phi if phi_override is None else phi_override
     y = torch.as_tensor(
-        y_source[:, spatial_indices].T, dtype=dtype, device=device
+        np.asarray(y_source[:, spatial_indices], dtype=np.float64).T,
+        dtype=dtype,
+        device=device,
     )
     phi = torch.as_tensor(
-        phi_source[:, spatial_indices].transpose(1, 0, 2),
+        np.asarray(phi_source[:, spatial_indices], dtype=np.float64).transpose(1, 0, 2),
         dtype=dtype,
         device=device,
     )
@@ -314,6 +316,7 @@ def evaluate(
             C_eval=c_eval,
             chunk_size=prediction_chunk_size,
             include_conditional_residual_variance=include_conditional_residual_variance,
+            validate_conditional_residual_variance=include_conditional_residual_variance,
         )
     else:
         mean, variance, diagnostics = vectorized_predict_with_C(

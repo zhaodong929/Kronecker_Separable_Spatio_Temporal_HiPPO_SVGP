@@ -175,6 +175,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--protocol-npz", type=Path, required=True)
     parser.add_argument("--protocol-json", type=Path, required=True)
+    parser.add_argument("--data-root", type=Path)
     parser.add_argument("--theta-json", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--blockwise-output", type=Path, required=True)
@@ -184,9 +185,24 @@ def main():
     parser.add_argument("--ms", type=int, default=128)
     parser.add_argument("--rff-sample-size", type=int, default=256)
     parser.add_argument("--prediction-chunk-size", type=int, default=8192)
+    parser.add_argument(
+        "--include-conditional-residual-variance",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Include k_xx - K_xu K_uu^-1 K_ux in the predictive variance. "
+            "Use --no-include-conditional-residual-variance only to reproduce "
+            "the historical finite-DTC protocol."
+        ),
+    )
     parser.add_argument("--beta-prior-variance", type=float, default=1000.0)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--max-blocks", type=int, default=0)
+    parser.add_argument(
+        "--feature-projection-npz",
+        type=Path,
+        help="Optional shared orthonormal feature basis stored under the 'basis' key.",
+    )
     parser.add_argument(
         "--solver-backend",
         choices=["auto", "numpy", "torch"],
@@ -255,6 +271,18 @@ def main():
     metadata = json.loads(args.protocol_json.read_text(encoding="utf-8"))
     theta_payload = json.loads(args.theta_json.read_text(encoding="utf-8"))
     theta = theta_payload["learned_theta"]
+    feature_projection = None
+    if args.feature_projection_npz is not None:
+        with np.load(args.feature_projection_npz) as projection_payload:
+            feature_projection = np.asarray(
+                projection_payload["basis"], dtype=np.float64
+            )
+        if feature_projection.ndim != 2 or feature_projection.shape[0] != 133:
+            raise ValueError(
+                "Feature projection must have shape (133, rank), got "
+                f"{feature_projection.shape}"
+            )
+    beta_dimension = 133 if feature_projection is None else feature_projection.shape[1]
     times = np.asarray(arrays["stream_times"], dtype=float)
     y = np.asarray(arrays["stream_y"], dtype=float)
     coordinates = np.asarray(arrays["coordinates"], dtype=float)
@@ -280,8 +308,8 @@ def main():
             Ks=ks,
             C=c_train,
             sigma2=sigma2,
-            beta_prior_mean=np.zeros(133),
-            beta_prior_cov=args.beta_prior_variance * np.eye(133),
+            beta_prior_mean=np.zeros(beta_dimension),
+            beta_prior_cov=args.beta_prior_variance * np.eye(beta_dimension),
             prior_point_variance=float(theta["kernel_variance"]),
             device=runtime.device,
             dtype=runtime.dtype,
@@ -294,8 +322,8 @@ def main():
             Ks=ks,
             C=c_train,
             sigma2=sigma2,
-            beta_prior_mean=np.zeros(133),
-            beta_prior_cov=args.beta_prior_variance * np.eye(133),
+            beta_prior_mean=np.zeros(beta_dimension),
+            beta_prior_cov=args.beta_prior_variance * np.eye(beta_dimension),
             prior_point_variance=float(theta["kernel_variance"]),
         )
         c_test_backend = c_test
@@ -373,7 +401,11 @@ def main():
     synchronize()
     temporal_setup_seconds = time.perf_counter() - temporal_setup_started
 
-    phi_cache = TaskPhiCache(metadata["root"], y, metadata["xlag"]["length"])
+    phi_cache = TaskPhiCache(
+        metadata["root"] if args.data_root is None else args.data_root,
+        y,
+        metadata["xlag"]["length"],
+    )
     state = None
     previous_basis = None
     previous_temporal_basis = None
@@ -393,6 +425,13 @@ def main():
     for block_id, block in enumerate(blocks):
         feature_started = time.perf_counter()
         phi_block, task_index = phi_cache.block(block)
+        if feature_projection is not None:
+            phi_block = np.einsum(
+                "tsp,pr->tsr",
+                np.asarray(phi_block, dtype=np.float64),
+                feature_projection,
+                optimize=True,
+            )
         feature_seconds = time.perf_counter() - feature_started
         y_block = y[block]
         with SynchronizedTimer(synchronize) as factor_timer:
@@ -473,7 +512,12 @@ def main():
                     Phi=test_factors.Phi,
                     C_eval=c_test_backend,
                     chunk_size=args.prediction_chunk_size,
-                    include_conditional_residual_variance=False,
+                    include_conditional_residual_variance=(
+                        args.include_conditional_residual_variance
+                    ),
+                    validate_conditional_residual_variance=(
+                        args.include_conditional_residual_variance
+                    ),
                 )
             else:
                 mean, variance, _ = vectorized_predict_with_C(
@@ -483,7 +527,9 @@ def main():
                     c_test_backend,
                     prediction_mode="streaming_sylvester",
                     chunk_size=args.prediction_chunk_size,
-                    include_conditional_residual_variance=False,
+                    include_conditional_residual_variance=(
+                        args.include_conditional_residual_variance
+                    ),
                 )
         prediction_seconds = prediction_timer.elapsed
         block_metrics = metrics(test_factors.y_vec, mean, variance)
@@ -557,7 +603,20 @@ def main():
         "num_test_space": int(test_indices.size),
         "learned_theta": theta,
         "hyperparameters": "learned on Task 1 by the matching Route B representation, then frozen",
-        "predictive_variance": "finite projected DTC; no conditional residual variance",
+        "feature_projection": {
+            "path": (
+                None
+                if args.feature_projection_npz is None
+                else str(args.feature_projection_npz)
+            ),
+            "original_dimension": 133,
+            "active_dimension": int(beta_dimension),
+        },
+        "predictive_variance": (
+            "full structured-joint conditional; conditional residual included"
+            if args.include_conditional_residual_variance
+            else "finite projected DTC; no conditional residual variance"
+        ),
         "overall_current_block": overall,
         "final_block": final_block,
         "timing": {
@@ -614,6 +673,13 @@ def main():
             pred_var=variance_grid[:evaluated_stop],
             test_indices=test_indices,
             times=times[:evaluated_stop],
+            variance_mode=np.asarray(
+                "full_joint_conditional"
+                if args.include_conditional_residual_variance
+                else "current_dtc"
+            ),
+            mt=np.asarray(args.mt),
+            ms=np.asarray(args.ms),
         )
     print(json.dumps(payload, indent=2, allow_nan=False), flush=True)
 

@@ -1,0 +1,191 @@
+{
+  "schema_version": 2,
+  "manifest_id": "era5_a100_shared_online_v2",
+  "base_config": "benchmark.json",
+  "manifest_dir": "manifests",
+  "seeds": [0, 1, 2, 3, 4],
+  "short_batch": {
+    "scope": "task1_2",
+    "include_xlag": true,
+    "official_models": [
+      {
+        "name": "st_vgp_full",
+        "model": "st_vgp"
+      },
+      {
+        "name": "st_svgp_ms64",
+        "model": "st_svgp",
+        "ms": 64
+      },
+      {
+        "name": "st_svgp_ms128",
+        "model": "st_svgp",
+        "ms": 128
+      },
+      {
+        "name": "mf_st_svgp_ms64",
+        "model": "mf_st_svgp",
+        "ms": 64
+      },
+      {
+        "name": "mf_st_svgp_ms128",
+        "model": "mf_st_svgp",
+        "ms": 128
+      }
+    ],
+    "markovflow": [
+      {
+        "model_kind": "sparse_variational",
+        "name": "variational_mt128_ms64",
+        "mt": 128,
+        "ms": 64
+      },
+      {
+        "model_kind": "sparse_variational",
+        "name": "variational_mt128_ms128",
+        "mt": 128,
+        "ms": 128
+      },
+      {
+        "model_kind": "sparse_cvi",
+        "name": "cvi_mt128_ms64",
+        "mt": 128,
+        "ms": 64
+      },
+      {
+        "model_kind": "sparse_cvi",
+        "name": "cvi_mt128_ms128",
+        "mt": 128,
+        "ms": 128
+      }
+    ],
+    "gpflow_feasibility": {
+      "preflight_tier": "8192",
+      "selected_tier": "8192",
+      "preflight_iterations": 2,
+      "tiers": {
+        "8192": [
+          {
+            "name": "mt128_ms64",
+            "mt": 128,
+            "ms": 64
+          },
+          {
+            "name": "mt64_ms128",
+            "mt": 64,
+            "ms": 128
+          }
+        ],
+        "4096": [
+          {
+            "name": "mt64_ms64",
+            "mt": 64,
+            "ms": 64
+          },
+          {
+            "name": "mt32_ms128",
+            "mt": 32,
+            "ms": 128
+          }
+        ]
+      }
+    },
+    "routeb": {
+      "targets": ["shared_xlag_residual", "joint_xlag"],
+      "representations": ["analytic_hippo_rff", "inducing_points"],
+      "capacities": [
+        {
+          "mt": 128,
+          "ms": 128
+        },
+        {
+          "mt": 128,
+          "ms": 64
+        },
+        {
+          "mt": 64,
+          "ms": 64
+        }
+      ]
+    }
+  },
+  "long_batch": {
+    "scope": "task1_10",
+    "preflight_iterations": 2,
+    "preflight_models": [
+      {
+        "name": "st_vgp_full",
+        "model": "st_vgp"
+      },
+      {
+        "name": "st_svgp_ms64",
+        "model": "st_svgp",
+        "ms": 64
+      },
+      {
+        "name": "st_svgp_ms128",
+        "model": "st_svgp",
+        "ms": 128
+      }
+    ],
+    "official_full_models": [
+      {
+        "name": "st_vgp_full",
+        "model": "st_vgp"
+      },
+      {
+        "name": "st_svgp_ms64",
+        "model": "st_svgp",
+        "ms": 64
+      },
+      {
+        "name": "st_svgp_ms128",
+        "model": "st_svgp",
+        "ms": 128
+      }
+    ]
+  },
+  "online": {
+    "include_existing_stage3": true,
+    "scopes": ["task1_2", "task1_10"],
+    "routeb": {
+      "representations": [
+        {
+          "name": "cumulative_hippo",
+          "representation": "analytic_hippo_rff"
+        },
+        {
+          "name": "global_inducing",
+          "representation": "inducing_points"
+        }
+      ],
+      "capacities": [
+        {
+          "mt": 128,
+          "ms": 128
+        },
+        {
+          "mt": 128,
+          "ms": 64
+        },
+        {
+          "mt": 64,
+          "ms": 64
+        }
+      ],
+      "variance_protocol": "full_joint_conditional"
+    },
+    "task2_postprocess": {
+      "num_segments": 10
+    }
+  },
+  "efficiency": {
+    "serial": true,
+    "gpu_count": 1,
+    "seed": 0,
+    "warmup": 10,
+    "repeats": 30,
+    "unit": "seconds_per_step",
+    "objective": "implementation-level A100 wall time and supported FLOP count"
+  }
+}
