@@ -15,6 +15,7 @@ SCRIPT = ROOT / "scripts/run_era5_a100_manifest_job.py"
 SUBMIT = ROOT / "slurm/era5_a100/submit_all.sh"
 ARRAY = ROOT / "slurm/era5_a100/run_manifest_array.sbatch"
 WORKER = ROOT / "slurm/era5_a100/run_manifest_worker.sbatch"
+PERSISTENT = ROOT / "slurm/era5_a100/run_persistent_pipeline_worker.sbatch"
 PREPARE = ROOT / "slurm/era5_a100/prepare_protocol.sbatch"
 EFFICIENCY = ROOT / "slurm/era5_a100/run_efficiency.sbatch"
 REPORT = ROOT / "slurm/era5_a100/generate_report.sbatch"
@@ -25,8 +26,9 @@ MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
 
-def test_submit_contract_uses_generated_manifests_and_records_dependencies() -> None:
+def test_submit_contract_uses_exactly_three_persistent_workers() -> None:
     submit = SUBMIT.read_text(encoding="utf-8")
+    persistent = PERSISTENT.read_text(encoding="utf-8")
     prepare = PREPARE.read_text(encoding="utf-8")
     array = ARRAY.read_text(encoding="utf-8")
     worker = WORKER.read_text(encoding="utf-8")
@@ -34,49 +36,34 @@ def test_submit_contract_uses_generated_manifests_and_records_dependencies() -> 
     report = REPORT.read_text(encoding="utf-8")
     gpflow_select = GPFLOW_SELECT.read_text(encoding="utf-8")
 
-    assert "from scripts.build_era5_a100_manifests import build_manifests" in submit
-    assert "outputs = build_manifests(" in submit
-    assert "stage2_jobs" not in submit
-    assert "stage3_jobs" not in submit
-    assert 'MANIFEST_DIR="${BENCHMARK_ROOT}/manifests"' in submit
+    assert 'SBATCH_ARGS=(' in submit
+    assert '--array="0-2%3"' in submit
+    assert '--time="72:00:00"' in submit
+    assert submit.count('raw="$(sbatch ') == 1
+    assert "submit_single" not in submit
+    assert "submit_workers" not in submit
+    assert "--dependency" not in submit
     assert 'JOB_IDS_JSON="${BENCHMARK_ROOT}/slurm_job_ids.json"' in submit
-    assert '"dependency": dependency or None' in submit
-    assert '"submitted_at": submitted_at' in submit
     assert '"created_at": datetime.now(timezone.utc).isoformat()' in submit
-    assert 'JOB_SUBMITTED_AT["${name}"]=' in submit
-    for name in (
-        "shared_batch_short",
-        "official_long_preflight",
-        "official_long_full",
-        "online_short",
-        "online_long",
-        "efficiency",
-    ):
-        assert f'expected = output_path / f"{{name}}.jsonl"' in submit
-        assert f'"{name}"' in submit
-
-    assert 'submit_single prepare "afterok:${JOB_IDS[validation]}"' in submit
-    assert 'submit_workers shared_batch_gpflow_preflight "afterok:${JOB_IDS[prepare]}"' in submit
-    assert 'submit_single gpflow_tier_selection' in submit
-    assert 'afterany:${JOB_IDS[shared_batch_gpflow_preflight]}' in submit
-    assert 'submit_workers shared_batch_short "afterok:${JOB_IDS[gpflow_tier_selection]}"' in submit
-    assert 'submit_workers official_long_preflight "afterany:${JOB_IDS[shared_batch_short]}"' in submit
-    assert 'submit_workers official_long_full "afterany:${JOB_IDS[official_long_preflight]}"' in submit
-    assert 'submit_workers online_short "afterany:${JOB_IDS[official_long_full]}"' in submit
-    assert 'submit_workers online_short_postprocess "afterany:${JOB_IDS[online_short]}"' in submit
-    assert 'submit_workers online_long "afterany:${JOB_IDS[online_short_postprocess]}"' in submit
-    assert 'submit_single efficiency "afterany:${JOB_IDS[online_long]}"' in submit
     assert 'if [[ -z "${PARTITION}" ]]' in submit
-    assert "cancel_submitted_jobs" in submit
-    assert 'WORKER_SCRIPT="${SCRIPT_DIR}/run_manifest_worker.sbatch"' in submit
-    assert "avoids submitting one Slurm array element per record" in submit
-    assert 'emit_indices("shared_preflight", "shared_batch_short", "gpflow_feasibility_preflight")' in submit
-    assert 'emit_indices("online_short_models", "online_short", "online")' in submit
-    assert 'emit_indices("online_short_postprocess", "online_short", "postprocess")' in submit
-    assert (
-        'afterany:${JOB_IDS[shared_batch_short]}:${JOB_IDS[official_long_full]}:'
-        '${JOB_IDS[online_short_postprocess]}:${JOB_IDS[online_long]}:${JOB_IDS[efficiency]}'
-    ) in submit
+    assert '"submission_mode": "three_persistent_a100_workers"' in submit
+    assert '"submitted_job_count": 3' in submit
+
+    assert "#SBATCH --gpus=1" in persistent
+    assert "#SBATCH --time=72:00:00" in persistent
+    assert 'if [[ "${WORKER_COUNT}" != "3" ]]' in persistent
+    assert "run_leader_stage validation" in persistent
+    assert "run_leader_stage prepare" in persistent
+    assert "run_parallel_stage gpflow_preflight" in persistent
+    assert "run_leader_stage gpflow_tier" in persistent
+    assert "run_parallel_stage shared_batch" in persistent
+    assert "run_parallel_stage official_long_full" in persistent
+    assert "run_parallel_stage online_short " in persistent
+    assert "run_parallel_stage online_short_postprocess" in persistent
+    assert "run_parallel_stage online_long" in persistent
+    assert 'if [[ "${WORKER_ID}" -ne 0 ]]' in persistent
+    assert "run_efficiency.sbatch" in persistent
+    assert "generate_report.sbatch" in persistent
 
     assert "slurm/manifests" not in prepare
     assert "slurm/manifests" not in array
@@ -96,7 +83,7 @@ def test_submit_contract_uses_generated_manifests_and_records_dependencies() -> 
     assert "select_era5_gpflow_tier.py" in gpflow_select
 
 
-def test_submit_dry_run_requires_partition_and_uses_bounded_workers(tmp_path: Path) -> None:
+def test_submit_dry_run_requires_partition_and_submits_one_three_worker_array(tmp_path: Path) -> None:
     common = [
         "bash",
         str(SUBMIT),
@@ -121,9 +108,11 @@ def test_submit_dry_run_requires_partition_and_uses_bounded_workers(tmp_path: Pa
         text=True,
     )
     assert bounded.returncode == 0, bounded.stderr
-    assert "shared_batch_short" in bounded.stdout
-    assert "workers=3 records=141" in bounded.stdout
-    assert "array=0,1,2,3" not in bounded.stdout
+    assert "single submission" in bounded.stdout
+    assert "array=0-2%3" in bounded.stdout
+    assert "gpus=3" in bounded.stdout
+    assert "time=72:00:00" in bounded.stdout
+    assert "shared_batch_short" not in bounded.stdout
 
 
 def test_qos_worker_executes_disjoint_manifest_strides(tmp_path: Path) -> None:
@@ -186,28 +175,22 @@ def test_qos_worker_executes_disjoint_manifest_strides(tmp_path: Path) -> None:
         assert artifact.read_text(encoding="utf-8") == str(index)
 
 
-def test_partial_submission_failure_rolls_back_created_jobs(tmp_path: Path) -> None:
+def test_real_submit_invokes_sbatch_once(tmp_path: Path) -> None:
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
     counter = tmp_path / "sbatch-count"
-    cancelled = tmp_path / "cancelled.txt"
+    arguments = tmp_path / "sbatch-arguments.txt"
     sbatch = fake_bin / "sbatch"
     sbatch.write_text(
         "#!/usr/bin/env bash\n"
         f"count=$(cat '{counter}' 2>/dev/null || echo 0)\n"
         "count=$((count + 1))\n"
         f"echo \"$count\" >'{counter}'\n"
-        "if [[ $count -eq 5 ]]; then exit 1; fi\n"
-        "echo $((70000 + count))\n",
+        f"printf '%s\\n' \"$*\" >'{arguments}'\n"
+        "echo 70001\n",
         encoding="utf-8",
     )
     sbatch.chmod(0o755)
-    scancel = fake_bin / "scancel"
-    scancel.write_text(
-        "#!/usr/bin/env bash\n" f"printf '%s\\n' \"$*\" >'{cancelled}'\n",
-        encoding="utf-8",
-    )
-    scancel.chmod(0o755)
 
     env = os.environ.copy()
     env["PATH"] = f"{fake_bin}:{env['PATH']}"
@@ -232,9 +215,18 @@ def test_partial_submission_failure_rolls_back_created_jobs(tmp_path: Path) -> N
         text=True,
         env=env,
     )
-    assert result.returncode != 0
-    assert "cancelling this pipeline's partial jobs" in result.stderr
-    assert cancelled.read_text(encoding="utf-8").strip() == "70001 70002 70003 70004"
+    assert result.returncode == 0, result.stderr
+    assert counter.read_text(encoding="utf-8").strip() == "1"
+    submitted = arguments.read_text(encoding="utf-8")
+    assert "--partition=a100" in submitted
+    assert "--array=0-2%3" in submitted
+    assert "--time=72:00:00" in submitted
+    assert str(PERSISTENT) in submitted
+    metadata = json.loads(
+        (tmp_path / "benchmark" / "slurm_job_ids.json").read_text(encoding="utf-8")
+    )
+    assert metadata["submitted_job_count"] == 3
+    assert metadata["jobs"]["persistent_pipeline"]["job_id"] == "70001"
 
 
 def write_manifest(path: Path, record: dict) -> None:
