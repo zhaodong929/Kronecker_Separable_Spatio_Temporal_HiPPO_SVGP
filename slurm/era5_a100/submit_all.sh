@@ -25,7 +25,7 @@ Options:
   --env PATH           Micromamba environment root containing routeb/gpflow/
                        stvgp_legacy environments
   --benchmark PATH     Benchmark output root
-  --partition NAME     Optional Slurm partition
+  --partition NAME     Required A100 Slurm partition (for example: a100)
   --account NAME       Optional Slurm account
   --max-gpus N         Array concurrency cap, 1-3 (default: 3)
   --dry-run            Print the dependency graph without submitting jobs
@@ -59,6 +59,10 @@ if [[ ! -d "${REPO_ROOT}" ]]; then
 fi
 if [[ ! "${MAX_GPUS}" =~ ^[1-3]$ ]]; then
   echo "--max-gpus must be an integer from 1 through 3" >&2
+  exit 2
+fi
+if [[ -z "${PARTITION}" ]]; then
+  echo "--partition is required; use the cluster's A100-only partition (for example: a100)" >&2
   exit 2
 fi
 if ! command -v "${PYTHON}" >/dev/null 2>&1; then
@@ -256,6 +260,24 @@ if [[ -n "${ACCOUNT}" ]]; then SBATCH_COMMON+=(--account="${ACCOUNT}"); fi
 SCRIPT_ARGS=(--repo "${REPO_ROOT}" --env "${ENV_ROOT}" --benchmark "${BENCHMARK_ROOT}")
 DRY_ID=90000
 
+cancel_submitted_jobs() {
+  if [[ "${DRY_RUN}" -eq 1 || "${#JOB_ORDER[@]}" -eq 0 ]]; then
+    return
+  fi
+  local ids=() name
+  for name in "${JOB_ORDER[@]}"; do
+    ids+=("${JOB_IDS[${name}]}")
+  done
+  echo "Submission failed; cancelling this pipeline's partial jobs: ${ids[*]}" >&2
+  scancel "${ids[@]}" || true
+}
+
+cancel_on_signal() {
+  cancel_submitted_jobs
+  exit 130
+}
+trap cancel_on_signal INT TERM
+
 submit_single() {
   local name="$1" dependency="$2" script="$3" count="${4:-}" manifest="${5:-}"
   local args=("${SBATCH_COMMON[@]}")
@@ -267,7 +289,10 @@ submit_single() {
     printf 'DRY-RUN %s dependency=%s script=%s\n' "${name}" "${dependency:-none}" "${script}"
   else
     local raw
-    raw="$(sbatch "${args[@]}" "${script}" "${SCRIPT_ARGS[@]}")"
+    if ! raw="$(sbatch "${args[@]}" "${script}" "${SCRIPT_ARGS[@]}")"; then
+      cancel_submitted_jobs
+      exit 1
+    fi
     id="${raw##*$'\n'}"
     id="${id%%;*}"
     id="${id%%_*}"
@@ -286,20 +311,28 @@ submit_single() {
   write_job_ids
 }
 
-submit_array() {
+submit_workers() {
   local name="$1" dependency="$2" count="$3" script="$4" manifest_name="$5" limit="$6"
   local index_spec="${7:-0-$((count - 1))}"
-  local args=("${SBATCH_COMMON[@]}" --array="${index_spec}%${limit}")
+  local workers="${limit}"
+  if (( count < workers )); then workers="${count}"; fi
+  local worker_spec="0-$((workers - 1))%${workers}"
+  local args=("${SBATCH_COMMON[@]}" --array="${worker_spec}")
   if [[ -n "${dependency}" ]]; then args+=(--dependency="${dependency}"); fi
   local id
   if [[ "${DRY_RUN}" -eq 1 ]]; then
     id="${DRY_ID}"
     DRY_ID=$((DRY_ID + 1))
-    printf 'DRY-RUN %s dependency=%s array=%s%%%s manifest=%s\n' \
-      "${name}" "${dependency:-none}" "${index_spec}" "${limit}" "${manifest_name}"
+    printf 'DRY-RUN %s dependency=%s workers=%s records=%s manifest=%s\n' \
+      "${name}" "${dependency:-none}" "${workers}" "${count}" "${manifest_name}"
   else
     local raw
-    raw="$(sbatch "${args[@]}" "${script}" "${SCRIPT_ARGS[@]}" --manifest-name "${manifest_name}")"
+    if ! raw="$(sbatch "${args[@]}" "${script}" "${SCRIPT_ARGS[@]}" \
+      --manifest-name "${manifest_name}" --indices "${index_spec}" \
+      --worker-count "${workers}")"; then
+      cancel_submitted_jobs
+      exit 1
+    fi
     id="${raw##*$'\n'}"
     id="${id%%;*}"
     id="${id%%_*}"
@@ -320,35 +353,35 @@ submit_array() {
 
 SETUP_SCRIPT="${SCRIPT_DIR}/setup_and_validate.sbatch"
 PREPARE_SCRIPT="${SCRIPT_DIR}/prepare_protocol.sbatch"
-ARRAY_SCRIPT="${SCRIPT_DIR}/run_manifest_array.sbatch"
+WORKER_SCRIPT="${SCRIPT_DIR}/run_manifest_worker.sbatch"
 GPFLOW_SELECT_SCRIPT="${SCRIPT_DIR}/select_gpflow_tier.sbatch"
 EFFICIENCY_SCRIPT="${SCRIPT_DIR}/run_efficiency.sbatch"
 REPORT_SCRIPT="${SCRIPT_DIR}/generate_report.sbatch"
 
 submit_single validation "" "${SETUP_SCRIPT}"
 submit_single prepare "afterok:${JOB_IDS[validation]}" "${PREPARE_SCRIPT}"
-submit_array shared_batch_gpflow_preflight "afterok:${JOB_IDS[prepare]}" \
-  "${COUNTS[shared_preflight_count]}" "${ARRAY_SCRIPT}" shared_batch_short "${MAX_GPUS}" \
+submit_workers shared_batch_gpflow_preflight "afterok:${JOB_IDS[prepare]}" \
+  "${COUNTS[shared_preflight_count]}" "${WORKER_SCRIPT}" shared_batch_short "${MAX_GPUS}" \
   "${COUNTS[shared_preflight_indices]}"
 submit_single gpflow_tier_selection \
   "afterany:${JOB_IDS[shared_batch_gpflow_preflight]}" "${GPFLOW_SELECT_SCRIPT}"
-submit_array shared_batch_short "afterok:${JOB_IDS[gpflow_tier_selection]}" \
-  "${COUNTS[shared_main_count]}" "${ARRAY_SCRIPT}" shared_batch_short "${MAX_GPUS}" \
+submit_workers shared_batch_short "afterok:${JOB_IDS[gpflow_tier_selection]}" \
+  "${COUNTS[shared_main_count]}" "${WORKER_SCRIPT}" shared_batch_short "${MAX_GPUS}" \
   "${COUNTS[shared_main_indices]}"
-# Slurm's array %N limit is per array, not global. Chaining the accuracy
-# arrays is what makes --max-gpus a hard pipeline-wide GPU ceiling.
-submit_array official_long_preflight "afterany:${JOB_IDS[shared_batch_short]}" \
-  "${COUNTS[official_long_preflight]}" "${ARRAY_SCRIPT}" official_long_preflight "${MAX_GPUS}"
-submit_array official_long_full "afterany:${JOB_IDS[official_long_preflight]}" \
-  "${COUNTS[official_long_full]}" "${ARRAY_SCRIPT}" official_long_full "${MAX_GPUS}"
-submit_array online_short "afterany:${JOB_IDS[official_long_full]}" \
-  "${COUNTS[online_short_models_count]}" "${ARRAY_SCRIPT}" online_short "${MAX_GPUS}" \
+# Each stage has at most --max-gpus worker elements. Chaining stages makes the
+# cap pipeline-wide and avoids submitting one Slurm array element per record.
+submit_workers official_long_preflight "afterany:${JOB_IDS[shared_batch_short]}" \
+  "${COUNTS[official_long_preflight]}" "${WORKER_SCRIPT}" official_long_preflight "${MAX_GPUS}"
+submit_workers official_long_full "afterany:${JOB_IDS[official_long_preflight]}" \
+  "${COUNTS[official_long_full]}" "${WORKER_SCRIPT}" official_long_full "${MAX_GPUS}"
+submit_workers online_short "afterany:${JOB_IDS[official_long_full]}" \
+  "${COUNTS[online_short_models_count]}" "${WORKER_SCRIPT}" online_short "${MAX_GPUS}" \
   "${COUNTS[online_short_models_indices]}"
-submit_array online_short_postprocess "afterany:${JOB_IDS[online_short]}" \
-  "${COUNTS[online_short_postprocess_count]}" "${ARRAY_SCRIPT}" online_short "${MAX_GPUS}" \
+submit_workers online_short_postprocess "afterany:${JOB_IDS[online_short]}" \
+  "${COUNTS[online_short_postprocess_count]}" "${WORKER_SCRIPT}" online_short "${MAX_GPUS}" \
   "${COUNTS[online_short_postprocess_indices]}"
-submit_array online_long "afterany:${JOB_IDS[online_short_postprocess]}" \
-  "${COUNTS[online_long]}" "${ARRAY_SCRIPT}" online_long "${MAX_GPUS}"
+submit_workers online_long "afterany:${JOB_IDS[online_short_postprocess]}" \
+  "${COUNTS[online_long]}" "${WORKER_SCRIPT}" online_long "${MAX_GPUS}"
 submit_single efficiency "afterany:${JOB_IDS[online_long]}" "${EFFICIENCY_SCRIPT}" \
   "${COUNTS[efficiency]}" "${MANIFEST_DIR}/efficiency.jsonl"
 submit_single report \
@@ -356,3 +389,4 @@ submit_single report \
   "${REPORT_SCRIPT}"
 
 echo "Submitted ERA5 A100 pipeline; job IDs saved to ${JOB_IDS_JSON} (env: ${JOB_IDS_ENV})"
+trap - INT TERM
