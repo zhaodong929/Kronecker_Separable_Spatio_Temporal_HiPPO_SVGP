@@ -51,6 +51,7 @@ def test_submit_contract_uses_exactly_three_persistent_workers() -> None:
 
     assert "#SBATCH --gpus=1" in persistent
     assert "#SBATCH --time=72:00:00" in persistent
+    assert 'SCRIPT_DIR="${REPO_ROOT}/slurm/era5_a100"' in persistent
     assert 'if [[ "${WORKER_COUNT}" != "3" ]]' in persistent
     assert "run_leader_stage validation" in persistent
     assert "run_leader_stage prepare" in persistent

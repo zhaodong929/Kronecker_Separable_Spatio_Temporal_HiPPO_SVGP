@@ -53,6 +53,7 @@ fi
 WORKER_ID="${SLURM_ARRAY_TASK_ID}"
 REPO_ROOT="$(cd "${REPO_ROOT}" && pwd)"
 BENCHMARK_ROOT="$(mkdir -p "${BENCHMARK_ROOT}" && cd "${BENCHMARK_ROOT}" && pwd)"
+SCRIPT_DIR="${REPO_ROOT}/slurm/era5_a100"
 ROUTEB_PY="${ROUTEB_PY:-${ENV_ROOT}/routeb/bin/python}"
 MANIFEST_DIR="${BENCHMARK_ROOT}/manifests"
 CONTROL_DIR="${BENCHMARK_ROOT}/slurm/persistent/${SLURM_ARRAY_JOB_ID}"
