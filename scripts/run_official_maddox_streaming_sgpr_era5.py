@@ -27,6 +27,7 @@ from stvgp_kronecker.benchmark_runtime import (  # noqa: E402
     host_snapshot,
     resolve_torch_runtime,
 )
+from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
 
 
 def flatten_inputs(times, coordinates, spatial_indices, block):
@@ -212,6 +213,8 @@ def main():
     total_update = 0.0
     total_prediction = 0.0
     for block_id, block in enumerate(blocks):
+        profile_range = profile_this_index(block_id, len(blocks))
+        profile_open = push_range("era5_online_block", profile_range)
         x_train = torch.as_tensor(
             flatten_inputs(times, coordinates, train_indices, block),
             dtype=runtime.dtype,
@@ -254,6 +257,7 @@ def main():
             )
             mean += offset_test
         prediction_seconds = prediction_timer.elapsed
+        pop_range(profile_open)
         if not np.all(np.isfinite(mean)) or not np.all(np.isfinite(variance)):
             raise FloatingPointError(
                 "Maddox StreamingSGPR produced non-finite predictions at "

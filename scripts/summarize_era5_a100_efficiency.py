@@ -36,6 +36,7 @@ EFFICIENCY_FIELDS = (
     "analytical_flops_per_unit",
     "analytical_total_flops",
     "nsight_executed_gpu_flops",
+    "nsight_flops_per_native_unit",
     "nsight_flops_per_unit",
     "nsight_flops_total",
     "cpu_supplement_flops",
@@ -60,6 +61,11 @@ COMPUTE_CONTRACT_FIELDS = (
     "work_unit",
     "required_measurement_backend",
     "comparison_status",
+    "native_work_unit",
+    "comparison_group",
+    "measurement_backend",
+    "precision",
+    "hardware_class",
 )
 
 CSV_HINTS = (
@@ -73,6 +79,8 @@ CSV_HINTS = (
 )
 JSON_HINTS = (
     "efficien",
+    "flop",
+    "ncu",
     "profile",
     "result",
     "timing",
@@ -223,6 +231,10 @@ def _value_from_payload(payload: Mapping[str, Any], target: str) -> tuple[float 
             "nsight_flops_per_unit",
             "nsight_executed_gpu_flops_per_unit",
             "nsight_gflops_per_unit",
+        ),
+        "nsight_flops_per_native_unit": (
+            "nsight_flops_per_native_unit",
+            "nsight_executed_gpu_flops",
         ),
         "nsight_flops_total": (
             "nsight_flops_total",
@@ -422,6 +434,23 @@ def normalize_efficiency_record(
         "work_unit": contract.get("work_unit"),
         "required_measurement_backend": contract.get("required_measurement_backend"),
         "comparison_status": contract.get("comparison_status", "undeclared"),
+        "native_work_unit": contract.get("native_work_unit"),
+        "comparison_group": contract.get("comparison_group"),
+        "measurement_backend": str(
+            row.get("measurement_backend")
+            or nested_value(payload, ("measurement_backend",))
+            or ""
+        ),
+        "precision": str(
+            row.get("precision")
+            or nested_value(payload, ("precision", "dtype"))
+            or ""
+        ),
+        "hardware_class": str(
+            row.get("hardware_class")
+            or nested_value(payload, ("hardware_class",))
+            or ""
+        ),
     }
     for field in EFFICIENCY_FIELDS:
         value, source = _value_from_row_or_payload(payload, field, row)
@@ -450,6 +479,27 @@ def normalize_efficiency_record(
     if result["framework_profiler_flops"] is None and result["framework_profiler_flops_total"] is not None:
         result["framework_profiler_flops"] = result["framework_profiler_flops_total"]
         result["framework_profiler_flops_source"] = result["framework_profiler_flops_total_source"]
+
+    metric_totals = nested_value(payload, ("ncu_metric_totals",))
+    required_metrics = (
+        "smsp__sass_thread_inst_executed_op_dadd_pred_on.sum",
+        "smsp__sass_thread_inst_executed_op_dmul_pred_on.sum",
+        "smsp__sass_thread_inst_executed_op_dfma_pred_on.sum",
+    )
+    has_ncu_metrics = isinstance(metric_totals, Mapping) and all(
+        _as_float(metric_totals.get(metric)) is not None for metric in required_metrics
+    )
+    has_common_counter = (
+        result["measurement_backend"] == "nsight_compute"
+        and bool(result["work_unit"])
+        and bool(result["comparison_group"])
+        and result["nsight_executed_gpu_flops"] is not None
+        and result["nsight_flops_per_unit"] is not None
+        and result["nsight_flops_total"] is not None
+        and has_ncu_metrics
+    )
+    if has_common_counter:
+        result["comparison_status"] = "common_hardware_counter_complete"
 
     steps = result["steps_or_blocks"]
     if steps is not None and steps > 0:
@@ -737,7 +787,64 @@ def summarize_efficiency(
         "benchmark_root": str(root),
         "records": records,
         "aggregates": aggregate_efficiency_records(records),
+        "flop_ratios": common_counter_flop_ratios(records),
     }
+
+
+def common_counter_flop_ratios(records: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Return ratios only within an identical canonical comparison group."""
+
+    groups: dict[tuple[str, str, str, str], list[Mapping[str, Any]]] = {}
+    for record in records:
+        flops = _as_float(record.get("nsight_flops_per_unit"))
+        group = str(record.get("comparison_group", ""))
+        precision = str(record.get("precision", ""))
+        hardware = str(record.get("hardware_class", ""))
+        if (
+            not _complete_efficiency_record(record)
+            or record.get("comparison_status") != "common_hardware_counter_complete"
+            or record.get("measurement_backend") != "nsight_compute"
+            or not group
+            or not precision
+            or not hardware
+            or flops is None
+            or flops <= 0.0
+        ):
+            continue
+        groups.setdefault((str(record.get("scope", "")), group, precision, hardware), []).append(record)
+
+    ratios: list[dict[str, Any]] = []
+    for (scope, group, precision, hardware), members in sorted(groups.items()):
+        ordered = sorted(
+            members,
+            key=lambda row: (
+                float(row["nsight_flops_per_unit"]),
+                str(row.get("method", "")),
+                str(row.get("configuration", "")),
+            ),
+        )
+        reference = ordered[0]
+        reference_flops = float(reference["nsight_flops_per_unit"])
+        for member in ordered:
+            flops = float(member["nsight_flops_per_unit"])
+            ratios.append(
+                {
+                    "scope": scope,
+                    "comparison_group": group,
+                    "precision": precision,
+                    "hardware_class": hardware,
+                    "work_unit": member.get("work_unit"),
+                    "method": member.get("method"),
+                    "configuration": member.get("configuration", ""),
+                    "seed": member.get("seed"),
+                    "nsight_flops_per_unit": flops,
+                    "reference_method": reference.get("method"),
+                    "reference_configuration": reference.get("configuration", ""),
+                    "reference_nsight_flops_per_unit": reference_flops,
+                    "flop_ratio_to_group_min": flops / reference_flops,
+                }
+            )
+    return ratios
 
 
 def efficiency_fieldnames() -> list[str]:
@@ -777,6 +884,30 @@ def write_efficiency_csv(summary: Mapping[str, Any], output: str | Path) -> None
         writer = csv.DictWriter(handle, fieldnames=fields, extrasaction="ignore")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def write_common_counter_flop_ratios(summary: Mapping[str, Any], output: str | Path) -> None:
+    path = Path(output)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fields = [
+        "scope",
+        "comparison_group",
+        "precision",
+        "hardware_class",
+        "work_unit",
+        "method",
+        "configuration",
+        "seed",
+        "nsight_flops_per_unit",
+        "reference_method",
+        "reference_configuration",
+        "reference_nsight_flops_per_unit",
+        "flop_ratio_to_group_min",
+    ]
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(summary.get("flop_ratios", []))
 
 
 def write_efficiency_markdown(summary: Mapping[str, Any], output: str | Path) -> None:
@@ -833,6 +964,27 @@ def write_efficiency_markdown(summary: Mapping[str, Any], output: str | Path) ->
     ]
     for row in aggregates:
         lines.append("| " + " | ".join(_render(row.get(column)) for column in columns) + " |")
+    ratios = list(summary.get("flop_ratios", []))
+    lines.extend(
+        [
+            "",
+            "## Gated common-counter FLOP ratios",
+            "",
+            "Ratios are emitted only within the same scope and canonical comparison group.",
+            "",
+            "| scope | comparison_group | method | reference_method | flop_ratio_to_group_min |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+    )
+    for row in ratios:
+        lines.append(
+            "| "
+            + " | ".join(
+                _render(row.get(column))
+                for column in ("scope", "comparison_group", "method", "reference_method", "flop_ratio_to_group_min")
+            )
+            + " |"
+        )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
@@ -849,6 +1001,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--benchmark-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--markdown-output", type=Path)
+    parser.add_argument("--ratio-output", type=Path)
     return parser.parse_args()
 
 
@@ -856,6 +1009,10 @@ def main() -> None:
     args = parse_args()
     summary = summarize_efficiency(args.benchmark_root)
     write_efficiency_csv(summary, args.output)
+    write_common_counter_flop_ratios(
+        summary,
+        args.ratio_output or args.output.with_name("era5_a100_flop_ratios.csv"),
+    )
     if args.markdown_output:
         write_efficiency_markdown(summary, args.markdown_output)
     print(json.dumps({"records": len(summary["records"]), "aggregates": len(summary["aggregates"])}, indent=2))

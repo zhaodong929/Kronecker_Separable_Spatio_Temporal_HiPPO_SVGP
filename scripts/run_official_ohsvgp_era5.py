@@ -30,6 +30,7 @@ from stvgp_kronecker.benchmark_runtime import (  # noqa: E402
     host_snapshot,
     resolve_torch_runtime,
 )
+from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
 
 
 def flatten_inputs(times, coordinates, spatial_indices, block):
@@ -257,6 +258,8 @@ def main():
     estimated_flops = 0.0
 
     for block_id, block in enumerate(blocks):
+        profile_range = profile_this_index(block_id, len(blocks))
+        profile_open = push_range("era5_online_block", profile_range)
         x_train = flatten_inputs(times, coordinates, train_indices, block)
         y_train = flatten_targets(residual, train_indices, block)
         order = np.lexsort((x_train[:, 2], x_train[:, 1], x_train[:, 0]))
@@ -330,6 +333,7 @@ def main():
             )
             pred_mean += offset_test
         prediction_seconds = prediction_timer.elapsed
+        pop_range(profile_open)
         block_metrics = metric_row(y_test, pred_mean, pred_variance)
         block_length = block.stop - block.start
         mean_grid[block] = pred_mean.reshape(block_length, test_indices.size)

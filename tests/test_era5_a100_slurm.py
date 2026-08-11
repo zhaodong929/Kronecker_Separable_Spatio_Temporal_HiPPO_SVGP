@@ -79,6 +79,10 @@ def test_submit_contract_uses_exactly_three_persistent_workers() -> None:
     assert "summarize_era5_a100_efficiency.py" in efficiency
     assert "not_instrumented" in efficiency
     assert '"--metrics"' in efficiency
+    assert '"--nvtx"' in efficiency
+    assert '"--nvtx-include"' in efficiency
+    assert "parse_era5_a100_ncu_flops.py" in efficiency
+    assert "ncu_flops.json" in efficiency
     assert "audit_era5_a100_shared_online.py" in report
     assert "generate_era5_a100_shared_online_report.py" in report
     assert "select_era5_gpflow_tier.py" in gpflow_select
@@ -228,6 +232,100 @@ def test_real_submit_invokes_sbatch_once(tmp_path: Path) -> None:
     )
     assert metadata["submitted_job_count"] == 3
     assert metadata["jobs"]["persistent_pipeline"]["job_id"] == "70001"
+
+
+def test_efficiency_wrapper_parses_common_ncu_flop_artifact(tmp_path: Path) -> None:
+    benchmark = tmp_path / "benchmark"
+    manifest_dir = benchmark / "manifests"
+    manifest_dir.mkdir(parents=True)
+    output = benchmark / "efficiency" / "profiles" / "batch" / "routeb" / "seed0"
+    result = output / "result.json"
+    command = (
+        "from pathlib import Path; import json; "
+        "p=Path(r'" + str(result) + "'); p.parent.mkdir(parents=True, exist_ok=True); "
+        "p.write_text(json.dumps({'scope':'task1_2','branch':'batch','method':'routeb','seed':0}))"
+    )
+    record = {
+        "job_id": "profile-routeb",
+        "argv": [sys.executable, "-c", command],
+        "scope": "task1_2",
+        "branch": "batch",
+        "method": "routeb",
+        "seed": 0,
+        "output_dir": str(output),
+        "expected": [str(result)],
+        "timeout_seconds": 30,
+        "precision": "float64",
+        "hardware_class": "NVIDIA A100",
+        "ncu": {
+            "enabled": True,
+            "range": "era5_batch_update",
+            "target": "last",
+            "work_unit": "one_full_fit_optimization_update",
+        },
+        "compute_contract": {
+            "schema_version": 2,
+            "baseline_family": "routeb",
+            "data_access_unit": "full_fit_dataset",
+            "measurement_scope": "optimization_update",
+            "work_unit": "one_full_fit_optimization_update",
+            "native_work_unit": "one_full_fit_optimization_update",
+            "comparison_group": "batch_full_fit_update",
+            "required_measurement_backend": "nsight_compute_executed_gpu_flops",
+            "comparison_status": "pending_common_hardware_counter",
+        },
+    }
+    (manifest_dir / "efficiency.jsonl").write_text(json.dumps(record) + "\n", encoding="utf-8")
+
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    nvidia_smi = fake_bin / "nvidia-smi"
+    nvidia_smi.write_text("#!/usr/bin/env bash\necho 'NVIDIA A100-SXM4-80GB'\n", encoding="utf-8")
+    nvidia_smi.chmod(0o755)
+    ncu = fake_bin / "ncu"
+    ncu.write_text(
+        "#!/usr/bin/env bash\n"
+        "if [[ \"${1:-}\" == \"--import\" ]]; then\n"
+        "  printf '\"Metric Name\",\"Metric Value\"\\n'\n"
+        "  printf '\"smsp__sass_thread_inst_executed_op_dadd_pred_on.sum\",\"10\"\\n'\n"
+        "  printf '\"smsp__sass_thread_inst_executed_op_dmul_pred_on.sum\",\"20\"\\n'\n"
+        "  printf '\"smsp__sass_thread_inst_executed_op_dfma_pred_on.sum\",\"30\"\\n'\n"
+        "  exit 0\n"
+        "fi\n"
+        "report=''\n"
+        "while [[ $# -gt 0 ]]; do\n"
+        "  case \"$1\" in\n"
+        "    --export) report=\"$2\"; shift 2 ;;\n"
+        "    --) shift; \"$@\"; rc=$?; : > \"$report\"; exit $rc ;;\n"
+        "    *) shift ;;\n"
+        "  esac\n"
+        "done\n"
+        "exit 2\n",
+        encoding="utf-8",
+    )
+    ncu.chmod(0o755)
+
+    env = os.environ.copy()
+    env.update(
+        {
+            "PATH": f"{fake_bin}:{env['PATH']}",
+            "ROUTEB_PY": sys.executable,
+            "NCU_BIN": str(ncu),
+        }
+    )
+    completed = subprocess.run(
+        ["bash", str(EFFICIENCY), "--repo", str(ROOT), "--benchmark", str(benchmark)],
+        check=False,
+        capture_output=True,
+        text=True,
+        env=env,
+    )
+    assert completed.returncode == 0, completed.stderr
+    ncu_flops = json.loads((output / "ncu_flops.json").read_text(encoding="utf-8"))
+    assert ncu_flops["measurement_backend"] == "nsight_compute"
+    assert ncu_flops["nsight_executed_gpu_flops"] == 90.0
+    assert ncu_flops["nsight_flops_per_unit"] == 90.0
+    assert (benchmark / "efficiency" / "era5_a100_flop_ratios.csv").is_file()
 
 
 def write_manifest(path: Path, record: dict) -> None:

@@ -30,6 +30,18 @@ ENTRY_SCHEMA_VERSION = 1
 ROUTE_B_BATCH_SCRIPT = "scripts/run_iclr_era5_routeb_batch.py"
 ROUTE_B_ONLINE_SCRIPT = "scripts/run_iclr_era5_routeb_strict_online.py"
 POSTPROCESS_SCRIPT = "scripts/summarize_task2_online_segments.py"
+NCU_BATCH_SCRIPTS = {
+    "scripts/run_iclr_era5_routeb_batch.py",
+    "scripts/run_official_stvgp_legacy.py",
+    "scripts/run_official_markovflow_stsvgp_era5.py",
+    "scripts/run_official_gpflow_svgp_era5.py",
+}
+NCU_ONLINE_SCRIPTS = {
+    "scripts/run_iclr_era5_routeb_strict_online.py",
+    "scripts/run_official_bui_osgpr_era5.py",
+    "scripts/run_official_maddox_streaming_sgpr_era5.py",
+    "scripts/run_official_ohsvgp_era5.py",
+}
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -1211,6 +1223,119 @@ def _method_family(method: str) -> str:
     return method
 
 
+def _replace_option(command: list[str], flag: str, value: str) -> list[str]:
+    result = list(command)
+    try:
+        index = result.index(flag)
+    except ValueError:
+        result.extend((flag, value))
+    else:
+        result[index + 1] = value
+    return result
+
+
+def _profile_output_path(source: Job, profile_root: Path, value: str) -> str:
+    source_root = str(source.output_dir)
+    if value == source_root:
+        return str(profile_root)
+    if value.startswith(source_root + "/"):
+        return str(profile_root / Path(value).relative_to(source.output_dir))
+    return value
+
+
+def _profile_job(
+    *,
+    source: Job,
+    profile_root: Path,
+    branch: str,
+    timeout_seconds: int,
+) -> Job:
+    command = [
+        _profile_output_path(source, profile_root, value)
+        for value in source.command
+    ]
+    script = str(command[1]) if len(command) > 1 else ""
+    if branch == "batch":
+        command = _replace_option(command, "--iterations", "2")
+    elif script == "scripts/run_official_bui_osgpr_era5.py":
+        command = _replace_option(command, "--max-stream-blocks", "2")
+    else:
+        command = _replace_option(command, "--max-blocks", "2")
+    expected = tuple(
+        profile_root / path.relative_to(source.output_dir)
+        if path.is_relative_to(source.output_dir)
+        else path
+        for path in source.expected
+    )
+    return replace(
+        source,
+        stage="stage4",
+        command=command,
+        output_dir=profile_root,
+        expected=expected,
+        timeout_seconds=timeout_seconds,
+        device_class="a100_ncu_profile",
+    )
+
+
+def _profile_metadata(
+    *,
+    source: Job,
+    branch: str,
+    efficiency_spec: dict[str, Any],
+) -> dict[str, Any]:
+    script = str(source.command[1]) if len(source.command) > 1 else ""
+    precision = (
+        str(source.command[source.command.index("--dtype") + 1])
+        if "--dtype" in source.command
+        else "float64"
+    )
+    if branch == "batch":
+        range_name = "era5_batch_update"
+        stochastic = script in {
+            "scripts/run_official_gpflow_svgp_era5.py",
+            "scripts/run_official_markovflow_stsvgp_era5.py",
+        }
+        unit = "one_full_data_pass" if stochastic else "one_full_fit_optimization_update"
+        native_unit = "one_minibatch_optimization_update" if stochastic else unit
+        comparison_group = "stochastic_full_data_pass" if stochastic else "batch_full_fit_update"
+        objective = "one steady-state batch optimization update"
+    else:
+        range_name = "era5_online_block"
+        unit = "one_arrival_block_update_and_prediction"
+        native_unit = unit
+        comparison_group = "online_arrival_block"
+        objective = "one steady-state strict-online block update and prediction"
+    metadata = _efficiency_metadata(
+        efficiency_spec=efficiency_spec,
+        table=("Table2A" if branch == "batch" else "Table3A" if source.scope == "task1_2" else "Table3B"),
+        method_family=_method_family(source.method),
+        configuration=_job_configuration(source),
+        measurement_status="scheduled_common_hardware_counter",
+        objective=objective,
+        unit=unit,
+    )
+    metadata.update(
+        {
+            "compute_source_method": source.method,
+            "manifest_branch": branch,
+            "native_work_unit": native_unit,
+            "comparison_group": comparison_group,
+            "precision": precision,
+            "hardware_class": "NVIDIA A100",
+            "warmup": 1,
+            "repeats": 1,
+            "ncu": {
+                "enabled": True,
+                "range": range_name,
+                "work_unit": unit,
+                "target": "last",
+            },
+        }
+    )
+    return metadata
+
+
 def _job_configuration(job: Job) -> dict[str, Any]:
     configuration: dict[str, Any] = {"method": job.method}
     for flag, key in (("--mt", "mt"), ("--ms", "ms"), ("--representation", "representation")):
@@ -1233,6 +1358,19 @@ def _compute_contract(
     script = str(job.command[1]) if len(job.command) > 1 else ""
     method = source_method or job.method
     family = _method_family(method)
+    if family in {"xlag_mean", "xlag_online"}:
+        return {
+            "schema_version": 2,
+            "baseline_family": family,
+            "branch": branch,
+            "data_access_unit": "cpu_only_reference",
+            "measurement_scope": "not_applicable",
+            "work_unit": "not_applicable",
+            "native_work_unit": "not_applicable",
+            "comparison_group": "not_applicable",
+            "required_measurement_backend": "not_applicable",
+            "comparison_status": "not_applicable",
+        }
     mode = branch
     if branch == "efficiency":
         if script in {
@@ -1251,38 +1389,50 @@ def _compute_contract(
         mode = "online"
 
     if mode == "batch":
-        if script == "scripts/run_official_gpflow_svgp_era5.py" or method.startswith(
-            ("gpflow_", "preflight_gpflow_")
-        ):
+        if script in {
+            "scripts/run_official_gpflow_svgp_era5.py",
+            "scripts/run_official_markovflow_stsvgp_era5.py",
+        } or method.startswith(("gpflow_", "preflight_gpflow_", "markovflow_")):
             data_access = "stochastic_minibatch"
-            unit = "one_minibatch_optimization_update"
+            unit = "one_full_data_pass"
+            native_unit = "one_minibatch_optimization_update"
+            comparison_group = "stochastic_full_data_pass"
         elif script in {
             ROUTE_B_BATCH_SCRIPT,
             "scripts/benchmark_routeb_batch_objective.py",
             "scripts/run_official_stvgp_legacy.py",
-            "scripts/run_official_markovflow_stsvgp_era5.py",
         } or method.startswith(("routeb_", "official_", "markovflow_")):
             data_access = "full_fit_dataset"
             unit = "one_full_fit_optimization_update"
+            native_unit = unit
+            comparison_group = "batch_full_fit_update"
         else:
             data_access = "undeclared"
             unit = "undeclared"
+            native_unit = "undeclared"
+            comparison_group = "undeclared"
         scope = "optimization_update"
     elif mode == "online":
         data_access = "arrival_block"
-        unit = "one_block_update_and_prediction"
+        unit = "one_arrival_block_update_and_prediction"
+        native_unit = unit
+        comparison_group = "online_arrival_block"
         scope = "block_update_and_prediction"
     else:
         data_access = "not_applicable"
         unit = "not_applicable"
+        native_unit = unit
+        comparison_group = unit
         scope = "not_applicable"
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "baseline_family": family,
         "branch": branch,
         "data_access_unit": data_access,
         "measurement_scope": scope,
         "work_unit": unit,
+        "native_work_unit": native_unit,
+        "comparison_group": comparison_group,
         "required_measurement_backend": "nsight_compute_executed_gpu_flops",
         "comparison_status": (
             "pending_common_hardware_counter"
@@ -1295,7 +1445,7 @@ def _compute_contract(
 def build_efficiency_jobs(
     *, spec: dict[str, Any], base_config: dict[str, Any], benchmark: Path, pythons: dict[str, Path]
 ) -> list[tuple[Job, dict[str, Any], str]]:
-    """Build actual seed-0 probes plus explicit baseline accounting records."""
+    """Build seed-0 probes and isolated common-counter baseline profiles."""
     routeb_python = pythons["routeb"]
     entries: list[tuple[Job, dict[str, Any], str]] = []
     for builder in (
@@ -1331,18 +1481,27 @@ def build_efficiency_jobs(
     for source in short_jobs:
         if source.seed != 0 or source.scope != "task1_2":
             continue
-        if source.method in {"xlag_mean_only"} or source.method.startswith(
-            ("official_", "markovflow_", "gpflow_feasibility_", "preflight_gpflow_")
-        ) or (
-            source.method.startswith("routeb_")
-            and source.method != "routeb_joint_analytic_hippo_rff_mt128_ms128"
-        ):
-            status = "analytical_lower_order" if source.method == "xlag_mean_only" else "not_instrumented"
-            objective = (
-                "linear X-lag ridge mean solve lower-order analytical reference"
-                if status == "analytical_lower_order"
-                else "steady-state method update; wrapper has no compatible implementation counter"
+        script = str(source.command[1]) if len(source.command) > 1 else ""
+        if script in NCU_BATCH_SCRIPTS and not source.method.startswith("preflight_gpflow_"):
+            profile_root = (
+                benchmark
+                / "efficiency"
+                / "profiles"
+                / "batch"
+                / source.scope
+                / source.method
+                / f"seed{source.seed}"
             )
+            job = _profile_job(
+                source=source,
+                profile_root=profile_root,
+                branch="batch",
+                timeout_seconds=source.timeout_seconds,
+            )
+            entries.append(
+                (job, _profile_metadata(source=source, branch="batch", efficiency_spec=spec["efficiency"]), "efficiency_profile")
+            )
+        elif source.method == "xlag_mean_only":
             job, metadata = _efficiency_reference_job(
                 base_config=base_config,
                 spec=spec,
@@ -1352,41 +1511,82 @@ def build_efficiency_jobs(
                 source_method=source.method,
                 method_family=_method_family(source.method),
                 configuration=_job_configuration(source),
-                measurement_status=status,
-                objective=objective,
+                measurement_status="cpu_not_applicable",
+                objective="CPU-only linear X-lag ridge mean reference; excluded from GPU FLOP ratios",
             )
             entries.append((job, metadata, "efficiency_record"))
+
+    for source in build_long_full_jobs(
+        spec=spec,
+        base_config=base_config,
+        benchmark=benchmark,
+        python=pythons["stvgp"],
+    ):
+        if source.seed != 0:
+            continue
+        profile_root = (
+            benchmark
+            / "efficiency"
+            / "profiles"
+            / "batch"
+            / source.scope
+            / source.method
+            / f"seed{source.seed}"
+        )
+        job = _profile_job(
+            source=source,
+            profile_root=profile_root,
+            branch="batch",
+            timeout_seconds=source.timeout_seconds,
+        )
+        entries.append(
+            (job, _profile_metadata(source=source, branch="batch", efficiency_spec=spec["efficiency"]), "efficiency_profile")
+        )
+
     online_jobs = build_online_jobs(
         spec=spec,
         base_config=base_config,
         benchmark=benchmark,
         pythons=pythons,
     )
-    probed_online = {
-        ("task1_2", "routeb_cumulative_hippo_mt128_ms128"),
-        ("task1_2", "routeb_global_inducing_mt128_ms128"),
-        ("task1_10", "routeb_cumulative_hippo_mt128_ms128"),
-        ("task1_10", "routeb_global_inducing_mt128_ms128"),
-    }
     for source, kind in online_jobs:
         if kind != "online" or source.seed != 0:
             continue
-        if (source.scope, source.method) in probed_online:
-            continue
         table = "Table3A" if source.scope == "task1_2" else "Table3B"
-        job, metadata = _efficiency_reference_job(
-            base_config=base_config,
-            spec=spec,
-            benchmark=benchmark,
-            python=routeb_python,
-            table=table,
-            source_method=source.method,
-            method_family=_method_family(source.method),
-            configuration=_job_configuration(source),
-            measurement_status="not_instrumented",
-            objective="strict-online baseline wrapper has no compatible implementation counter",
-        )
-        entries.append((job, metadata, "efficiency_record"))
+        script = str(source.command[1]) if len(source.command) > 1 else ""
+        if script in NCU_ONLINE_SCRIPTS:
+            profile_root = (
+                benchmark
+                / "efficiency"
+                / "profiles"
+                / "online"
+                / source.scope
+                / source.method
+                / f"seed{source.seed}"
+            )
+            job = _profile_job(
+                source=source,
+                profile_root=profile_root,
+                branch="online",
+                timeout_seconds=source.timeout_seconds,
+            )
+            entries.append(
+                (job, _profile_metadata(source=source, branch="online", efficiency_spec=spec["efficiency"]), "efficiency_profile")
+            )
+        elif source.method.startswith("xlag_"):
+            job, metadata = _efficiency_reference_job(
+                base_config=base_config,
+                spec=spec,
+                benchmark=benchmark,
+                python=routeb_python,
+                table=table,
+                source_method=source.method,
+                method_family=_method_family(source.method),
+                configuration=_job_configuration(source),
+                measurement_status="cpu_not_applicable",
+                objective="CPU-only X-lag online reference; excluded from GPU FLOP ratios",
+            )
+            entries.append((job, metadata, "efficiency_record"))
 
     output = benchmark / "efficiency"
     summary = Job(
@@ -1402,11 +1602,17 @@ def build_efficiency_jobs(
             str(benchmark),
             "--output",
             str(output / "era5_a100_efficiency.csv"),
+            "--ratio-output",
+            str(output / "era5_a100_flop_ratios.csv"),
             "--markdown-output",
             str(output / "era5_a100_efficiency.md"),
         ],
         output_dir=output,
-        expected=(output / "era5_a100_efficiency.csv", output / "era5_a100_efficiency.md"),
+        expected=(
+            output / "era5_a100_efficiency.csv",
+            output / "era5_a100_flop_ratios.csv",
+            output / "era5_a100_efficiency.md",
+        ),
         dependencies=(),
         timeout_seconds=int(base_config["timeouts_seconds"]["report"]),
         device_class="a100_efficiency_serial",
@@ -1663,10 +1869,11 @@ def _validate_entries(
                 raise AssertionError("Task2 postprocessing has an unexpected command")
 
     probes = [entry for entry in efficiency_entries if entry["kind"] == "efficiency_probe"]
+    profiles = [entry for entry in efficiency_entries if entry["kind"] == "efficiency_profile"]
     records = [entry for entry in efficiency_entries if entry["kind"] == "efficiency_record"]
     summaries = [entry for entry in efficiency_entries if entry["kind"] == "efficiency_summary"]
-    if len(probes) < 6 or not records or len(summaries) != 1:
-        raise AssertionError("Efficiency manifest needs implementation probes, baseline records, and one summary")
+    if len(probes) < 6 or len(profiles) < 40 or not records or len(summaries) != 1:
+        raise AssertionError("Efficiency manifest needs probes, common-counter profiles, CPU references, and one summary")
     if {entry["seed"] for entry in probes} != {0}:
         raise AssertionError("Efficiency probes must use seed0")
     required_metadata = {"objective", "unit", "warmup", "repeats", "execution"}
@@ -1680,10 +1887,14 @@ def _validate_entries(
         for entry in efficiency_entries
     ):
         raise AssertionError("Every efficiency entry must declare single-card serial execution")
-    if not any(entry["measurement_status"] == "not_instrumented" for entry in records):
-        raise AssertionError("Efficiency baseline records must preserve not_instrumented rows")
-    if not any(entry["measurement_status"] == "analytical_lower_order" for entry in records):
-        raise AssertionError("Efficiency baseline records must preserve analytical lower-order rows")
+    if any(entry["branch"] not in {"batch", "online"} for entry in profiles):
+        raise AssertionError("Common-counter profile entries need an unambiguous batch or online branch")
+    if any(entry.get("ncu", {}).get("enabled") is not True for entry in profiles):
+        raise AssertionError("Common-counter profiles must enable Nsight Compute")
+    if any(entry["measurement_status"] != "scheduled_common_hardware_counter" for entry in profiles):
+        raise AssertionError("Common-counter profiles must be marked as scheduled until Nsight artifacts exist")
+    if not records or any(entry["measurement_status"] != "cpu_not_applicable" for entry in records):
+        raise AssertionError("Only explicit CPU references may remain outside the GPU counter protocol")
 
 
 def _validate_dependency_producers(
@@ -1850,7 +2061,7 @@ def build_manifests(
             job,
             manifest_id=manifest_id,
             kind=kind,
-            branch="efficiency",
+            branch=str(metadata.get("manifest_branch", "efficiency")),
             metadata=metadata,
         )
         for job, metadata, kind in efficiency_jobs

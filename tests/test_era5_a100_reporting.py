@@ -13,6 +13,7 @@ from scripts.generate_era5_a100_shared_online_report import (
 )
 from scripts.summarize_era5_a100_efficiency import (
     aggregate_efficiency_records,
+    common_counter_flop_ratios,
     normalize_efficiency_record,
     summarize_efficiency,
 )
@@ -366,7 +367,9 @@ def test_compute_contract_distinguishes_batch_minibatch_and_online_units() -> No
     assert routeb["baseline_family"] == "routeb"
     assert routeb["data_access_unit"] == "full_fit_dataset"
     assert gpflow["data_access_unit"] == "stochastic_minibatch"
-    assert online["work_unit"] == "one_block_update_and_prediction"
+    assert gpflow["work_unit"] == "one_full_data_pass"
+    assert gpflow["native_work_unit"] == "one_minibatch_optimization_update"
+    assert online["work_unit"] == "one_arrival_block_update_and_prediction"
 
     reference = job_entry(
         job("record_table2a_gpflow", "-c"),
@@ -378,6 +381,64 @@ def test_compute_contract_distinguishes_batch_minibatch_and_online_units() -> No
     assert reference["compute_contract"]["baseline_family"] == "gpflow"
     assert reference["compute_contract"]["data_access_unit"] == "stochastic_minibatch"
 
+
+def test_common_counter_gate_requires_metrics_and_matching_group(tmp_path: Path) -> None:
+    output = tmp_path / "runs" / "task1_2" / "online" / "routeb" / "seed0"
+    output.mkdir(parents=True)
+    contract = {
+        "schema_version": 2,
+        "baseline_family": "routeb",
+        "data_access_unit": "arrival_block",
+        "measurement_scope": "block_update_and_prediction",
+        "work_unit": "one_arrival_block_update_and_prediction",
+        "native_work_unit": "one_arrival_block_update_and_prediction",
+        "comparison_group": "online_arrival_block",
+        "required_measurement_backend": "nsight_compute_executed_gpu_flops",
+        "comparison_status": "pending_common_hardware_counter",
+    }
+    (output / "compute_contract.json").write_text(
+        json.dumps({"contract": contract}), encoding="utf-8"
+    )
+    metrics = {
+        "smsp__sass_thread_inst_executed_op_dadd_pred_on.sum": 10.0,
+        "smsp__sass_thread_inst_executed_op_dmul_pred_on.sum": 20.0,
+        "smsp__sass_thread_inst_executed_op_dfma_pred_on.sum": 30.0,
+    }
+    payload = {
+        "scope": "task1_2",
+        "branch": "online",
+        "method": "routeb",
+        "seed": 0,
+        "status": "complete",
+        "measurement_backend": "nsight_compute",
+        "precision": "float64",
+        "hardware_class": "NVIDIA A100",
+        "ncu_metric_totals": metrics,
+        "nsight_executed_gpu_flops": 90.0,
+        "nsight_flops_per_native_unit": 90.0,
+        "nsight_flops_per_unit": 90.0,
+        "nsight_flops_total": 90.0,
+    }
+    path = output / "ncu_flops.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    first = normalize_efficiency_record(payload, source_path=path)
+    first.update({"artifacts_complete": True})
+    assert first["comparison_status"] == "common_hardware_counter_complete"
+
+    second = dict(first, method="bui", nsight_flops_per_unit=180.0, nsight_flops_total=180.0)
+    second["source_path"] = "other/ncu_flops.json"
+    ratios = common_counter_flop_ratios([first, second])
+    assert {row["method"] for row in ratios} == {"routeb", "bui"}
+    assert max(row["flop_ratio_to_group_min"] for row in ratios) == 2.0
+
+    mismatched = dict(second, method="gpflow", comparison_group="stochastic_full_data_pass")
+    ratios = common_counter_flop_ratios([first, mismatched])
+    assert {row["method"] for row in ratios} == {"routeb", "gpflow"}
+    assert all(row["comparison_group"] in {"online_arrival_block", "stochastic_full_data_pass"} for row in ratios)
+
+    incomplete = dict(first)
+    incomplete["comparison_status"] = "pending_common_hardware_counter"
+    assert common_counter_flop_ratios([incomplete]) == []
 
 def test_report_separates_online_from_batch_and_writes_outputs(tmp_path: Path) -> None:
     root = _fixture(tmp_path)

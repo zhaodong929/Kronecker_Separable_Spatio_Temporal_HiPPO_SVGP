@@ -28,6 +28,11 @@ from markovflow.models import SpatioTemporalSparseCVI
 from markovflow.models import SpatioTemporalSparseVariational
 from markovflow.ssm_natgrad import SSMNaturalGradient
 
+try:
+    from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
+except ImportError:
+    from era5_ncu_ranges import pop_range, profile_this_index, push_range
+
 
 def flatten_inputs(times, coordinates, spatial_indices):
     selected = np.asarray(coordinates[spatial_indices], dtype=np.float64)
@@ -141,6 +146,7 @@ def train(
     seed,
     prediction_chunk_size,
     variational_optimizer,
+    profile_enabled=True,
 ):
     rng = np.random.RandomState(seed)
     adam = tf.optimizers.Adam(float(learning_rate))
@@ -181,7 +187,12 @@ def train(
     for iteration in range(1, int(iterations) + 1):
         x_batch, y_batch = ordered_minibatch()
         iteration_started = time.perf_counter()
-        loss = float(np.asarray(one_step(x_batch, y_batch)))
+        profile_range = profile_enabled and profile_this_index(iteration - 1, int(iterations))
+        profile_open = push_range("era5_batch_update", profile_range)
+        try:
+            loss = float(np.asarray(one_step(x_batch, y_batch)))
+        finally:
+            pop_range(profile_open)
         iteration_seconds = time.perf_counter() - iteration_started
         iteration_times.append(iteration_seconds)
         row = {
@@ -311,6 +322,7 @@ def main():
         args.seed,
         args.prediction_chunk_size,
         args.variational_optimizer,
+        False,
     )
 
     x_train = flatten_inputs(times, coordinates, train_indices)
@@ -333,6 +345,7 @@ def main():
         args.seed,
         args.prediction_chunk_size,
         args.variational_optimizer,
+        True,
     )
     x_test = flatten_inputs(times, coordinates, test_indices)
     y_test = flatten_targets(y_original, test_indices)

@@ -33,10 +33,15 @@ from stvgp_kronecker.benchmark_runtime import (
     host_snapshot,
     resolve_torch_runtime,
 )
+from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
 from stvgp_kronecker.data.hipposvgp_era5 import load_hipposvgp_era5
 from stvgp_kronecker.routeb_empirical_bayes import (
     BatchRouteBEmpiricalBayes,
     joint_sufficient_statistics,
+)
+from stvgp_kronecker.temporal_kernel_config import (
+    load_spectral_mixture_config,
+    temporal_kernel_metadata,
 )
 
 
@@ -96,6 +101,19 @@ def load_joint_phi(
     xlag_length: int,
     data_part: str,
 ) -> tuple[np.ndarray, float]:
+    protocol_key = "calibration_phi" if data_part == "calibration" else "stream_phi"
+    if protocol_key in arrays:
+        started = time.perf_counter()
+        phi = np.asarray(arrays[protocol_key], dtype=np.float32)
+        expected_y = np.asarray(
+            arrays["calibration_y" if data_part == "calibration" else "stream_y"]
+        )
+        if phi.shape[:2] != expected_y.shape or phi.ndim != 3:
+            raise ValueError(
+                f"{protocol_key} must have shape (time, space, features); "
+                f"got {phi.shape} for target {expected_y.shape}"
+            )
+        return phi, time.perf_counter() - started
     metadata = json.loads(protocol_json.read_text(encoding="utf-8"))
     root = Path(metadata["root"]) if data_root is None else data_root
     if data_part == "calibration":
@@ -180,6 +198,16 @@ def main() -> None:
     )
     parser.add_argument("--beta-prior-variance", type=float, default=1000.0)
     parser.add_argument("--rff-sample-size", type=int, default=256)
+    parser.add_argument(
+        "--temporal-kernel",
+        choices=["matern32", "spectral_mixture"],
+        default="matern32",
+    )
+    parser.add_argument(
+        "--spectral-mixture-json",
+        type=Path,
+        help="Fixed one-dimensional mixture weights, means, and scales for HiPPO.",
+    )
     parser.add_argument("--xlag-length", type=int, default=10)
     parser.add_argument(
         "--joint-phi-npy",
@@ -222,6 +250,15 @@ def main() -> None:
         help="Optional shared orthonormal feature basis stored under the 'basis' key.",
     )
     args = parser.parse_args()
+
+    spectral_mixture = load_spectral_mixture_config(args.spectral_mixture_json)
+    if args.temporal_kernel == "spectral_mixture":
+        if args.representation != "analytic_hippo_rff":
+            raise ValueError("The fixed spectral-mixture screen is only supported by HiPPO-RFF")
+        if spectral_mixture is None:
+            raise ValueError("--spectral-mixture-json is required for spectral_mixture")
+    elif spectral_mixture is not None:
+        raise ValueError("--spectral-mixture-json requires --temporal-kernel spectral_mixture")
     if args.early_stopping_patience_validations < 0:
         raise ValueError("Early-stopping patience must be non-negative")
     if args.early_stopping_min_delta < 0.0:
@@ -254,7 +291,14 @@ def main() -> None:
     arrays = np.load(args.protocol_npz)
     feature_loading_seconds = 0.0
     if args.target_mode == "joint_xlag":
-        if args.protocol_json is None:
+        protocol_phi_key = (
+            "calibration_phi" if args.data_part == "calibration" else "stream_phi"
+        )
+        if (
+            args.protocol_json is None
+            and args.joint_phi_npy is None
+            and protocol_phi_key not in arrays
+        ):
             raise ValueError("--protocol-json is required for joint_xlag")
         if args.joint_phi_npy is None:
             data.phi, feature_loading_seconds = load_joint_phi(
@@ -267,10 +311,10 @@ def main() -> None:
         else:
             started = time.perf_counter()
             data.phi = np.load(args.joint_phi_npy, mmap_mode="r")
-            expected_shape = (*data.y.shape, 133)
-            if data.phi.shape != expected_shape:
+            if data.phi.ndim != 3 or data.phi.shape[:2] != data.y.shape:
                 raise ValueError(
-                    f"Cached Phi shape mismatch: expected {expected_shape}, got {data.phi.shape}"
+                    "Cached Phi must have shape (time, space, features): "
+                    f"target={data.y.shape}, phi={data.phi.shape}"
                 )
             feature_loading_seconds = time.perf_counter() - started
     feature_projection = None
@@ -323,6 +367,8 @@ def main() -> None:
         rff_sample_size=args.rff_sample_size,
         seed=args.model_seed,
         objective_type=args.training_objective,
+        temporal_kernel=args.temporal_kernel,
+        spectral_mixture=spectral_mixture,
     ).to(device=runtime.device, dtype=runtime.dtype)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     version_index = int(args.objective_optimization_version[1])
@@ -402,24 +448,29 @@ def main() -> None:
     iterations_completed = 0
     training_started = time.perf_counter()
     for iteration in range(1, args.iterations + 1):
+        profile_range = profile_this_index(iteration - 1, args.iterations)
+        profile_open = push_range("era5_batch_update", profile_range)
         with SynchronizedTimer(runtime.synchronize) as iteration_timer:
-            optimizer.zero_grad(set_to_none=True)
-            objective = model.objective(
-                y_matrix=y_train,
-                phi_tensor=phi_train,
-                spatial_coordinates=coordinates_train,
-                beta_prior_variance=args.beta_prior_variance,
-                **objective_options,
-            )
-            loss = objective.nlml_per_observation
-            if not torch.isfinite(loss):
-                raise RuntimeError(f"Non-finite NLML at iteration {iteration}")
-            loss.backward()
-            gradient_norm_tensor = torch.nn.utils.clip_grad_norm_(
-                model.parameters(), 20.0
-            )
-            optimizer.step()
-            model.clamp_parameters()
+            try:
+                optimizer.zero_grad(set_to_none=True)
+                objective = model.objective(
+                    y_matrix=y_train,
+                    phi_tensor=phi_train,
+                    spatial_coordinates=coordinates_train,
+                    beta_prior_variance=args.beta_prior_variance,
+                    **objective_options,
+                )
+                loss = objective.nlml_per_observation
+                if not torch.isfinite(loss):
+                    raise RuntimeError(f"Non-finite NLML at iteration {iteration}")
+                loss.backward()
+                gradient_norm_tensor = torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), 20.0
+                )
+                optimizer.step()
+                model.clamp_parameters()
+            finally:
+                pop_range(profile_open)
         iteration_seconds = iteration_timer.elapsed
         gradient_norm = float(gradient_norm_tensor.detach().cpu())
         iteration_times.append(iteration_seconds)
@@ -535,6 +586,7 @@ def main() -> None:
         "data_part": args.data_part,
         "target_mode": args.target_mode,
         "temporal_representation": args.representation,
+        "temporal_kernel": temporal_kernel_metadata(args.temporal_kernel, spectral_mixture),
         "evaluation_backend": evaluation_backend,
         "temporal_factor_device": str(runtime.device),
         "split_seed": args.split_seed,

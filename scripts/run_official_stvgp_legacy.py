@@ -18,6 +18,11 @@ import time
 
 import numpy as np
 
+try:
+    from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
+except ImportError:
+    from era5_ncu_ranges import pop_range, profile_this_index, push_range
+
 
 bayesnewton = None
 jax = None
@@ -438,7 +443,7 @@ def _update_learned_xlag(args, built, phase, state, iteration):
     return time.perf_counter() - started
 
 
-def _train_phase(args, built, times, iterations, validation_record=None, learned_state=None, trajectory_record=None):
+def _train_phase(args, built, times, iterations, validation_record=None, learned_state=None, trajectory_record=None, profile_enabled=True):
     if int(iterations) < 1:
         raise ValueError("iterations must be >= 1")
     if validation_record is not None and trajectory_record is not None:
@@ -461,7 +466,12 @@ def _train_phase(args, built, times, iterations, validation_record=None, learned
                 args, built, built["phase"], learned_state, iteration
             )
         update_started = time.perf_counter()
-        loss = built["train_op"](built["phase"]["y_train_grid"])
+        profile_range = profile_enabled and profile_this_index(iteration - 1, int(iterations))
+        profile_open = push_range("era5_batch_update", profile_range)
+        try:
+            loss = built["train_op"](built["phase"]["y_train_grid"])
+        finally:
+            pop_range(profile_open)
         iteration_seconds = time.perf_counter() - update_started
         cumulative_update_seconds += update_seconds + iteration_seconds
         loss_value = float(np.asarray(loss[0]))
@@ -667,6 +677,7 @@ def main():
         validation_record=validation_record,
         learned_state=learned_state,
         trajectory_record=trajectory_record,
+        profile_enabled=not splits["has_validation"],
     )
 
     if splits["has_validation"]:
@@ -681,6 +692,7 @@ def main():
             refit_built,
             times,
             selection_result["best_iteration"],
+            profile_enabled=True,
         )
         final_built = refit_built
         final_phase = refit_phase

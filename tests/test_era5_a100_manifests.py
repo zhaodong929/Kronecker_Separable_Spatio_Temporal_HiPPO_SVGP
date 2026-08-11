@@ -350,14 +350,16 @@ def test_online_dependencies_are_produced_by_prior_manifests(tmp_path: Path) -> 
     )
 
 
-def test_efficiency_contains_seed0_probes_records_and_serial_summary(tmp_path: Path) -> None:
+def test_efficiency_contains_common_counter_profiles_and_cpu_references(tmp_path: Path) -> None:
     outputs, _ = build(tmp_path)
     rows = read_jsonl(outputs["efficiency"])
     probes = [row for row in rows if row["kind"] == "efficiency_probe"]
+    profiles = [row for row in rows if row["kind"] == "efficiency_profile"]
     records = [row for row in rows if row["kind"] == "efficiency_record"]
     summary = [row for row in rows if row["kind"] == "efficiency_summary"]
     assert len(probes) == 6
-    assert len(records) >= 40
+    assert len(profiles) == 44
+    assert len(records) == 5
     assert len(summary) == 1
     assert {row["table"] for row in probes} == {"Table2A", "Table3A", "Table3B"}
     assert {row["seed"] for row in probes} == {0}
@@ -366,18 +368,26 @@ def test_efficiency_contains_seed0_probes_records_and_serial_summary(tmp_path: P
         row["objective"] and row["unit"] and row["execution"] == {"gpu_count": 1, "serial": True}
         for row in probes
     )
-    assert {row["measurement_status"] for row in records} >= {
-        "not_instrumented",
-        "analytical_lower_order",
-    }
-    assert any(row["configuration"].get("method") == "official_st_vgp_full" for row in records)
-    assert any(row["configuration"].get("method", "").startswith("gpflow_feasibility_") for row in records)
-    assert any(row["configuration"].get("method", "").startswith("markovflow_") for row in records)
+    assert {row["measurement_status"] for row in records} == {"cpu_not_applicable"}
+    assert all(row["compute_contract"]["comparison_status"] == "not_applicable" for row in records)
+    assert {row["branch"] for row in profiles} == {"batch", "online"}
+    assert all(row["ncu"] == {"enabled": True, "range": row["ncu"]["range"], "target": "last", "work_unit": row["ncu"]["work_unit"]} for row in profiles)
+    assert all(row["measurement_status"] == "scheduled_common_hardware_counter" for row in profiles)
+    assert all(row["precision"] == "float64" and row["hardware_class"] == "NVIDIA A100" for row in profiles)
+    assert any(row["method"] == "official_st_vgp_full" for row in profiles)
+    assert any(row["method"].startswith("gpflow_feasibility_") for row in profiles)
+    assert any(row["method"].startswith("markovflow_") for row in profiles)
+    stochastic = [row for row in profiles if row["method"].startswith(("gpflow_", "markovflow_"))]
+    assert stochastic
+    assert all(row["compute_contract"]["data_access_unit"] == "stochastic_minibatch" for row in stochastic)
+    assert all(row["compute_contract"]["work_unit"] == "one_full_data_pass" for row in stochastic)
+    assert all(row["compute_contract"]["native_work_unit"] == "one_minibatch_optimization_update" for row in stochastic)
     shared_rows = read_jsonl(outputs["shared_batch_short"])
     assert all(row["kind"] != "batch" for row in shared_rows if row["scope"] == "calibration")
     assert summary[0]["execution"] == {"gpu_count": 1, "serial": True}
     assert summary[0]["argv"][1] == "scripts/summarize_era5_a100_efficiency.py"
     assert "--output" in summary[0]["argv"]
+    assert "--ratio-output" in summary[0]["argv"]
     assert "--markdown-output" in summary[0]["argv"]
 
 

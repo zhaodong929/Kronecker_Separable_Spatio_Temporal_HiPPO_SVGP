@@ -29,6 +29,7 @@ from stvgp_kronecker.benchmark_runtime import (  # noqa: E402
     host_snapshot,
     tensorflow_memory,
 )
+from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
 
 
 NP_DTYPE = np.float64
@@ -58,7 +59,7 @@ def product_inducing(times, spatial_inducing, mt):
     )
 
 
-def make_kernel(theta):
+def make_kernel(theta, *, frozen: bool):
     temporal = gpflow.kernels.Matern32(
         variance=float(theta["kernel_variance"]),
         lengthscales=float(theta["ell_t"]),
@@ -75,8 +76,40 @@ def make_kernel(theta):
         active_dims=[2],
     )
     kernel = temporal * latitude * longitude
-    gpflow.set_trainable(kernel, False)
+    gpflow.set_trainable(kernel, not frozen)
     return kernel
+
+
+def adapt_model(model, *, steps: int, learning_rate: float) -> int:
+    """Run a bounded, causal Adam update for the official GPflow model."""
+
+    if steps <= 0:
+        return 0
+    optimizer = tf.optimizers.Adam(float(learning_rate))
+    completed = 0
+    for _ in range(int(steps)):
+        with tf.GradientTape() as tape:
+            loss = model.training_loss()
+        variables = model.trainable_variables
+        gradients = tape.gradient(loss, variables)
+        if not bool(tf.math.is_finite(loss)) or any(
+            gradient is None or not bool(tf.reduce_all(tf.math.is_finite(gradient)))
+            for gradient in gradients
+        ):
+            raise FloatingPointError("Non-finite Bui adaptive objective or gradient")
+        optimizer.apply_gradients(zip(gradients, variables))
+        completed += 1
+    return completed
+
+
+def theta_from_model(model) -> dict[str, object]:
+    temporal, latitude, longitude = model.kernel.kernels
+    return {
+        "ell_t": float(temporal.lengthscales.numpy()),
+        "ell_s": [float(latitude.lengthscales.numpy()), float(longitude.lengthscales.numpy())],
+        "kernel_variance": float(temporal.variance.numpy()),
+        "noise_std": float(np.sqrt(model.likelihood.variance.numpy())),
+    }
 
 
 def metric_row(y_true, mean, variance):
@@ -136,7 +169,7 @@ def write_csv(rows, path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--protocol-npz", type=Path, required=True)
-    parser.add_argument("--theta-json", type=Path, required=True)
+    parser.add_argument("--theta-json", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--blockwise-output", type=Path, required=True)
     parser.add_argument("--predictions-output", type=Path, default=None)
@@ -154,10 +187,35 @@ def main():
             "the GP prior, matching the strict-online benchmark protocol."
         ),
     )
+    parser.add_argument(
+        "--delayed-observations",
+        action="store_true",
+        help="Absorb each scored hidden block once before the next visible update.",
+    )
+    parser.add_argument(
+        "--adaptive",
+        action="store_true",
+        help=(
+            "Use Bui-owned Task-1 empirical Bayes and bounded causal online "
+            "adaptation of kernel, likelihood, and pseudo-input locations."
+        ),
+    )
+    parser.add_argument("--adaptive-calibration-steps", type=int, default=25)
+    parser.add_argument("--adaptive-online-steps", type=int, default=5)
+    parser.add_argument("--adaptive-learning-rate", type=float, default=0.01)
+    parser.add_argument("--initial-ell-t", type=float, default=0.05)
+    parser.add_argument("--initial-ell-s", type=float, nargs=2, default=[0.35, 0.35])
+    parser.add_argument("--initial-kernel-variance", type=float, default=1.0)
+    parser.add_argument("--initial-noise", type=float, default=0.1)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--device", default="auto")
     parser.add_argument("--dtype", choices=["float32", "float64"], default="float64")
     args = parser.parse_args()
+
+    if not args.adaptive and args.theta_json is None:
+        raise ValueError("--theta-json is required for controlled Bui OSGPR")
+    if args.adaptive and (args.adaptive_calibration_steps < 0 or args.adaptive_online_steps < 0):
+        raise ValueError("Adaptive optimization steps must be non-negative")
 
     global NP_DTYPE
     runtime = configure_tensorflow(tf, device=args.device, dtype=args.dtype)
@@ -193,8 +251,17 @@ def main():
         calibration_blocks = calibration_blocks[: args.max_calibration_blocks]
     if args.max_stream_blocks > 0:
         stream_blocks = stream_blocks[: args.max_stream_blocks]
-    theta_payload = json.loads(args.theta_json.read_text(encoding="utf-8"))
-    theta = theta_payload["learned_theta"]
+    theta_payload = None if args.theta_json is None else json.loads(args.theta_json.read_text(encoding="utf-8"))
+    theta = (
+        {
+            "ell_t": float(args.initial_ell_t),
+            "ell_s": [float(value) for value in args.initial_ell_s],
+            "kernel_variance": float(args.initial_kernel_variance),
+            "noise_std": float(args.initial_noise),
+        }
+        if args.adaptive
+        else theta_payload["learned_theta"]
+    )
     noise_variance = float(theta["noise_std"]) ** 2
     inducing_key = f"inducing_coords_ms{args.ms}"
     spatial_inducing = np.asarray(arrays[inducing_key], dtype=NP_DTYPE)
@@ -206,12 +273,13 @@ def main():
     old_kernel_covariance = None
     old_z = z
     calibration_seconds = 0.0
-    if args.task1_posterior_warm_start:
+    task1_warm_start = bool(args.task1_posterior_warm_start or args.adaptive)
+    if task1_warm_start:
         for block_id, block in enumerate(calibration_blocks):
             x_new = flatten_inputs(calibration_times, coordinates, train_indices, block)
             y_new = flatten_targets(calibration_residual, train_indices, block)
             started = time.perf_counter()
-            kernel = make_kernel(theta)
+            kernel = make_kernel(theta, frozen=not args.adaptive)
             if old_mean is None:
                 model = gpflow.models.SGPR(
                     data=(x_new, y_new),
@@ -219,7 +287,8 @@ def main():
                     inducing_variable=z,
                     noise_variance=noise_variance,
                 )
-                gpflow.set_trainable(model, False)
+                if not args.adaptive:
+                    gpflow.set_trainable(model, False)
             else:
                 model = OSGPR_VFE(
                     data=(x_new, y_new),
@@ -231,9 +300,19 @@ def main():
                     Z=z,
                 )
                 model.likelihood.variance.assign(noise_variance)
-                gpflow.set_trainable(model, False)
+                if not args.adaptive:
+                    gpflow.set_trainable(model, False)
+            if args.adaptive:
+                adapt_model(
+                    model,
+                    steps=args.adaptive_calibration_steps,
+                    learning_rate=args.adaptive_learning_rate,
+                )
+                z = np.asarray(model.inducing_variable.Z)
+                noise_variance = float(model.likelihood.variance.numpy())
+                theta = theta_from_model(model)
             old_mean, old_covariance = posterior_at_z(model, z)
-            old_kernel_covariance = np.asarray(kernel(z))
+            old_kernel_covariance = np.asarray(model.kernel(z))
             old_z = z
             calibration_seconds += time.perf_counter() - started
             print(json.dumps({"phase": "calibration", "block": block_id}), flush=True)
@@ -244,32 +323,55 @@ def main():
     all_variance = []
     total_update_seconds = 0.0
     total_prediction_seconds = 0.0
+    delayed_rows = 0
     for block_id, block in enumerate(stream_blocks):
-        x_new = flatten_inputs(stream_times, coordinates, train_indices, block)
-        y_new = flatten_targets(stream_residual, train_indices, block)
+        profile_range = profile_this_index(block_id, len(stream_blocks))
+        profile_open = push_range("era5_online_block", profile_range)
         update_started = time.perf_counter()
-        kernel = make_kernel(theta)
-        if old_mean is None:
-            model = gpflow.models.SGPR(
-                data=(x_new, y_new),
-                kernel=kernel,
-                inducing_variable=z,
-                noise_variance=noise_variance,
-            )
-            gpflow.set_trainable(model, False)
-        else:
-            model = OSGPR_VFE(
-                data=(x_new, y_new),
-                kernel=kernel,
-                mu_old=old_mean,
-                Su_old=old_covariance,
-                Kaa_old=old_kernel_covariance,
-                Z_old=old_z,
-                Z=z,
-            )
-            model.likelihood.variance.assign(noise_variance)
-            gpflow.set_trainable(model, False)
-        new_mean, new_covariance = posterior_at_z(model, z)
+        updates = [(block, train_indices, "current_visible")]
+        if args.delayed_observations and block_id > 0:
+            updates.insert(0, (stream_blocks[block_id - 1], test_indices, "delayed_hidden"))
+        for observation_block, spatial_indices, update_kind in updates:
+            x_new = flatten_inputs(stream_times, coordinates, spatial_indices, observation_block)
+            y_new = flatten_targets(stream_residual, spatial_indices, observation_block)
+            kernel = make_kernel(theta, frozen=not args.adaptive)
+            if old_mean is None:
+                model = gpflow.models.SGPR(
+                    data=(x_new, y_new),
+                    kernel=kernel,
+                    inducing_variable=z,
+                    noise_variance=noise_variance,
+                )
+                if not args.adaptive:
+                    gpflow.set_trainable(model, False)
+            else:
+                model = OSGPR_VFE(
+                    data=(x_new, y_new),
+                    kernel=kernel,
+                    mu_old=old_mean,
+                    Su_old=old_covariance,
+                    Kaa_old=old_kernel_covariance,
+                    Z_old=old_z,
+                    Z=z,
+                )
+                model.likelihood.variance.assign(noise_variance)
+                if not args.adaptive:
+                    gpflow.set_trainable(model, False)
+            if args.adaptive:
+                adapt_model(
+                    model,
+                    steps=args.adaptive_online_steps,
+                    learning_rate=args.adaptive_learning_rate,
+                )
+                z = np.asarray(model.inducing_variable.Z)
+                noise_variance = float(model.likelihood.variance.numpy())
+                theta = theta_from_model(model)
+            new_mean, new_covariance = posterior_at_z(model, z)
+            old_mean, old_covariance = new_mean, new_covariance
+            old_kernel_covariance = np.asarray(model.kernel(z))
+            old_z = z
+            if update_kind == "delayed_hidden":
+                delayed_rows += int(x_new.shape[0])
         update_seconds = time.perf_counter() - update_started
 
         x_test = flatten_inputs(stream_times, coordinates, test_indices, block)
@@ -281,6 +383,7 @@ def main():
         )
         mean += offset_test
         prediction_seconds = time.perf_counter() - prediction_started
+        pop_range(profile_open)
         block_metrics = metric_row(y_test, mean, variance)
         row = {
             "block_id": block_id,
@@ -298,7 +401,7 @@ def main():
         total_update_seconds += update_seconds
         total_prediction_seconds += prediction_seconds
         old_mean, old_covariance = new_mean, new_covariance
-        old_kernel_covariance = np.asarray(kernel(z))
+        old_kernel_covariance = np.asarray(model.kernel(z))
         old_z = z
         print(json.dumps(row), flush=True)
 
@@ -326,14 +429,16 @@ def main():
         "protocol": (
             "strict online; Task-1 hyperparameter calibration only; Task-2(+) starts "
             "from the GP prior; no history replay"
-            if not args.task1_posterior_warm_start
+            if not task1_warm_start
             else "diagnostic online; Task-1 posterior warm-start; no history replay"
         ),
         "initial_posterior": (
             "GP prior at the first streaming block"
-            if not args.task1_posterior_warm_start
+            if not task1_warm_start
             else "posterior transferred from Task 1"
         ),
+        "delayed_observations": bool(args.delayed_observations),
+        "delayed_observation_rows": delayed_rows,
         "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
         "split_seed": args.seed,
         "num_stream_times": int(stream_times.size),
@@ -345,8 +450,28 @@ def main():
         "joint_inducing": int(z.shape[0]),
         "temporal_grid_count": args.mt,
         "spatial_grid_count": args.ms,
-        "inducing_locations": "fixed global Cartesian product; never optimized",
-        "hyperparameters": "Route-B Task-1 empirical-Bayes theta, frozen for controlled posterior-transfer comparison",
+        "inducing_locations": (
+            "adaptive pseudo-input locations optimized causally from Task 1 and each online update"
+            if args.adaptive
+            else "fixed global Cartesian product; never optimized"
+        ),
+        "adaptive": bool(args.adaptive),
+        "adaptive_optimization": (
+            None
+            if not args.adaptive
+            else {
+                "Task1_steps_per_block": int(args.adaptive_calibration_steps),
+                "online_steps_per_update": int(args.adaptive_online_steps),
+                "learning_rate": float(args.adaptive_learning_rate),
+                "updated_parameters": ["kernel", "likelihood", "inducing_locations"],
+            }
+        ),
+        "hyperparameters": (
+            "Bui-owned Task-1 empirical Bayes followed by bounded causal online adaptation"
+            if args.adaptive
+            else "Route-B Task-1 empirical-Bayes theta, frozen for controlled posterior-transfer comparison"
+        ),
+        "learned_theta": theta_from_model(model),
         "final": final_metrics,
         "timing": {
             "task1_calibration_seconds": calibration_seconds,

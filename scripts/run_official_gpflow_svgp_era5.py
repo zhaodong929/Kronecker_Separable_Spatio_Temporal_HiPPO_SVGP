@@ -27,6 +27,7 @@ from stvgp_kronecker.benchmark_runtime import (  # noqa: E402
     host_snapshot,
     tensorflow_memory,
 )
+from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
 
 
 NP_DTYPE = np.float64
@@ -121,6 +122,7 @@ def train(
     validation_every,
     seed,
     prediction_chunk_size,
+    profile_enabled=True,
 ):
     rng = np.random.default_rng(seed)
     natgrad = gpflow.optimizers.NaturalGradient(gamma=natgrad_gamma)
@@ -145,7 +147,12 @@ def train(
     for iteration in range(1, int(iterations) + 1):
         indices = rng.choice(x.shape[0], size=min(batch_size, x.shape[0]), replace=False)
         iteration_started = time.perf_counter()
-        loss = float(step(x[indices], y[indices]).numpy())
+        profile_range = profile_enabled and profile_this_index(iteration - 1, int(iterations))
+        profile_open = push_range("era5_batch_update", profile_range)
+        try:
+            loss = float(step(x[indices], y[indices]).numpy())
+        finally:
+            pop_range(profile_open)
         iteration_seconds = time.perf_counter() - iteration_started
         iteration_times.append(iteration_seconds)
         row = {
@@ -266,6 +273,7 @@ def main():
         validation_every=args.validation_every,
         seed=args.seed,
         prediction_chunk_size=args.prediction_chunk_size,
+        profile_enabled=False,
     )
 
     x_train = flatten_inputs(times, coordinates, train_indices)
@@ -283,6 +291,7 @@ def main():
         validation_every=args.validation_every,
         seed=args.seed,
         prediction_chunk_size=args.prediction_chunk_size,
+        profile_enabled=True,
     )
     x_test = flatten_inputs(times, coordinates, test_indices)
     y_test = flatten_targets(y_original, test_indices)
