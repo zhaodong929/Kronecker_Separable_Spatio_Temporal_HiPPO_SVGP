@@ -55,6 +55,7 @@ done
 REPO_ROOT="$(cd "${REPO_ROOT}" && pwd)"
 BENCHMARK_ROOT="$(mkdir -p "${BENCHMARK_ROOT}" && cd "${BENCHMARK_ROOT}" && pwd)"
 STVGP_LIBRARY_DIR="${STVGP_LIBRARY_DIR:-$(dirname "$(dirname "${STVGP_PY}")")/lib}"
+STVGP_CUDA_DATA_DIR="${STVGP_CUDA_DATA_DIR:-$(dirname "${STVGP_LIBRARY_DIR}")}"
 mkdir -p "${BENCHMARK_ROOT}/slurm/validation"
 VALIDATION_DIR="${BENCHMARK_ROOT}/slurm/validation"
 TMP_DIR="$(mktemp -d "${VALIDATION_DIR}/.validate.XXXXXX")"
@@ -128,7 +129,9 @@ done
 
 # The legacy JAX GPU wheel loads CUDA libraries from the isolated environment.
 run_legacy_jax() {
-  JAX_PLATFORM_NAME=gpu LD_LIBRARY_PATH="${STVGP_LIBRARY_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+  JAX_PLATFORM_NAME=gpu \
+    LD_LIBRARY_PATH="${STVGP_LIBRARY_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+    XLA_FLAGS="--xla_gpu_cuda_data_dir=${STVGP_CUDA_DATA_DIR}${XLA_FLAGS:+ ${XLA_FLAGS}}" \
     "${STVGP_PY}" "$@"
 }
 
@@ -268,8 +271,10 @@ if not a100_devices:
     raise SystemExit(
         "Legacy JAX must expose an A100 through jax.devices(); CPU-only jaxlib is rejected"
     )
-if str(jax.default_backend()).lower() not in {"gpu", "cuda"}:
-    raise SystemExit(f"Legacy JAX default backend is CPU: {jax.default_backend()}")
+backend = jax.lib.xla_bridge.get_backend()
+backend_platform = str(getattr(backend, "platform", "")).lower()
+if backend_platform not in {"gpu", "cuda"}:
+    raise SystemExit(f"Legacy JAX default backend is CPU: {backend_platform}")
 probe = jax.device_put(jnp.ones((1,), dtype=jnp.float32), a100_devices[0])
 if hasattr(probe, "block_until_ready"):
     probe.block_until_ready()
@@ -280,8 +285,8 @@ payload = {
     "jaxlib_version": getattr(jaxlib, "__version__", None),
     "bayesnewton_version": getattr(bayesnewton, "__version__", "unknown"),
     "objax_version": getattr(objax, "__version__", "unknown"),
-    "backend_platform_version": str(getattr(jax.lib.xla_bridge.get_backend(), "platform_version", "unknown")),
-    "default_backend": str(jax.default_backend()),
+    "backend_platform_version": str(getattr(backend, "platform_version", "unknown")),
+    "default_backend": backend_platform,
     "devices": [str(device) for device in devices],
     "gpu_devices": [str(device) for device in gpu_devices],
     "a100_devices": [str(device) for device in a100_devices],
