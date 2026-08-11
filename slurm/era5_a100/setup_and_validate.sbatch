@@ -18,6 +18,22 @@
 
 set -euo pipefail
 
+# Permit a minimal Slurm environment when user-environment retrieval fails.
+export PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
+if [[ -z "${HOME:-}" ]]; then
+  job_user="${SLURM_JOB_USER:-${USER:-}}"
+  if [[ -z "${job_user}" ]]; then
+    echo "HOME is unset and Slurm did not provide a job user" >&2
+    exit 1
+  fi
+  HOME="$(getent passwd "${job_user}" | cut -d: -f6)"
+  if [[ -z "${HOME}" ]]; then
+    echo "Could not determine HOME for Slurm job user: ${job_user}" >&2
+    exit 1
+  fi
+  export HOME
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_REPO="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 REPO_ROOT="${REPO_ROOT:-${DEFAULT_REPO}}"
