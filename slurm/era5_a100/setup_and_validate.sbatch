@@ -54,6 +54,7 @@ done
 
 REPO_ROOT="$(cd "${REPO_ROOT}" && pwd)"
 BENCHMARK_ROOT="$(mkdir -p "${BENCHMARK_ROOT}" && cd "${BENCHMARK_ROOT}" && pwd)"
+STVGP_LIBRARY_DIR="${STVGP_LIBRARY_DIR:-$(dirname "$(dirname "${STVGP_PY}")")/lib}"
 mkdir -p "${BENCHMARK_ROOT}/slurm/validation"
 VALIDATION_DIR="${BENCHMARK_ROOT}/slurm/validation"
 TMP_DIR="$(mktemp -d "${VALIDATION_DIR}/.validate.XXXXXX")"
@@ -124,6 +125,12 @@ for item in "routeb:${ROUTEB_PY}" "gpflow:${TF_PY}" "stvgp_legacy:${STVGP_PY}"; 
     "${python_path}" -m pip freeze >"${TMP_DIR}/${name}_freeze.txt" 2>"${TMP_DIR}/${name}_freeze.log" || CHECK_FAILED=1
   fi
 done
+
+# The legacy JAX GPU wheel loads CUDA libraries from the isolated environment.
+run_legacy_jax() {
+  JAX_PLATFORM_NAME=gpu LD_LIBRARY_PATH="${STVGP_LIBRARY_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+    "${STVGP_PY}" "$@"
+}
 
 check_torch() {
   local output="${TMP_DIR}/torch.json"
@@ -231,7 +238,7 @@ PY
 
 check_legacy_jax() {
   local output="${TMP_DIR}/legacy_jax.json"
-  if JAX_PLATFORM_NAME=gpu "${STVGP_PY}" - "${output}" >"${TMP_DIR}/legacy_jax.log" 2>&1 <<'PY'
+  if run_legacy_jax - "${output}" >"${TMP_DIR}/legacy_jax.log" 2>&1 <<'PY'
 import json
 import platform
 import sys
@@ -293,7 +300,7 @@ PY
 
 check_stsvgp_smoke() {
   local output="${TMP_DIR}/legacy_stsvgp_smoke.json"
-  if JAX_PLATFORM_NAME=gpu "${STVGP_PY}" - "${REPO_ROOT}" "${output}" >"${TMP_DIR}/legacy_stsvgp_smoke.log" 2>&1 <<'PY'
+  if run_legacy_jax - "${REPO_ROOT}" "${output}" >"${TMP_DIR}/legacy_stsvgp_smoke.log" 2>&1 <<'PY'
 import argparse
 import importlib.util
 import json
