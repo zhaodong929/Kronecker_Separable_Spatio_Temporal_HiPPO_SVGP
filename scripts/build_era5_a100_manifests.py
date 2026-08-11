@@ -1352,13 +1352,14 @@ def _compute_contract(
     branch: str,
     *,
     source_method: str | None = None,
+    cpu_only: bool = False,
 ) -> dict[str, Any]:
     """Declare the only FLOP comparison scope a run may enter."""
 
     script = str(job.command[1]) if len(job.command) > 1 else ""
     method = source_method or job.method
     family = _method_family(method)
-    if family in {"xlag_mean", "xlag_online"}:
+    if cpu_only or family in {"xlag_mean", "xlag_online"}:
         return {
             "schema_version": 2,
             "baseline_family": family,
@@ -1482,7 +1483,11 @@ def build_efficiency_jobs(
         if source.seed != 0 or source.scope != "task1_2":
             continue
         script = str(source.command[1]) if len(source.command) > 1 else ""
-        if script in NCU_BATCH_SCRIPTS and not source.method.startswith("preflight_gpflow_"):
+        if (
+            script in NCU_BATCH_SCRIPTS
+            and script != "scripts/run_official_markovflow_stsvgp_era5.py"
+            and not source.method.startswith("preflight_gpflow_")
+        ):
             profile_root = (
                 benchmark
                 / "efficiency"
@@ -1501,7 +1506,12 @@ def build_efficiency_jobs(
             entries.append(
                 (job, _profile_metadata(source=source, branch="batch", efficiency_spec=spec["efficiency"]), "efficiency_profile")
             )
-        elif source.method == "xlag_mean_only":
+        elif source.method == "xlag_mean_only" or script == "scripts/run_official_markovflow_stsvgp_era5.py":
+            objective = (
+                "CPU-only linear X-lag ridge mean reference; excluded from GPU FLOP ratios"
+                if source.method == "xlag_mean_only"
+                else "CPU-only Markovflow/TF2.2 compatibility baseline; excluded from A100 FLOP ratios"
+            )
             job, metadata = _efficiency_reference_job(
                 base_config=base_config,
                 spec=spec,
@@ -1512,7 +1522,7 @@ def build_efficiency_jobs(
                 method_family=_method_family(source.method),
                 configuration=_job_configuration(source),
                 measurement_status="cpu_not_applicable",
-                objective="CPU-only linear X-lag ridge mean reference; excluded from GPU FLOP ratios",
+                objective=objective,
             )
             entries.append((job, metadata, "efficiency_record"))
 
@@ -1639,10 +1649,12 @@ def job_entry(
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     source_method = None
+    cpu_only = False
     if metadata:
         value = metadata.get("compute_source_method")
         if isinstance(value, str):
             source_method = value
+        cpu_only = metadata.get("measurement_status") == "cpu_not_applicable"
     entry: dict[str, Any] = {
         "argv": [str(value) for value in job.command],
         "branch": branch,
@@ -1661,7 +1673,12 @@ def job_entry(
         "seed": job.seed,
         "stage": job.stage,
         "timeout_seconds": job.timeout_seconds,
-        "compute_contract": _compute_contract(job, branch, source_method=source_method),
+        "compute_contract": _compute_contract(
+            job,
+            branch,
+            source_method=source_method,
+            cpu_only=cpu_only,
+        ),
     }
     if job.status_path is not None:
         entry["status_path"] = str(job.status_path)

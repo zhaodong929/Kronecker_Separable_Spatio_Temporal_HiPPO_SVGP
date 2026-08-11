@@ -358,8 +358,8 @@ def test_efficiency_contains_common_counter_profiles_and_cpu_references(tmp_path
     records = [row for row in rows if row["kind"] == "efficiency_record"]
     summary = [row for row in rows if row["kind"] == "efficiency_summary"]
     assert len(probes) == 6
-    assert len(profiles) == 44
-    assert len(records) == 5
+    assert len(profiles) == 40
+    assert len(records) == 9
     assert len(summary) == 1
     assert {row["table"] for row in probes} == {"Table2A", "Table3A", "Table3B"}
     assert {row["seed"] for row in probes} == {0}
@@ -376,8 +376,8 @@ def test_efficiency_contains_common_counter_profiles_and_cpu_references(tmp_path
     assert all(row["precision"] == "float64" and row["hardware_class"] == "NVIDIA A100" for row in profiles)
     assert any(row["method"] == "official_st_vgp_full" for row in profiles)
     assert any(row["method"].startswith("gpflow_feasibility_") for row in profiles)
-    assert any(row["method"].startswith("markovflow_") for row in profiles)
-    stochastic = [row for row in profiles if row["method"].startswith(("gpflow_", "markovflow_"))]
+    assert any(row["configuration"].get("method", "").startswith("markovflow_") for row in records)
+    stochastic = [row for row in profiles if row["method"].startswith("gpflow_")]
     assert stochastic
     assert all(row["compute_contract"]["data_access_unit"] == "stochastic_minibatch" for row in stochastic)
     assert all(row["compute_contract"]["work_unit"] == "one_full_data_pass" for row in stochastic)
