@@ -249,6 +249,14 @@ def test_long_preflight_and_full_are_real_and_disjoint(tmp_path: Path) -> None:
         "official_st_svgp_ms128",
     }
     assert all(row["argv"][1] == "scripts/run_official_stvgp_legacy.py" for row in preflight + full)
+    for row in preflight + full:
+        cuda_root = Path(row["argv"][0]).parent.parent.resolve()
+        assert row["env"] == {
+            "JAX_PLATFORM_NAME": "gpu",
+            "LD_LIBRARY_PATH": str(cuda_root / "lib"),
+            "PATH": f"{cuda_root / 'bin'}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "XLA_FLAGS": f"--xla_gpu_cuda_data_dir={cuda_root}",
+        }
     assert all(argument(row, "--iterations") == "2" for row in preflight)
     assert all("official_protocol/task1_10" in argument(row, "--data-npz") for row in preflight)
     assert all("--use-xlag-mean" in row["argv"] for row in preflight + full)

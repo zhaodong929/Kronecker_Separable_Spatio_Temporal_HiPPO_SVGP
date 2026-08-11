@@ -1682,6 +1682,14 @@ def job_entry(
     }
     if job.status_path is not None:
         entry["status_path"] = str(job.status_path)
+    if "scripts/run_official_stvgp_legacy.py" in job.command:
+        cuda_root = job.python.parent.parent.resolve()
+        entry["env"] = {
+            "JAX_PLATFORM_NAME": "gpu",
+            "LD_LIBRARY_PATH": str(cuda_root / "lib"),
+            "PATH": f"{cuda_root / 'bin'}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "XLA_FLAGS": f"--xla_gpu_cuda_data_dir={cuda_root}",
+        }
     if metadata:
         entry.update(metadata)
     return entry

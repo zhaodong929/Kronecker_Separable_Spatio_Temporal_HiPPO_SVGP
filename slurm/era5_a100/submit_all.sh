@@ -76,6 +76,7 @@ SBATCH_ARGS=(
   --partition="${PARTITION}"
   --array="0-2%3"
   --chdir="${REPO_ROOT}"
+  --export=NIL
   --time="72:00:00"
 )
 if [[ -n "${ACCOUNT}" ]]; then SBATCH_ARGS+=(--account="${ACCOUNT}"); fi

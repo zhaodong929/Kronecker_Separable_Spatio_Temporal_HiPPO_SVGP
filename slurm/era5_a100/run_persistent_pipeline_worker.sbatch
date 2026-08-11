@@ -11,6 +11,27 @@
 
 set -euo pipefail
 
+# Keep persistent workers runnable when Slurm does not propagate user env.
+export PATH="${PATH:-/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin}"
+if [[ -z "${HOME:-}" ]]; then
+  job_user="${SLURM_JOB_USER:-${USER:-}}"
+  if [[ -z "${job_user}" ]]; then
+    echo "HOME is unset and Slurm did not provide a job user" >&2
+    exit 1
+  fi
+  bitbucket_home="/vol/bitbucket/${job_user}"
+  if [[ -d "${bitbucket_home}" ]]; then
+    HOME="${bitbucket_home}"
+  else
+    HOME="$(getent passwd "${job_user}" | cut -d: -f6)"
+  fi
+  if [[ -z "${HOME}" ]]; then
+    echo "Could not determine HOME for Slurm job user: ${job_user}" >&2
+    exit 1
+  fi
+  export HOME
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEFAULT_REPO="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 REPO_ROOT="${REPO_ROOT:-${DEFAULT_REPO}}"
