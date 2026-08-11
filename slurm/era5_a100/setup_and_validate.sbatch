@@ -379,6 +379,7 @@ training = runner._train_phase(args, built, times, 1)
 loss = float(training["losses"][0])
 if not (loss == loss and abs(loss) != float("inf")):
     raise RuntimeError("ST-SVGP update produced a non-finite loss")
+backend = runner.jax.lib.xla_bridge.get_backend()
 payload = {
     "status": "passed",
     "model": "st_svgp",
@@ -391,7 +392,7 @@ payload = {
         "iterations": int(training["iterations"]),
         "loss": loss,
     },
-    "jax_backend": str(runner.jax.default_backend()),
+    "jax_backend": str(getattr(backend, "platform", "unknown")),
     "jax_devices": [str(device) for device in runner.jax.devices()],
     "cpu_fallback": False,
 }
