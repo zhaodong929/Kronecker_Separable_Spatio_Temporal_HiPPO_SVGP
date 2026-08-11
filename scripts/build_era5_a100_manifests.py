@@ -1177,10 +1177,13 @@ def _efficiency_reference_job(
         measurement_status=measurement_status,
         objective=objective,
     )
+    metadata["compute_source_method"] = source_method
     return job, metadata
 
 
 def _method_family(method: str) -> str:
+    if method.startswith("probe_table") and "routeb" in method:
+        return "routeb"
     if method == "xlag_mean_only":
         return "xlag_mean"
     if method.startswith("official_mf_st_svgp"):
@@ -1217,6 +1220,76 @@ def _job_configuration(job: Job) -> dict[str, Any]:
     if "--target-mode" in job.command:
         configuration["target_mode"] = job.command[job.command.index("--target-mode") + 1]
     return configuration
+
+
+def _compute_contract(
+    job: Job,
+    branch: str,
+    *,
+    source_method: str | None = None,
+) -> dict[str, Any]:
+    """Declare the only FLOP comparison scope a run may enter."""
+
+    script = str(job.command[1]) if len(job.command) > 1 else ""
+    method = source_method or job.method
+    family = _method_family(method)
+    mode = branch
+    if branch == "efficiency":
+        if script in {
+            "scripts/benchmark_routeb_batch_objective.py",
+            "scripts/run_iclr_era5_routeb_batch.py",
+        } or job.method.startswith("record_table2"):
+            mode = "batch"
+        elif script in {
+            "scripts/profile_routeb_backend_bottlenecks.py",
+            "scripts/run_iclr_era5_routeb_strict_online.py",
+        } or job.method.startswith("record_table3"):
+            mode = "online"
+    elif branch in {"official_preflight", "official_full", "shared_batch_short"}:
+        mode = "batch"
+    elif branch in {"online_short", "online_long", "postprocess"}:
+        mode = "online"
+
+    if mode == "batch":
+        if script == "scripts/run_official_gpflow_svgp_era5.py" or method.startswith(
+            ("gpflow_", "preflight_gpflow_")
+        ):
+            data_access = "stochastic_minibatch"
+            unit = "one_minibatch_optimization_update"
+        elif script in {
+            ROUTE_B_BATCH_SCRIPT,
+            "scripts/benchmark_routeb_batch_objective.py",
+            "scripts/run_official_stvgp_legacy.py",
+            "scripts/run_official_markovflow_stsvgp_era5.py",
+        } or method.startswith(("routeb_", "official_", "markovflow_")):
+            data_access = "full_fit_dataset"
+            unit = "one_full_fit_optimization_update"
+        else:
+            data_access = "undeclared"
+            unit = "undeclared"
+        scope = "optimization_update"
+    elif mode == "online":
+        data_access = "arrival_block"
+        unit = "one_block_update_and_prediction"
+        scope = "block_update_and_prediction"
+    else:
+        data_access = "not_applicable"
+        unit = "not_applicable"
+        scope = "not_applicable"
+    return {
+        "schema_version": 1,
+        "baseline_family": family,
+        "branch": branch,
+        "data_access_unit": data_access,
+        "measurement_scope": scope,
+        "work_unit": unit,
+        "required_measurement_backend": "nsight_compute_executed_gpu_flops",
+        "comparison_status": (
+            "pending_common_hardware_counter"
+            if scope != "not_applicable"
+            else "not_applicable"
+        ),
+    }
 
 
 def build_efficiency_jobs(
@@ -1359,6 +1432,11 @@ def job_entry(
     branch: str,
     metadata: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    source_method = None
+    if metadata:
+        value = metadata.get("compute_source_method")
+        if isinstance(value, str):
+            source_method = value
     entry: dict[str, Any] = {
         "argv": [str(value) for value in job.command],
         "branch": branch,
@@ -1377,6 +1455,7 @@ def job_entry(
         "seed": job.seed,
         "stage": job.stage,
         "timeout_seconds": job.timeout_seconds,
+        "compute_contract": _compute_contract(job, branch, source_method=source_method),
     }
     if job.status_path is not None:
         entry["status_path"] = str(job.status_path)

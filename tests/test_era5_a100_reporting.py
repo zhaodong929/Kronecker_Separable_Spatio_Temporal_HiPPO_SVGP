@@ -11,7 +11,12 @@ from scripts.generate_era5_a100_shared_online_report import (
     deterministic_bootstrap_ci,
     generate_report,
 )
-from scripts.summarize_era5_a100_efficiency import normalize_efficiency_record, summarize_efficiency
+from scripts.summarize_era5_a100_efficiency import (
+    aggregate_efficiency_records,
+    normalize_efficiency_record,
+    summarize_efficiency,
+)
+from scripts.build_era5_a100_manifests import Job, _compute_contract, job_entry
 
 
 def _write_run(
@@ -288,6 +293,90 @@ def test_audit_reports_manifest_jobs_that_never_started(tmp_path: Path) -> None:
     row = next(item for item in payload["runs"] if item["method"] == "never_started")
     assert row["status"] == "missing"
     assert row["issues"] == "missing_manifest_job_artifacts:online_long.jsonl"
+
+
+def test_efficiency_contract_marks_uninstrumented_rows_incomparable(tmp_path: Path) -> None:
+    output = tmp_path / "runs" / "task1_2" / "batch" / "gpflow" / "seed0"
+    output.mkdir(parents=True)
+    result = output / "result.json"
+    payload = {
+        "scope": "task1_2",
+        "branch": "batch",
+        "method": "gpflow",
+        "seed": 0,
+        "analytical_flops": 1.0,
+    }
+    result.write_text(json.dumps(payload), encoding="utf-8")
+    (output / "compute_contract.json").write_text(
+        json.dumps(
+            {
+                "contract": {
+                    "schema_version": 1,
+                    "baseline_family": "gpflow",
+                    "data_access_unit": "stochastic_minibatch",
+                    "measurement_scope": "optimization_update",
+                    "work_unit": "one_minibatch_optimization_update",
+                    "required_measurement_backend": "nsight_compute_executed_gpu_flops",
+                    "comparison_status": "pending_common_hardware_counter",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    row = normalize_efficiency_record(payload, source_path=result)
+
+    assert row["data_access_unit"] == "stochastic_minibatch"
+    assert row["comparison_status"] == "pending_common_hardware_counter"
+
+    row.update({"status": "complete", "artifacts_complete": True})
+    aggregate = aggregate_efficiency_records([row])[0]
+    assert aggregate["baseline_family"] == "gpflow"
+    assert aggregate["comparison_status"] == "pending_common_hardware_counter"
+
+
+def test_compute_contract_distinguishes_batch_minibatch_and_online_units() -> None:
+    def job(method: str, script: str) -> Job:
+        return Job(
+            stage="stage4",
+            scope="task1_2",
+            method=method,
+            seed=0,
+            python=Path("python"),
+            command=["python", script],
+            output_dir=Path("output"),
+            expected=(),
+            dependencies=(),
+            timeout_seconds=1,
+            device_class="a100",
+        )
+
+    routeb = _compute_contract(
+        job("probe_table2a_routeb_joint_analytic_hippo_mt128_ms128", "scripts/benchmark_routeb_batch_objective.py"),
+        "efficiency",
+    )
+    gpflow = _compute_contract(
+        job("gpflow_feasibility_svgp", "scripts/run_official_gpflow_svgp_era5.py"), "shared_batch_short"
+    )
+    online = _compute_contract(
+        job("routeb_cumulative_hippo_mt128_ms128", "scripts/run_iclr_era5_routeb_strict_online.py"),
+        "online_short",
+    )
+
+    assert routeb["baseline_family"] == "routeb"
+    assert routeb["data_access_unit"] == "full_fit_dataset"
+    assert gpflow["data_access_unit"] == "stochastic_minibatch"
+    assert online["work_unit"] == "one_block_update_and_prediction"
+
+    reference = job_entry(
+        job("record_table2a_gpflow", "-c"),
+        manifest_id="test",
+        kind="efficiency_record",
+        branch="efficiency",
+        metadata={"compute_source_method": "gpflow_feasibility_8192_mt128_ms64"},
+    )
+    assert reference["compute_contract"]["baseline_family"] == "gpflow"
+    assert reference["compute_contract"]["data_access_unit"] == "stochastic_minibatch"
 
 
 def test_report_separates_online_from_batch_and_writes_outputs(tmp_path: Path) -> None:

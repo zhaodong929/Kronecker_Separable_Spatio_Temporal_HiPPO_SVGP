@@ -52,6 +52,16 @@ EFFICIENCY_FIELDS = (
     "history_replay_mib",
 )
 
+COMPUTE_CONTRACT_FIELDS = (
+    "compute_contract_version",
+    "baseline_family",
+    "data_access_unit",
+    "measurement_scope",
+    "work_unit",
+    "required_measurement_backend",
+    "comparison_status",
+)
+
 CSV_HINTS = (
     "efficien",
     "flop",
@@ -106,6 +116,16 @@ def _first(mapping: Mapping[str, Any], keys: Iterable[str]) -> tuple[Any, str]:
         if key in mapping and mapping[key] not in (None, ""):
             return mapping[key], key
     return None, ""
+
+
+def _compute_contract_for(path: Path) -> Mapping[str, Any]:
+    candidate = path.parent / "compute_contract.json"
+    try:
+        payload = json.loads(candidate.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {}
+    contract = payload.get("contract") if isinstance(payload, Mapping) else None
+    return contract if isinstance(contract, Mapping) else {}
 
 
 def _recursive_values(value: Any, keys: set[str], prefix: str = "") -> list[tuple[Any, str]]:
@@ -385,6 +405,7 @@ def normalize_efficiency_record(
         or nested_value(payload, ("counting_method", "flop_counting_method"))
         or ""
     )
+    contract = _compute_contract_for(path)
     result: dict[str, Any] = {
         "row_type": "raw",
         **identity,
@@ -394,6 +415,13 @@ def normalize_efficiency_record(
         "source_path": str(source_path),
         "status": str(row.get("status") if row and row.get("status") else nested_value(payload, ("status", "state", "outcome")) or "observed"),
         "flop_notes": raw_counting_method or str(nested_value(payload, ("excluded_flops",)) or ""),
+        "compute_contract_version": contract.get("schema_version"),
+        "baseline_family": contract.get("baseline_family"),
+        "data_access_unit": contract.get("data_access_unit"),
+        "measurement_scope": contract.get("measurement_scope"),
+        "work_unit": contract.get("work_unit"),
+        "required_measurement_backend": contract.get("required_measurement_backend"),
+        "comparison_status": contract.get("comparison_status", "undeclared"),
     }
     for field in EFFICIENCY_FIELDS:
         value, source = _value_from_row_or_payload(payload, field, row)
@@ -673,6 +701,13 @@ def aggregate_efficiency_records(
                 "artifacts_complete": True,
                 "flop_notes": "",
             }
+            for field in COMPUTE_CONTRACT_FIELDS:
+                values = {
+                    item.get(field)
+                    for item in selected
+                    if item.get(field) not in (None, "")
+                }
+                row[field] = next(iter(values)) if len(values) == 1 else None
             row["seed_count"] = len({item.get("seed") for item in selected})
             methods = {str(item.get("counting_method", "not instrumented")) for item in selected}
             methods.discard("not instrumented")
@@ -725,6 +760,7 @@ def efficiency_fieldnames() -> list[str]:
         "counting_method",
         "flop_notes",
     ]
+    fields.extend(COMPUTE_CONTRACT_FIELDS)
     fields.extend(EFFICIENCY_FIELDS)
     fields.extend(f"{field}_source" for field in EFFICIENCY_FIELDS)
     for field in EFFICIENCY_FIELDS:

@@ -30,7 +30,7 @@ import signal
 import subprocess
 import sys
 import time
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 
 NONFINITE_TOKEN = re.compile(
@@ -269,6 +269,28 @@ def _safe_job_id(record: dict[str, Any], index: int) -> str:
     return text if text else f"array-{index}"
 
 
+def write_compute_contract(
+    output_dir: Path,
+    record: Mapping[str, Any],
+    common: Mapping[str, Any],
+    status: str,
+) -> None:
+    contract = record.get("compute_contract")
+    if not isinstance(contract, Mapping):
+        return
+    atomic_json(
+        output_dir / "compute_contract.json",
+        {
+            "schema_version": 1,
+            "contract": dict(contract),
+            "job": common["job"],
+            "manifest": common["manifest"],
+            "argv": common["argv"],
+            "run_status": status,
+        },
+    )
+
+
 def run_record(
     record: dict[str, Any],
     *,
@@ -321,6 +343,7 @@ def run_record(
         }
         if not status_path.exists():
             atomic_json(status_path, payload)
+        write_compute_contract(output_dir, record, common, "skipped")
         print(f"SKIP complete {job_id}")
         return 0
 
@@ -331,6 +354,7 @@ def run_record(
     (output_dir / "manifest_record.json").write_text(
         json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
+    write_compute_contract(output_dir, record, common, "running")
 
     command_env = os.environ.copy()
     overrides = record.get("env", {})
@@ -420,6 +444,7 @@ def run_record(
         "environment_overrides": sorted(str(key) for key in (overrides or {})),
     }
     atomic_json(status_path, payload)
+    write_compute_contract(output_dir, record, common, status)
     if status == "complete":
         print(f"COMPLETE {job_id} ({elapsed:.1f}s)")
         return 0
