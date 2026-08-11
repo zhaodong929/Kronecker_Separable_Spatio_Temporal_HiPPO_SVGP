@@ -151,6 +151,7 @@ done
 run_legacy_jax() {
   JAX_PLATFORM_NAME=gpu \
     LD_LIBRARY_PATH="${STVGP_LIBRARY_DIR}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}" \
+    PATH="${STVGP_CUDA_DATA_DIR}/bin:${PATH}" \
     XLA_FLAGS="--xla_gpu_cuda_data_dir=${STVGP_CUDA_DATA_DIR}${XLA_FLAGS:+ ${XLA_FLAGS}}" \
     "${STVGP_PY}" "$@"
 }
