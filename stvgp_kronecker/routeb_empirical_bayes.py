@@ -75,10 +75,21 @@ class TemporalFactorModel(nn.Module):
         rff_sample_size: int,
         seed: int,
         temporal_horizon: TemporalBlockSpec | None = None,
+        temporal_kernel: str = "matern32",
+        spectral_mixture: dict[str, tuple[float, ...]] | None = None,
     ) -> None:
         super().__init__()
         self.representation = representation
         self.mt = int(mt)
+        if temporal_kernel not in {"matern32", "spectral_mixture"}:
+            raise ValueError(f"Unsupported temporal kernel: {temporal_kernel}")
+        if (
+            representation != "analytic_hippo_rff"
+            and temporal_kernel != "matern32"
+        ):
+            raise ValueError("Spectral-mixture kernels require analytic_hippo_rff")
+        if temporal_kernel == "spectral_mixture" and spectral_mixture is None:
+            raise ValueError("Spectral-mixture kernels require a fixed configuration")
         self.register_buffer("times", torch.as_tensor(times, dtype=DTYPE))
         if representation == "analytic_hippo_rff":
             self.builder = make_analytic_temporal_builder(
@@ -87,7 +98,22 @@ class TemporalFactorModel(nn.Module):
                 variance=initial_variance,
                 rff_sample_size=rff_sample_size,
                 seed=seed,
-                kernel_type="matern32",
+                kernel_type=temporal_kernel,
+                spectral_mixture_weights=(
+                    np.asarray(spectral_mixture["weights"], dtype=float)
+                    if spectral_mixture is not None
+                    else None
+                ),
+                spectral_mixture_means=(
+                    np.asarray(spectral_mixture["means"], dtype=float)
+                    if spectral_mixture is not None
+                    else None
+                ),
+                spectral_mixture_scales=(
+                    np.asarray(spectral_mixture["scales"], dtype=float)
+                    if spectral_mixture is not None
+                    else None
+                ),
             )
             self.horizon = temporal_horizon or temporal_spec_for_block(
                 np.asarray(times, dtype=float), slice(0, len(times)), moving=True
@@ -661,6 +687,8 @@ class BatchRouteBEmpiricalBayes(nn.Module):
         seed: int,
         objective_type: str = "finite_dtc",
         temporal_horizon: TemporalBlockSpec | None = None,
+        temporal_kernel: str = "matern32",
+        spectral_mixture: dict[str, tuple[float, ...]] | None = None,
     ) -> None:
         super().__init__()
         if objective_type not in {"finite_dtc", "vfe"}:
@@ -675,6 +703,8 @@ class BatchRouteBEmpiricalBayes(nn.Module):
             rff_sample_size=rff_sample_size,
             seed=seed,
             temporal_horizon=temporal_horizon,
+            temporal_kernel=temporal_kernel,
+            spectral_mixture=spectral_mixture,
         )
         self.register_buffer(
             "spatial_inducing", torch.as_tensor(spatial_inducing, dtype=DTYPE)

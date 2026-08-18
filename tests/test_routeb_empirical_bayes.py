@@ -196,6 +196,36 @@ def test_all_five_hyperparameters_have_finite_gradients_and_fixed_supports() -> 
     torch.testing.assert_close(model.spatial_inducing, z_before)
 
 
+def test_batch_model_uses_the_requested_fixed_spectral_mixture() -> None:
+    mixture = {
+        "weights": (0.7, 0.3),
+        "means": (0.0, 1.5),
+        "scales": (1.0, 0.6),
+    }
+    model = BatchRouteBEmpiricalBayes(
+        times=np.linspace(0.0, 1.0, 6),
+        spatial_inducing=np.asarray([[-1.0, 0.0], [0.0, 0.5], [1.0, -0.5]]),
+        mt=4,
+        representation="analytic_hippo_rff",
+        initial_ell_t=0.1,
+        initial_ell_s=(0.4, 0.5),
+        initial_kernel_variance=1.0,
+        initial_noise_std=0.1,
+        rff_sample_size=24,
+        seed=2,
+        temporal_kernel="spectral_mixture",
+        spectral_mixture=mixture,
+    )
+
+    assert model.temporal.builder.config.kernel_type == "spectral_mixture"
+    assert model.temporal.builder.config.spectral_mixture_weights == mixture["weights"]
+    projection, prior = model.temporal.factors()
+    assert projection.shape == (6, 4)
+    assert prior.shape == (4, 4)
+    assert torch.isfinite(projection).all()
+    assert torch.isfinite(prior).all()
+
+
 def test_temporal_query_can_use_a_separate_cumulative_hippo_horizon() -> None:
     full_times = np.linspace(0.0, 1.0, 12)
     query_times = full_times[8:12]
