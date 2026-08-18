@@ -1,0 +1,56 @@
+{
+  "root": "/root/autodl-tmp/stvgp_era5_benchmark/data/era5/processed_timeseries_4",
+  "calibration_tasks": [
+    "task_1"
+  ],
+  "stream_tasks": [
+    "task_2"
+  ],
+  "variable_index": 0,
+  "num_calibration_times": 186,
+  "num_stream_times": 186,
+  "num_locations": 1000,
+  "num_train_locations": 800,
+  "num_validation_locations": 80,
+  "num_fit_locations": 720,
+  "num_test_locations": 200,
+  "split_seed": 3,
+  "time_normalization": "(t - stream_start) / Task-1 span",
+  "time_scale": 185.0,
+  "coordinate_normalization": "global mean/std over the fixed 1000 locations",
+  "xlag": {
+    "mode": "medium_era5_xlag",
+    "length": 10,
+    "features": 133,
+    "ridge": 0.001,
+    "batch_mean_fit": "all stream times at the 800 training locations",
+    "strict_online_mean_fit": "Task 1 at the same 800 training locations, then frozen"
+  },
+  "spatial_split": "seeded 800/200 held-out location split",
+  "inducing_selection": "deterministic k-means over training coordinates only",
+  "num_blocks": 19,
+  "block_lengths": [
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    10,
+    6
+  ],
+  "task_aware_blocks": false,
+  "npz": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/protocol/task1_2/seed3/protocol.npz",
+  "npz_sha256": "9f72dd5000d041a55467b9a9645bf2fbdd5fca5a81ef7e49e6a12ce5e4c046e3"
+}

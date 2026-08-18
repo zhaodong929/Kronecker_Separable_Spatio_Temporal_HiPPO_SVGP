@@ -1,0 +1,49 @@
+{
+  "implementation": "X-lag ridge mean only",
+  "protocol": "task1_fixed",
+  "parameter_source": "Task 1 only; frozen through Task 2(+)",
+  "noise_variance": 0.10939507690834437,
+  "num_blocks": 19,
+  "overall_current_block": {
+    "rmse": 0.7052642999270974,
+    "nll": 2.0859447384846774,
+    "coverage90": 0.5503763440860215,
+    "mean_predictive_std": 0.3307492659226084
+  },
+  "final_block": {
+    "block_id": 18,
+    "block_start": 180,
+    "block_stop": 186,
+    "hours": 6,
+    "update_seconds": 0.0,
+    "prediction_seconds": 0.0,
+    "rmse": 0.8685011550159996,
+    "nll": 3.2601133152283306,
+    "coverage90": 0.18166666666666667,
+    "mean_predictive_std": 0.3307492659226084
+  },
+  "split_seed": 0,
+  "num_stream_times": 186,
+  "num_train_space": 800,
+  "num_test_space": 200,
+  "timing": {
+    "process_total_seconds": 0.03622398525476456
+  },
+  "resources": {
+    "peak_rss_mib": 422.875,
+    "persistent_state_bytes": 1072,
+    "persistent_state_mib": 0.0010223388671875,
+    "history_replay_buffer_bytes": 0,
+    "device": "CPU",
+    "dtype": "float64"
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/protocol/task1_2/seed0/protocol.npz",
+    "protocol_json": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/protocol/task1_2/seed0/protocol.json",
+    "output_dir": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_task1_fixed/seed0",
+    "mode": "task1_fixed",
+    "ridge": 0.001,
+    "xlag_length": 10,
+    "seed": 0
+  }
+}

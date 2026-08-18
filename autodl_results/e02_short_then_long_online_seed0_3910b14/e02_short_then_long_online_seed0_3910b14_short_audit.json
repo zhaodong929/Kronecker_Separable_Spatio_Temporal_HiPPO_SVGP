@@ -1,0 +1,593 @@
+{
+  "schema_version": 1,
+  "verification_status": "VERIFIED",
+  "benchmark_root": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2",
+  "expected_modern_runs": 13,
+  "complete_modern_runs": 13,
+  "protocols": [
+    {
+      "scope": "task1_2",
+      "seed": 0,
+      "status": "complete",
+      "issues": []
+    }
+  ],
+  "calibration": [
+    {
+      "representation": "analytic_hippo_rff",
+      "seed": 0,
+      "status": "complete",
+      "issues": []
+    },
+    {
+      "representation": "inducing_points",
+      "seed": 0,
+      "status": "complete",
+      "issues": []
+    }
+  ],
+  "runs": [
+    {
+      "scope": "task1_2",
+      "branch": "batch",
+      "method": "xlag_mean_only",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/batch/xlag_mean_only/seed0/result.json",
+      "details": {
+        "device": "CPU",
+        "dtype": "float64",
+        "git_commit": null,
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.3718139752168949,
+          "nll": 0.42984656704977814,
+          "coverage90": 0.9066935483870968
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "batch",
+      "method": "routeb_residual_analytic_hippo_rff",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/batch/routeb_residual_analytic_hippo_rff/seed0/result.json",
+      "details": {
+        "device": "cuda",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.1040495661260761,
+          "nll": -0.8350129570806735,
+          "coverage90": 0.9489784946236559
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "batch",
+      "method": "routeb_residual_inducing_points",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/batch/routeb_residual_inducing_points/seed0/result.json",
+      "details": {
+        "device": "cuda",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.08861440900878167,
+          "nll": -0.9786096063801076,
+          "coverage90": 0.9591666666666666
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "batch",
+      "method": "routeb_joint_analytic_hippo_rff",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/batch/routeb_joint_analytic_hippo_rff/seed0/result.json",
+      "details": {
+        "device": "cuda",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.08322073603029959,
+          "nll": -1.0121388501070938,
+          "coverage90": 0.9673118279569892
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "batch",
+      "method": "routeb_joint_inducing_points",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/batch/routeb_joint_inducing_points/seed0/result.json",
+      "details": {
+        "device": "cuda",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.06809784297495014,
+          "nll": -1.1666351170336566,
+          "coverage90": 0.9788172043010752
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "batch",
+      "method": "gpflow_svgp_residual_mt8_ms64",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/batch/gpflow_svgp_residual_mt8_ms64/seed0/result.json",
+      "details": {
+        "device": "cuda:0",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.19184939896980444,
+          "nll": -0.1801785688356443,
+          "coverage90": 0.9586559139784946
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "online",
+      "method": "xlag_task1_fixed",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_task1_fixed/seed0/result.json",
+      "details": {
+        "device": "CPU",
+        "dtype": "float64",
+        "git_commit": null,
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.7052642999270974,
+          "nll": 2.0859447384846774,
+          "coverage90": 0.5503763440860215
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "online",
+      "method": "xlag_recursive_rls",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_recursive_rls/seed0/result.json",
+      "details": {
+        "device": "CPU",
+        "dtype": "float64",
+        "git_commit": null,
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.47059961656426696,
+          "nll": 0.6760489301797474,
+          "coverage90": 0.8247311827956989
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "online",
+      "method": "routeb_analytic_hippo_rff",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/routeb_analytic_hippo_rff/seed0/result.json",
+      "details": {
+        "device": "cuda",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.08432551524123098,
+          "nll": -1.0403061436084582,
+          "coverage90": 0.9539247311827957
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "online",
+      "method": "routeb_inducing_points",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/routeb_inducing_points/seed0/result.json",
+      "details": {
+        "device": "cuda",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.06793521812339144,
+          "nll": -1.2495069313913303,
+          "coverage90": 0.9642741935483871
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "online",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/bui_osgpr_mt2_ms64/seed0/result.json",
+      "details": {
+        "device": "cuda:0",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.6381142840894848,
+          "nll": 0.9919210359005776,
+          "coverage90": 0.9203225806451613
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "online",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/maddox_streaming_sgpr_mt2_ms64/seed0/result.json",
+      "details": {
+        "device": "cuda",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.5761058861326501,
+          "nll": 1.0878211436413585,
+          "coverage90": 0.9544086021505377
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    },
+    {
+      "scope": "task1_2",
+      "branch": "online",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 0,
+      "status": "complete",
+      "issues": [],
+      "result": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/official_ohsvgp_m32_rff128/seed0/result.json",
+      "details": {
+        "device": "cuda",
+        "dtype": "float64",
+        "git_commit": "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7",
+        "prediction_shapes": {
+          "y_true": [
+            186,
+            200
+          ],
+          "pred_mean": [
+            186,
+            200
+          ],
+          "pred_var": [
+            186,
+            200
+          ]
+        },
+        "recomputed": {
+          "rmse": 0.6233630372564682,
+          "nll": 0.9596101160398428,
+          "coverage90": 0.884489247311828
+        },
+        "expected_shape": [
+          186,
+          200
+        ]
+      }
+    }
+  ],
+  "repository_commits": [
+    "3910b14eb6cb0bf7e5e692071e4a2873d233dbc7"
+  ],
+  "compatibility_runs": [
+    {
+      "scope": "task1_10",
+      "branch": "online",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 0,
+      "status": "complete",
+      "device_class": "modern_gpu",
+      "wall_seconds": 47.683535154908895,
+      "log": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_10/online/bui_osgpr_mt2_ms64/seed0/run.log"
+    },
+    {
+      "scope": "task1_10",
+      "branch": "online",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 0,
+      "status": "complete",
+      "device_class": "modern_gpu_legacy_api",
+      "wall_seconds": 8.32830813433975,
+      "log": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_10/online/maddox_streaming_sgpr_mt2_ms64/seed0/run.log"
+    },
+    {
+      "scope": "task1_10",
+      "branch": "online",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 0,
+      "status": "complete",
+      "device_class": "modern_gpu",
+      "wall_seconds": 135.16792068164796,
+      "log": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_10/online/official_ohsvgp_m32_rff128/seed0/run.log"
+    },
+    {
+      "scope": "task1_10",
+      "branch": "online",
+      "method": "routeb_analytic_hippo_rff",
+      "seed": 0,
+      "status": "complete",
+      "device_class": "modern_gpu",
+      "wall_seconds": 38.420168962329626,
+      "log": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_10/online/routeb_analytic_hippo_rff/seed0/run.log"
+    },
+    {
+      "scope": "task1_10",
+      "branch": "online",
+      "method": "routeb_inducing_points",
+      "seed": 0,
+      "status": "complete",
+      "device_class": "modern_gpu",
+      "wall_seconds": 33.81783541850746,
+      "log": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_10/online/routeb_inducing_points/seed0/run.log"
+    },
+    {
+      "scope": "task1_10",
+      "branch": "online",
+      "method": "xlag_recursive_rls",
+      "seed": 0,
+      "status": "complete",
+      "device_class": "cpu",
+      "wall_seconds": 30.006877805106342,
+      "log": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_10/online/xlag_recursive_rls/seed0/run.log"
+    },
+    {
+      "scope": "task1_10",
+      "branch": "online",
+      "method": "xlag_task1_fixed",
+      "seed": 0,
+      "status": "complete",
+      "device_class": "cpu",
+      "wall_seconds": 2.4682489270344377,
+      "log": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_10/online/xlag_task1_fixed/seed0/run.log"
+    }
+  ],
+  "issues": [],
+  "audit_boundaries": [
+    "Legacy ST-SVGP and Markovflow failures are classified by status files but are not required for the modern-run completion verdict.",
+    "The audit verifies artifacts, metrics, splits, block coverage and zero replay; it does not certify semantic equivalence between different GP approximations.",
+    "GPU FLOP estimates are not treated as exact hardware instruction counts."
+  ]
+}

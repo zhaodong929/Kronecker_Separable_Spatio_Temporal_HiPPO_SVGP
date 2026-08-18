@@ -1,0 +1,55 @@
+{
+  "implementation": "strict-online recursive X-lag ridge/RLS mean only",
+  "protocol": "Task-1 sufficient-statistic calibration; new-block-only RLS updates; no replay",
+  "ridge": 0.001,
+  "num_blocks": 171,
+  "overall_current_block": {
+    "rmse": 0.6262204861255335,
+    "nll": 0.9509816740311511,
+    "coverage90": 0.8525776583034648,
+    "mean_predictive_std": 0.5314981899332765
+  },
+  "final_block": {
+    "block_id": 170,
+    "block_start": 1668,
+    "block_stop": 1674,
+    "hours": 6,
+    "task_index": 10,
+    "update_seconds": 0.004090324975550175,
+    "prediction_seconds": 0.0002735806629061699,
+    "noise_variance": 0.3891215181685512,
+    "rmse": 0.45262681955601375,
+    "nll": 0.7102548818570665,
+    "coverage90": 0.9758333333333333,
+    "mean_predictive_std": 0.6237960549478901
+  },
+  "timing": {
+    "stream_update_seconds": 0.9972649114206433,
+    "stream_prediction_seconds": 0.08209407981485128,
+    "xlag_feature_loading_seconds": 24.555999509990215,
+    "mean_block_update_seconds": 0.005831958546319552,
+    "mean_block_prediction_seconds": 0.00048008233809854553,
+    "process_total_seconds": 27.8699057335034
+  },
+  "split_seed": 0,
+  "num_stream_times": 1674,
+  "num_train_space": 800,
+  "num_test_space": 200,
+  "resources": {
+    "peak_rss_mib": 1762.69140625,
+    "persistent_state_bytes": 143664,
+    "persistent_state_mib": 0.1370086669921875,
+    "history_replay_buffer_bytes": 0,
+    "device": "CPU",
+    "dtype": "float64"
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/protocol/task1_10/seed0/protocol.npz",
+    "protocol_json": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/protocol/task1_10/seed0/protocol.json",
+    "output_dir": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_10/online/xlag_recursive_rls/seed0",
+    "mode": "recursive_rls",
+    "ridge": 0.001,
+    "xlag_length": 10,
+    "seed": 0
+  }
+}

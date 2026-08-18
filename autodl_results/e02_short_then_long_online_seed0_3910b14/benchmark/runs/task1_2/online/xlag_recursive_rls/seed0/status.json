@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "job": "stage3/task1_2/xlag_recursive_rls/seed0",
+  "stage": "stage3",
+  "scope": "task1_2",
+  "method": "xlag_recursive_rls",
+  "seed": 0,
+  "status": "complete",
+  "legacy": false,
+  "device_class": "cpu",
+  "command": [
+    "/root/autodl-tmp/stvgp_envs/routeb/bin/python",
+    "scripts/run_iclr_era5_xlag_mean_baselines.py",
+    "--protocol-npz",
+    "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/protocol/task1_2/seed0/protocol.npz",
+    "--protocol-json",
+    "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/protocol/task1_2/seed0/protocol.json",
+    "--output-dir",
+    "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_recursive_rls/seed0",
+    "--mode",
+    "recursive_rls",
+    "--seed",
+    "0"
+  ],
+  "started_at": "2026-08-18T02:35:57.556797+00:00",
+  "finished_at": "2026-08-18T02:36:06.044159+00:00",
+  "wall_seconds": 8.487388150766492,
+  "timeout_seconds": 21600,
+  "returncode": 0,
+  "expected_artifacts": [
+    "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_recursive_rls/seed0/result.json",
+    "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_recursive_rls/seed0/blocks.csv",
+    "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_recursive_rls/seed0/predictions.npz"
+  ],
+  "missing_artifacts": [],
+  "log": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_recursive_rls/seed0/run.log",
+  "nvidia_smi": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_recursive_rls/seed0/nvidia_smi.csv",
+  "resource_usage": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_recursive_rls/seed0/resource_usage.txt",
+  "status_path": "/root/autodl-tmp/stvgp_era5_results_e02_short_then_long_seed0_rerun2/runs/task1_2/online/xlag_recursive_rls/seed0/status.json"
+}
