@@ -79,7 +79,13 @@ def validate_lock(lock: dict[str, Any]) -> None:
     hardware = lock.get("hardware", {})
     if hardware.get("status") != "passed":
         raise ValueError("Recorded hardware gate is not a passing RTX 4090 / 120 GiB result")
-    for path_key in ("ohsvgp_official_reproduction", "ovc_memory_assessment"):
+    required_gates = {
+        "ohsvgp_rbf": "ohsvgp_official_reproduction",
+        "ovc_svgp": "ovc_memory_assessment",
+    }
+    for method, path_key in required_gates.items():
+        if method not in lock["methods"]:
+            continue
         gate = read_json(Path(lock["gate_evidence"][path_key]))
         if gate.get("status") != "passed":
             raise ValueError(f"Gate no longer passes: {path_key}")
