@@ -157,6 +157,7 @@ def main() -> None:
     )
     catalog = json.loads(absolute(args.catalog).read_text(encoding="utf-8"))
     fairness = None if args.fairness_protocol is None else json.loads(absolute(args.fairness_protocol).read_text(encoding="utf-8"))
+    admitted_repaired = set() if fairness is None else set(fairness.get("methods", {}))
     methods = methods_for_evaluation(catalog, fairness)
     rows: list[dict[str, Any]] = []
     missing: list[dict[str, Any]] = []
@@ -212,6 +213,7 @@ def main() -> None:
         for item in catalog["methods"]
         if item["id"] in ("ohsvgp_rbf", "st_svgp", "ovc_svgp", "lmc_svgp", "imc_svgp", "fsde_svi", "earth")
         and item["setting_b_status"] != "formal_result_available"
+        and item["id"] not in admitted_repaired
     ]
     output = absolute(args.output_dir)
     if output.exists():
@@ -225,7 +227,7 @@ def main() -> None:
     write_csv(failures, output / "failure_table.csv")
     write_latex_table(aggregate, output / "main_table.tex")
     report = [
-        "# COVID Long-Stream Setting B Gaussian Preliminary Audit",
+        "# COVID Long-Stream Setting B Gaussian Final Report" if fairness is not None else "# COVID Long-Stream Setting B Gaussian Preliminary Audit",
         "",
         "All metric rows use the same delayed-observation information set and the common log1p(per-100k) target scale.",
         "",
@@ -234,10 +236,9 @@ def main() -> None:
         capacity_policy["selection_protocol"],
         "",
         "Route B ordinary and cumulative HiPPO remain exactly matched at "
-        "`Mt=32, Ms=32`. Repaired external adapters are deliberately absent "
-        "until their three blocked seed-0 validation windows, method-specific "
-        "gates and a new locked seed-5--9 formal run pass. Prior adapter archives "
-        "are preliminary audit evidence and cannot be reintroduced by this evaluator.",
+        "`Mt=32, Ms=32`. External adapters are admitted only after their three "
+        "blocked seed-0 validation windows, method-specific gates and a fairness-locked "
+        "seed-5--9 formal run pass. Prior adapter archives cannot be reintroduced by path alone.",
         "",
         "| Method | Splits | RMSE | CRPS | Gaussian NLPD | ECE | Coverage90 |",
         "|---|---:|---:|---:|---:|---:|---:|",

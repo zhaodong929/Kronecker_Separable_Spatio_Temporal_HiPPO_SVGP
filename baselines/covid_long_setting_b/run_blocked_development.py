@@ -104,7 +104,7 @@ def candidates(method: str, phase: str, selection_root: Path) -> tuple[dict[str,
             return ()
         chosen = shared.get("candidate")
         if not isinstance(chosen, dict):
-            raise ValueError(f"No passing capacity selection is available for {method}")
+            return ()
         return tuple({**chosen, "online_inference_steps": steps} for steps in ONLINE_STEPS)
     if method in ("lmc", "imc", "fsde"):
         return FACTORIAL_GRID
