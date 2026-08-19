@@ -376,7 +376,14 @@ def test_efficiency_contains_common_counter_profiles_and_cpu_references(tmp_path
     assert all(row["precision"] == "float64" and row["hardware_class"] == "NVIDIA A100" for row in profiles)
     assert any(row["method"] == "official_st_vgp_full" for row in profiles)
     assert any(row["method"].startswith("gpflow_feasibility_") for row in profiles)
-    assert any(row["configuration"].get("method", "").startswith("markovflow_") for row in records)
+    markovflow_records = [
+        row
+        for row in records
+        if row["configuration"].get("method", "").startswith("markovflow_")
+    ]
+    assert len(markovflow_records) == 4
+    assert all(row.get("ncu") is None for row in markovflow_records)
+    assert all(row["measurement_status"] == "cpu_not_applicable" for row in markovflow_records)
     stochastic = [row for row in profiles if row["method"].startswith("gpflow_")]
     assert stochastic
     assert all(row["compute_contract"]["data_access_unit"] == "stochastic_minibatch" for row in stochastic)

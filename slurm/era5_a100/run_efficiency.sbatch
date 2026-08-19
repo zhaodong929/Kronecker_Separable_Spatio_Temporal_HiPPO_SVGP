@@ -22,13 +22,14 @@ MANIFEST_NAME=""
 GPU_NAME_REGEX="${ERA5_GPU_NAME_REGEX:-a100}"
 MIN_GPU_MEMORY_GIB="${ERA5_MIN_GPU_MEMORY_GIB:-75}"
 REQUIRE_NCU=0
+DISABLE_NCU=0
 
 usage() {
   cat >&2 <<'EOF'
 Usage: run_efficiency.sbatch [--manifest PATH | --manifest-name efficiency]
                             [--repo PATH] [--env PATH] [--benchmark PATH]
                             [--gpu-name-regex REGEX] [--min-gpu-memory-gib GIB]
-                            [--require-ncu]
+                            [--require-ncu] [--disable-ncu]
 EOF
 }
 
@@ -42,6 +43,7 @@ while [[ $# -gt 0 ]]; do
     --gpu-name-regex) GPU_NAME_REGEX="$2"; shift 2 ;;
     --min-gpu-memory-gib) MIN_GPU_MEMORY_GIB="$2"; shift 2 ;;
     --require-ncu) REQUIRE_NCU=1; shift ;;
+    --disable-ncu) DISABLE_NCU=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 2 ;;
   esac
@@ -49,6 +51,10 @@ done
 
 if [[ ! "${MIN_GPU_MEMORY_GIB}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
   echo "--min-gpu-memory-gib must be a positive number" >&2
+  exit 2
+fi
+if [[ "${REQUIRE_NCU}" -eq 1 && "${DISABLE_NCU}" -eq 1 ]]; then
+  echo "--require-ncu and --disable-ncu cannot be used together" >&2
   exit 2
 fi
 
@@ -112,11 +118,14 @@ fi
 TEMP_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/era5-a100-efficiency.XXXXXX")"
 trap 'rm -rf -- "${TEMP_ROOT}"' EXIT
 
-NCU_BIN="${NCU_BIN:-}"
-if [[ -n "${NCU_BIN}" ]]; then
-  NCU_BIN="$(command -v "${NCU_BIN}" || true)"
-else
-  NCU_BIN="$(command -v ncu || true)"
+NCU_BIN=""
+if [[ "${DISABLE_NCU}" -eq 0 ]]; then
+  NCU_BIN="${NCU_BIN:-}"
+  if [[ -n "${NCU_BIN}" ]]; then
+    NCU_BIN="$(command -v "${NCU_BIN}" || true)"
+  else
+    NCU_BIN="$(command -v ncu || true)"
+  fi
 fi
 if [[ "${REQUIRE_NCU}" -eq 1 && ( -z "${NCU_BIN}" || ! -x "${NCU_BIN}" ) ]]; then
   echo "--require-ncu was requested but Nsight Compute (ncu) is unavailable" >&2
@@ -164,7 +173,7 @@ PY
 
   run_manifest="${MANIFEST}"
   run_index="${index}"
-  if [[ "${ncu_requested}" == "1" ]]; then
+  if [[ "${ncu_requested}" == "1" && "${DISABLE_NCU}" -eq 0 ]]; then
     if [[ -n "${NCU_BIN}" && -x "${NCU_BIN}" ]]; then
       run_manifest="${TEMP_ROOT}/ncu_${index}.jsonl"
       "${ROUTEB_PY}" - "${MANIFEST}" "${index}" "${run_manifest}" \
@@ -302,7 +311,46 @@ PY
     echo "Efficiency record ${index} failed with status ${rc}; continuing" >&2
     failures=$((failures + 1))
   fi
-  if [[ "${ncu_requested}" == "1" && "${runner_succeeded}" == "1" ]]; then
+  if [[ "${ncu_requested}" == "1" && "${runner_succeeded}" == "1" && "${DISABLE_NCU}" -eq 1 ]]; then
+    "${ROUTEB_PY}" - "${MANIFEST}" "${index}" "${REPO_ROOT}" <<'PY'
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import sys
+
+manifest, wanted, repo = sys.argv[1:]
+wanted = int(wanted)
+record_index = 0
+for line in Path(manifest).read_text(encoding="utf-8").splitlines():
+    if not line.strip():
+        continue
+    if record_index == wanted:
+        record = json.loads(line)
+        output = Path(record["output_dir"])
+        if not output.is_absolute():
+            output = Path(repo) / output
+        payload = {
+            "schema_version": 1,
+            "status": "pending_common_hardware_counter",
+            "comparison_status": "pending_common_hardware_counter",
+            "measurement_backend": None,
+            "ncu_requested": True,
+            "ncu_executed": False,
+            "reason": "GPU performance-counter access was prevalidated as unavailable; the workload ran without Nsight FLOP collection.",
+            "finished_at": datetime.now(timezone.utc).isoformat(),
+        }
+        target = output / "ncu_audit.json"
+        temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+        temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        temporary.replace(target)
+        break
+    record_index += 1
+else:
+    raise SystemExit(f"manifest index not found: {wanted}")
+PY
+    echo "NCU_PENDING efficiency index=${index}: workload completed without GPU counters" >&2
+  elif [[ "${ncu_requested}" == "1" && "${runner_succeeded}" == "1" ]]; then
     ncu_paths="$("${ROUTEB_PY}" - "${run_manifest}" "${run_index}" <<'PY'
 import json
 from pathlib import Path

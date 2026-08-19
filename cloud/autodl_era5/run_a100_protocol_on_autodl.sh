@@ -11,6 +11,8 @@ RESULTS_BRANCH="${RESULTS_BRANCH:-codex/autodl-era5-a100-full-results}"
 GPU_NAME_REGEX="${GPU_NAME_REGEX:-.*}"
 MIN_GPU_MEMORY_GIB="${MIN_GPU_MEMORY_GIB:-24}"
 AUTO_SHUTDOWN="${AUTO_SHUTDOWN:-1}"
+REQUIRE_NCU="${REQUIRE_NCU:-1}"
+NCU_AUDIT_DIR="${NCU_AUDIT_DIR:-}"
 CODE_COMMIT="$(git -C "${ROOT}" rev-parse HEAD)"
 RUN_LABEL="${RUN_LABEL:-a100_protocol_autodl_$(date -u +%Y%m%dT%H%M%SZ)_${CODE_COMMIT:0:7}}"
 LOG_DIR="${BENCHMARK_ROOT}/logs"
@@ -95,13 +97,14 @@ run_manifest_phase() {
 }
 
 verify_complete_protocol() {
-  "${ROUTEB_PY}" - "${BENCHMARK_ROOT}" <<'PY'
+  "${ROUTEB_PY}" - "${BENCHMARK_ROOT}" "${REQUIRE_NCU}" <<'PY'
 import json
 import math
 import sys
 from pathlib import Path
 
 root = Path(sys.argv[1])
+require_ncu = bool(int(sys.argv[2]))
 names = (
     "shared_batch_short.jsonl", "official_long_preflight.jsonl", "official_long_full.jsonl",
     "online_short.jsonl", "online_long.jsonl", "efficiency.jsonl",
@@ -132,6 +135,8 @@ for name in names:
         ncu = row.get("ncu")
         if isinstance(ncu, dict) and ncu.get("enabled", True):
             ncu_total += 1
+            if not require_ncu:
+                continue
             try:
                 flops = json.loads((output / "ncu_flops.json").read_text(encoding="utf-8"))
                 value = float(flops["nsight_flops_per_unit"])
@@ -155,10 +160,29 @@ else:
 report = root / "report"
 if not report.is_dir() or not any(report.iterdir()):
     issues.append("missing_report_artifacts")
+if not require_ncu:
+    audit_dir = root / "ncu_validation"
+    if not audit_dir.is_dir() or not any(audit_dir.iterdir()):
+        issues.append("missing_ncu_permission_audit")
 if issues:
     raise SystemExit("Full protocol verification failed:\n" + "\n".join(issues))
-print(json.dumps({"verification_status": "VERIFIED", "manifest_records": total, "ncu_profiles": ncu_total}, sort_keys=True))
+print(json.dumps({
+    "verification_status": "VERIFIED",
+    "manifest_records": total,
+    "ncu_profiles_required": ncu_total if require_ncu else 0,
+    "ncu_profiles_pending": 0 if require_ncu else ncu_total,
+}, sort_keys=True))
 PY
+}
+
+copy_ncu_audit() {
+  [[ "${REQUIRE_NCU}" == "0" ]] || return 0
+  if [[ -z "${NCU_AUDIT_DIR}" || ! -d "${NCU_AUDIT_DIR}" ]]; then
+    echo "REQUIRE_NCU=0 requires NCU_AUDIT_DIR containing the counter-permission audit." >&2
+    return 1
+  fi
+  mkdir -p "${BENCHMARK_ROOT}/ncu_validation"
+  cp -a "${NCU_AUDIT_DIR}/." "${BENCHMARK_ROOT}/ncu_validation/"
 }
 
 copy_without_data_or_predictions() {
@@ -218,7 +242,7 @@ if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
   printf '%s\n' 'Usage: run_a100_protocol_on_autodl.sh'
   exit 0
 fi
-if [[ $# -ne 0 || ! "${MIN_GPU_MEMORY_GIB}" =~ ^[0-9]+([.][0-9]+)?$ || ( "${AUTO_SHUTDOWN}" != "0" && "${AUTO_SHUTDOWN}" != "1" ) ]]; then
+if [[ $# -ne 0 || ! "${MIN_GPU_MEMORY_GIB}" =~ ^[0-9]+([.][0-9]+)?$ || ( "${AUTO_SHUTDOWN}" != "0" && "${AUTO_SHUTDOWN}" != "1" ) || ( "${REQUIRE_NCU}" != "0" && "${REQUIRE_NCU}" != "1" ) ]]; then
   echo 'Invalid arguments or environment overrides.' >&2
   exit 2
 fi
@@ -239,6 +263,7 @@ export ERA5_GPU_NAME_REGEX="${GPU_NAME_REGEX}" ERA5_MIN_GPU_MEMORY_GIB="${MIN_GP
 run bash "${VALIDATOR}" --repo "${ROOT}" --env "${ENV_ROOT}" --benchmark "${BENCHMARK_ROOT}" --gpu-name-regex "${GPU_NAME_REGEX}" --min-gpu-memory-gib "${MIN_GPU_MEMORY_GIB}"
 run "${ROUTEB_PY}" "${ROOT}/cloud/autodl_era5/run_benchmark.py" --config "${BASE_CONFIG}" --stage prepare --include-legacy
 run "${ROUTEB_PY}" "${MANIFEST_BUILDER}" --config "${SPEC}" --benchmark-root "${BENCHMARK_ROOT}" --output-dir "${BENCHMARK_ROOT}/manifests" --hardware-class "${GPU_NAME}"
+copy_ncu_audit
 run_manifest_phase gpflow_preflight shared_batch_short kind gpflow_feasibility_preflight
 run "${ROUTEB_PY}" "${GPFLOW_SELECTOR}" --config "${SPEC}" --benchmark-root "${BENCHMARK_ROOT}" --manifest-dir "${BENCHMARK_ROOT}/manifests" --hardware-class "${GPU_NAME}"
 run_manifest_phase shared_batch shared_batch_short not_kind gpflow_feasibility_preflight
@@ -247,7 +272,16 @@ run_manifest_phase official_long_full official_long_full all
 run_manifest_phase online_short online_short kind online
 run_manifest_phase online_short_postprocess online_short kind postprocess
 run_manifest_phase online_long online_long all
-run bash "${EFFICIENCY_RUNNER}" --repo "${ROOT}" --env "${ENV_ROOT}" --benchmark "${BENCHMARK_ROOT}" --gpu-name-regex "${GPU_NAME_REGEX}" --min-gpu-memory-gib "${MIN_GPU_MEMORY_GIB}" --require-ncu
+efficiency_args=(
+  --repo "${ROOT}" --env "${ENV_ROOT}" --benchmark "${BENCHMARK_ROOT}"
+  --gpu-name-regex "${GPU_NAME_REGEX}" --min-gpu-memory-gib "${MIN_GPU_MEMORY_GIB}"
+)
+if [[ "${REQUIRE_NCU}" == "1" ]]; then
+  efficiency_args+=(--require-ncu)
+else
+  efficiency_args+=(--disable-ncu)
+fi
+run bash "${EFFICIENCY_RUNNER}" "${efficiency_args[@]}"
 run bash "${REPORT_RUNNER}" --repo "${ROOT}" --env "${ENV_ROOT}" --benchmark "${BENCHMARK_ROOT}"
 verify_complete_protocol
 publish_verified_results
