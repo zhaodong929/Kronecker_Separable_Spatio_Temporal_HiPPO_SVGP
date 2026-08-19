@@ -152,6 +152,7 @@ def command_for(lock: dict[str, Any], method: str, protocol: Path, output: Path,
         return [
             python, "baselines/covid_long_setting_b/adapters/run_factorial_lmc_imc.py", *common,
             "--method", method.split("_", 1)[0],
+            "--device", "gpu",
             "--temporal-inducing", str(config["temporal_inducing"]),
             "--latent-rank", str(config["latent_rank"]),
             "--online-inference-steps", str(config["online_inference_steps"]),
@@ -160,6 +161,7 @@ def command_for(lock: dict[str, Any], method: str, protocol: Path, output: Path,
     if method == "fsde_svi":
         return [
             python, "baselines/covid_long_setting_b/adapters/run_factorial_fsde_svi.py", *common,
+            "--device", "gpu",
             "--temporal-inducing", str(config["temporal_inducing"]),
             "--latent-rank", str(config["latent_rank"]),
             "--online-inference-steps", str(config["online_inference_steps"]),

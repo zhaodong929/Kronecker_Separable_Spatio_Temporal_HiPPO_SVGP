@@ -20,6 +20,7 @@ from baselines.covid_long_setting_b.formalization import canonical_json_sha256, 
 
 CONVERGED = {"converged_elbo_plateau", "converged_objective_plateau"}
 METHOD_IDS = ("ohsvgp_rbf", "ovc_svgp", "st_svgp", "lmc_svgp", "imc_svgp", "fsde_svi")
+GPU_METHOD_IDS = {"ohsvgp_rbf", "lmc_svgp", "imc_svgp", "fsde_svi"}
 ENVIRONMENT_BY_METHOD = {
     "ohsvgp_rbf": "ohsvgp",
     "ovc_svgp": "ovc",
@@ -217,7 +218,7 @@ def main() -> None:
                 "configuration": configs[method_id],
                 "environment": ENVIRONMENT_BY_METHOD[method_id],
                 "source_commit": source_commit(catalog, method_id),
-                "execution_backend": "GPU" if method_id == "ohsvgp_rbf" else "official isolated environment",
+                "execution_backend": "GPU" if method_id in GPU_METHOD_IDS else "official isolated environment",
                 "resource_class": "serial_high_rss" if method_id in ("ovc_svgp", "st_svgp", "fsde_svi") else "serial",
             }
             for method_id in configs

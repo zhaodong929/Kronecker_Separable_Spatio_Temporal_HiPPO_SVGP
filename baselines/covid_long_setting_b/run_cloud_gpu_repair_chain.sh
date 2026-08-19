@@ -37,6 +37,12 @@ print(jax.devices())
     --methods lmc imc fsde --phase capacity --execute --resume \
     --factorial-device gpu --fsde-python "$FSDE_PYTHON"
 
+"$FSDE_PYTHON" baselines/covid_long_setting_b/run_blocked_development.py \
+    --development-manifest "${DEVELOPMENT_MANIFEST#$ROOT/}" \
+    --output-root "${FACTORIAL_ROOT#$ROOT/}" \
+    --methods lmc imc fsde --phase online_steps --execute --resume \
+    --factorial-device gpu --fsde-python "$FSDE_PYTHON"
+
 "$PYTHON" baselines/covid_long_setting_b/run_ohsvgp_reproduction_gates.py \
     --python "$PYTHON" --output-dir "${OHSVGP_GATE_ROOT#$ROOT/}" --execute
 
