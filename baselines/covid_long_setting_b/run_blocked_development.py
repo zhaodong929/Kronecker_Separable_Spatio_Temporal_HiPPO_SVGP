@@ -159,6 +159,7 @@ def command_for(
             *common,
             "--temporal-inducing", str(candidate["temporal_inducing"]),
             "--latent-rank", str(candidate["latent_rank"]),
+            "--device", args.factorial_device,
             "--online-inference-steps", str(candidate.get("online_inference_steps", 25)),
             "--batch-size", str(args.factorial_batch_size),
             *common_task1_args(args),

@@ -18,7 +18,10 @@ import sys
 import time
 from typing import Any
 
-os.environ.setdefault("JAX_PLATFORM_NAME", "cpu")
+_device_parser = argparse.ArgumentParser(add_help=False)
+_device_parser.add_argument("--device", choices=("cpu", "gpu"), default="cpu")
+REQUESTED_DEVICE, _ = _device_parser.parse_known_args()
+os.environ["JAX_PLATFORM_NAME"] = REQUESTED_DEVICE.device
 
 import jax
 import jax.numpy as jnp
@@ -52,6 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--protocol-json", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--device", choices=("cpu", "gpu"), default="cpu")
     parser.add_argument("--temporal-inducing", type=int, default=16)
     parser.add_argument("--latent-rank", type=int, default=4)
     parser.add_argument("--task1-iterations", type=int, default=50000)
@@ -441,6 +445,8 @@ def run_online(
 
 def main() -> None:
     args = parse_args()
+    if args.device == "gpu" and jax.default_backend() != "gpu":
+        raise RuntimeError("--device gpu was requested, but JAX did not initialize a GPU backend")
     protocol = COVIDSettingBProtocol(args.protocol_npz, args.protocol_json)
     if not 1 <= args.temporal_inducing <= protocol.calibration_weeks + protocol.online_weeks:
         raise ValueError("--temporal-inducing is outside the study horizon")
@@ -482,6 +488,7 @@ def main() -> None:
             "protocol": "Task-1-only chronological 48-week history plus four held-out weekly Setting B updates",
             "seed": args.seed,
             "capacity": {"temporal_inducing": args.temporal_inducing, "latent_rank": args.latent_rank},
+            "execution_device": args.device,
             "task1_convergence": convergence,
             "online_posterior_updates": posterior_updates,
             "task1_seconds": time.perf_counter() - task1_started - float(np.sum(seconds)),
@@ -531,6 +538,7 @@ def main() -> None:
             "online_inference_steps": args.online_inference_steps,
             "task1_convergence": convergence,
             "online_posterior_updates": posterior_updates,
+            "execution_device": args.device,
             "current_visible_update": "analytic Gaussian conditioning of the official full-output predictive posterior",
             "history_update": "causal official FSDE-SVI variational update on complete arrived labels",
             "hyperparameters": "Task-1 parameters are frozen; each multi-step online FSDE update retains only the causal variational posterior",
@@ -542,6 +550,7 @@ def main() -> None:
         "source": "SeyoungKimLab/FactorialSDE",
         "seed": args.seed,
         "capacity": {"temporal_inducing": args.temporal_inducing, "latent_rank": args.latent_rank},
+        "execution_device": args.device,
         "task1_convergence": convergence,
         "task1_seconds": task1_seconds,
         "online_seconds_total": float(np.sum(seconds)),
