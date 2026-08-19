@@ -73,6 +73,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--task1-plateau-checks", type=int, default=10)
     parser.add_argument("--task1-plateau-relative-improvement", type=float, default=1e-3)
     parser.add_argument("--factorial-batch-size", type=int, default=16)
+    parser.add_argument("--factorial-device", choices=("cpu", "gpu"), default="cpu")
     parser.add_argument("--st-online-steps", type=int, default=5)
     parser.add_argument("--ovc-dtype", choices=("float32", "float64"), default="float64")
     parser.add_argument("--ohsvgp-device", default="cuda")
@@ -144,6 +145,7 @@ def command_for(
             "baselines/covid_long_setting_b/adapters/run_factorial_lmc_imc.py",
             *common,
             "--method", method,
+            "--device", args.factorial_device,
             "--temporal-inducing", str(candidate["temporal_inducing"]),
             "--latent-rank", str(candidate["latent_rank"]),
             "--online-inference-steps", str(candidate.get("online_inference_steps", 25)),
