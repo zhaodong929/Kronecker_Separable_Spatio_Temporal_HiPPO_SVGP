@@ -90,7 +90,7 @@ if [[ "${INCLUDE_LEGACY}" == "1" ]]; then
   # metadata requires TensorFlow 2.4.x, contrary to the stale TF 2.2.1 pin in
   # the generated upstream setup.py.
   "${MARKOV_PY}" -m pip install \
-    numpy==1.18.5 scipy==1.4.1 tensorflow==2.4.4 \
+    numpy==1.19.5 scipy==1.4.1 tensorflow==2.4.4 \
     tensorflow-probability==0.11.0 gpflow==2.1.3 \
     banded-matrices==0.0.6 protobuf==3.20.3
 fi
