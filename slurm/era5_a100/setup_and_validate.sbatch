@@ -197,16 +197,14 @@ check_reporting() {
   if "${ROUTEB_PY}" - "${output}" >"${TMP_DIR}/reporting.log" 2>&1 <<'PY'
 import json
 import sys
-import matplotlib
-import reportlab
+import numpy as np
 
 output = sys.argv[1]
 with open(output, "w", encoding="utf-8") as handle:
     json.dump(
         {
             "status": "passed",
-            "matplotlib": matplotlib.__version__,
-            "reportlab": getattr(reportlab, "Version", "unknown"),
+            "numpy": np.__version__,
         },
         handle,
         indent=2,
