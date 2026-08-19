@@ -89,7 +89,10 @@ if [[ "${INCLUDE_LEGACY}" == "1" ]]; then
   "${MARKOV_PY}" -m pip install \
     numpy==1.18.5 scipy==1.4.1 tensorflow==2.2.1 \
     tensorflow-probability==0.11.0 gpflow==2.1.3 \
-    banded-matrices==0.0.6 protobuf==3.20.3
+    protobuf==3.20.3
+  # The official requirements pin TensorFlow 2.2.1, while the later wheel
+  # metadata for banded-matrices 0.0.6 incorrectly requires TensorFlow >=2.4.
+  "${MARKOV_PY}" -m pip install banded-matrices==0.0.6 --no-deps
   "${MARKOV_PY}" -m pip install \
     -e "${ROOT}/baselines/external/secondmind_labs_markovflow_v0.0.13" \
     --no-deps
