@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
-from typing import Any
+from typing import Any, Mapping
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -45,8 +45,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--development-root",
         type=Path,
-        default=Path("baselines/covid_long_setting_b/results/convergence_repair_v1/blocked_development"),
+        help="Legacy shared development root; cannot be combined with per-method roots.",
     )
+    for name in ("factorial", "ohsvgp", "ovc", "st-svgp"):
+        parser.add_argument(f"--{name}-development-root", type=Path)
     parser.add_argument(
         "--ohsvgp-gate",
         type=Path,
@@ -94,6 +96,27 @@ def source_commit(catalog: dict[str, Any], method_id: str) -> str:
     return str(methods[method_id].get("source_commit", "local"))
 
 
+def development_roots(args: argparse.Namespace) -> dict[str, Path]:
+    """Resolve separate seed-0 development roots without mixing their artifacts."""
+
+    names = ("factorial", "ohsvgp", "ovc", "st_svgp")
+    supplied = {
+        "factorial": args.factorial_development_root,
+        "ohsvgp": args.ohsvgp_development_root,
+        "ovc": args.ovc_development_root,
+        "st_svgp": args.st_svgp_development_root,
+    }
+    if args.development_root is not None:
+        if any(value is not None for value in supplied.values()):
+            raise ValueError("Use either --development-root or all four per-method development roots")
+        root = absolute(args.development_root)
+        return {name: root for name in names}
+    missing = [name for name in names if supplied[name] is None]
+    if missing:
+        raise ValueError(f"Missing per-method development roots: {missing}")
+    return {name: absolute(supplied[name]) for name in names}
+
+
 def git_commit() -> str:
     return subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=True).stdout.strip()
 
@@ -103,16 +126,19 @@ def locked_code_hashes() -> dict[str, str]:
 
 
 def build_selected_configs(
-    capacity: dict[str, Any],
+    capacities: Mapping[str, dict[str, Any]],
     online_steps: dict[str, Any],
     *,
     ohsvgp_gate_passed: bool,
     ovc_memory_passed: bool,
 ) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+    # Retain the public helper's legacy shared-record input for its focused tests.
+    if "factorial" not in capacities:
+        capacities = {name: dict(capacities) for name in ("factorial", "ohsvgp", "ovc", "st_svgp")}
     configs: dict[str, dict[str, Any]] = {}
     exclusions: dict[str, str] = {}
 
-    ohsvgp = maybe_selected(capacity, "ohsvgp")
+    ohsvgp = maybe_selected(capacities["ohsvgp"], "ohsvgp")
     if ohsvgp is None:
         exclusions["ohsvgp_rbf"] = "no_configuration_passed_all_development_gates"
     elif not ohsvgp_gate_passed:
@@ -120,7 +146,7 @@ def build_selected_configs(
     else:
         configs["ohsvgp_rbf"] = ohsvgp
 
-    ovc = maybe_selected(capacity, "ovc")
+    ovc = maybe_selected(capacities["ovc"], "ovc")
     if ovc is None:
         exclusions["ovc_svgp"] = "no_configuration_passed_all_development_gates"
     elif not ovc_memory_passed:
@@ -128,13 +154,13 @@ def build_selected_configs(
     else:
         configs["ovc_svgp"] = ovc
 
-    st_svgp = maybe_selected(capacity, "st_svgp")
+    st_svgp = maybe_selected(capacities["st_svgp"], "st_svgp")
     if st_svgp is None:
         exclusions["st_svgp"] = "no_configuration_passed_all_development_gates"
     else:
         configs["st_svgp"] = st_svgp
 
-    shared = capacity.get("selected", {}).get("factorial_lmc_imc_fsde_shared", {})
+    shared = capacities["factorial"].get("selected", {}).get("factorial_lmc_imc_fsde_shared", {})
     shared_candidate = shared.get("candidate") if isinstance(shared, dict) else None
     if shared.get("status") != "selected" or not isinstance(shared_candidate, dict):
         for method_id in ("lmc_svgp", "imc_svgp", "fsde_svi"):
@@ -161,14 +187,17 @@ def main() -> None:
     output = absolute(args.output)
     if output.exists():
         raise FileExistsError(f"Refusing to replace fairness lock: {output}")
-    development_root = absolute(args.development_root)
-    capacity = load(development_root / "capacity" / "capacity_selection.json")
-    online_steps = load(development_root / "online_steps" / "online_step_selection.json")
+    roots = development_roots(args)
+    capacities = {
+        name: load(root / "capacity" / "capacity_selection.json")
+        for name, root in roots.items()
+    }
+    online_steps = load(roots["factorial"] / "online_steps" / "online_step_selection.json")
     gate = load(args.ohsvgp_gate)
     ovc_assessment = load(args.ovc_memory_assessment)
     environment = load(args.environment_lock)
     configs, exclusions = build_selected_configs(
-        capacity,
+        capacities,
         online_steps,
         ohsvgp_gate_passed=gate.get("status") == "passed",
         ovc_memory_passed=ovc_assessment.get("status") == "passed",
@@ -208,10 +237,17 @@ def main() -> None:
             "blocked_windows": ["1-28 -> 29-36", "1-36 -> 37-44", "1-44 -> 45-52"],
             "metric": "mean Gaussian NLPD on restored log1p(per-100k) scale",
             "tie_breaker": "mean RMSE, then smaller capacity",
-            "convergence": capacity.get("convergence_gate"),
-            "practical_capacity_stability": capacity.get("practical_capacity_stability"),
-            "capacity_record": str((development_root / "capacity" / "capacity_selection.json").resolve()),
-            "online_step_record": str((development_root / "online_steps" / "online_step_selection.json").resolve()),
+            "convergence_by_development_root": {
+                name: record.get("convergence_gate") for name, record in capacities.items()
+            },
+            "practical_capacity_stability_by_development_root": {
+                name: record.get("practical_capacity_stability") for name, record in capacities.items()
+            },
+            "capacity_records": {
+                name: str((roots[name] / "capacity" / "capacity_selection.json").resolve())
+                for name in roots
+            },
+            "online_step_record": str((roots["factorial"] / "online_steps" / "online_step_selection.json").resolve()),
         },
         "methods": {
             method_id: {
@@ -224,6 +260,7 @@ def main() -> None:
             for method_id in configs
         },
         "gate_evidence": {
+            "development_roots": {name: str(root.resolve()) for name, root in roots.items()},
             "ohsvgp_official_reproduction": str(absolute(args.ohsvgp_gate)),
             "ovc_memory_assessment": str(absolute(args.ovc_memory_assessment)),
             "hardware_fingerprint": str(absolute(args.hardware_fingerprint)),
