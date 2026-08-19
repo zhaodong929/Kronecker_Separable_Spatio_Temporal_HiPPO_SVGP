@@ -20,6 +20,8 @@ PREPARE = ROOT / "slurm/era5_a100/prepare_protocol.sbatch"
 EFFICIENCY = ROOT / "slurm/era5_a100/run_efficiency.sbatch"
 REPORT = ROOT / "slurm/era5_a100/generate_report.sbatch"
 GPFLOW_SELECT = ROOT / "slurm/era5_a100/select_gpflow_tier.sbatch"
+AUTODL_FULL = ROOT / "cloud/autodl_era5/run_a100_protocol_on_autodl.sh"
+GPFLOW_SELECTOR_SCRIPT = ROOT / "scripts/select_era5_gpflow_tier.py"
 SPEC = importlib.util.spec_from_file_location("era5_a100_manifest", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -86,6 +88,28 @@ def test_submit_contract_uses_exactly_three_persistent_workers() -> None:
     assert "audit_era5_a100_shared_online.py" in report
     assert "generate_era5_a100_shared_online_report.py" in report
     assert "select_era5_gpflow_tier.py" in gpflow_select
+
+
+def test_autodl_full_protocol_reuses_the_complete_manifest_and_requires_ncu() -> None:
+    script = AUTODL_FULL.read_text(encoding="utf-8")
+    for phase in (
+        "gpflow_preflight",
+        "shared_batch",
+        "official_long_preflight",
+        "official_long_full",
+        "online_short",
+        "online_short_postprocess",
+        "online_long",
+    ):
+        assert f"run_manifest_phase {phase}" in script
+    assert "--include-legacy" in script
+    assert "--hardware-class" in script
+    assert "--require-ncu" in script
+    assert "verify_complete_protocol" in script
+    assert "publish_verified_results" in script
+    assert "/usr/bin/shutdown -h now" in script
+    selector = GPFLOW_SELECTOR_SCRIPT.read_text(encoding="utf-8")
+    assert "--hardware-class" in selector
 
 
 def test_submit_dry_run_requires_partition_and_submits_one_three_worker_array(tmp_path: Path) -> None:
@@ -280,7 +304,10 @@ def test_efficiency_wrapper_parses_common_ncu_flop_artifact(tmp_path: Path) -> N
     fake_bin = tmp_path / "bin"
     fake_bin.mkdir()
     nvidia_smi = fake_bin / "nvidia-smi"
-    nvidia_smi.write_text("#!/usr/bin/env bash\necho 'NVIDIA A100-SXM4-80GB'\n", encoding="utf-8")
+    nvidia_smi.write_text(
+        "#!/usr/bin/env bash\necho 'NVIDIA A100-SXM4-80GB, 81920'\n",
+        encoding="utf-8",
+    )
     nvidia_smi.chmod(0o755)
     ncu = fake_bin / "ncu"
     ncu.write_text(

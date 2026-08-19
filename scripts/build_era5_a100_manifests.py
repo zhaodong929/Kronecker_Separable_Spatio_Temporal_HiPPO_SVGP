@@ -1283,6 +1283,7 @@ def _profile_metadata(
     source: Job,
     branch: str,
     efficiency_spec: dict[str, Any],
+    hardware_class: str,
 ) -> dict[str, Any]:
     script = str(source.command[1]) if len(source.command) > 1 else ""
     precision = (
@@ -1322,7 +1323,7 @@ def _profile_metadata(
             "native_work_unit": native_unit,
             "comparison_group": comparison_group,
             "precision": precision,
-            "hardware_class": "NVIDIA A100",
+            "hardware_class": hardware_class,
             "warmup": 1,
             "repeats": 1,
             "ncu": {
@@ -1444,7 +1445,12 @@ def _compute_contract(
 
 
 def build_efficiency_jobs(
-    *, spec: dict[str, Any], base_config: dict[str, Any], benchmark: Path, pythons: dict[str, Path]
+    *,
+    spec: dict[str, Any],
+    base_config: dict[str, Any],
+    benchmark: Path,
+    pythons: dict[str, Path],
+    hardware_class: str = "NVIDIA A100",
 ) -> list[tuple[Job, dict[str, Any], str]]:
     """Build seed-0 probes and isolated common-counter baseline profiles."""
     routeb_python = pythons["routeb"]
@@ -1504,7 +1510,16 @@ def build_efficiency_jobs(
                 timeout_seconds=source.timeout_seconds,
             )
             entries.append(
-                (job, _profile_metadata(source=source, branch="batch", efficiency_spec=spec["efficiency"]), "efficiency_profile")
+                (
+                    job,
+                    _profile_metadata(
+                        source=source,
+                        branch="batch",
+                        efficiency_spec=spec["efficiency"],
+                        hardware_class=hardware_class,
+                    ),
+                    "efficiency_profile",
+                )
             )
         elif source.method == "xlag_mean_only" or script == "scripts/run_official_markovflow_stsvgp_era5.py":
             objective = (
@@ -1550,7 +1565,16 @@ def build_efficiency_jobs(
             timeout_seconds=source.timeout_seconds,
         )
         entries.append(
-            (job, _profile_metadata(source=source, branch="batch", efficiency_spec=spec["efficiency"]), "efficiency_profile")
+            (
+                job,
+                _profile_metadata(
+                    source=source,
+                    branch="batch",
+                    efficiency_spec=spec["efficiency"],
+                    hardware_class=hardware_class,
+                ),
+                "efficiency_profile",
+            )
         )
 
     online_jobs = build_online_jobs(
@@ -1581,7 +1605,16 @@ def build_efficiency_jobs(
                 timeout_seconds=source.timeout_seconds,
             )
             entries.append(
-                (job, _profile_metadata(source=source, branch="online", efficiency_spec=spec["efficiency"]), "efficiency_profile")
+                (
+                    job,
+                    _profile_metadata(
+                        source=source,
+                        branch="online",
+                        efficiency_spec=spec["efficiency"],
+                        hardware_class=hardware_class,
+                    ),
+                    "efficiency_profile",
+                )
             )
         elif source.method.startswith("xlag_"):
             job, metadata = _efficiency_reference_job(
@@ -1973,6 +2006,7 @@ def build_manifests(
     benchmark_root: Path | None,
     output_dir: Path | None = None,
     gpflow_tier: str | None = None,
+    hardware_class: str = "NVIDIA A100",
 ) -> dict[str, Path]:
     spec_path = spec_path.resolve()
     spec = load_spec(spec_path)
@@ -2018,6 +2052,7 @@ def build_manifests(
         base_config=base_config,
         benchmark=benchmark_root,
         pythons=pythons,
+        hardware_class=hardware_class,
     )
 
     short_entries = []
@@ -2151,6 +2186,11 @@ def parse_args() -> argparse.Namespace:
         help="Manifest directory; defaults to ${BENCHMARK_ROOT}/manifests.",
     )
     parser.add_argument("--gpflow-tier", choices=("8192", "4096"))
+    parser.add_argument(
+        "--hardware-class",
+        default="NVIDIA A100",
+        help="Hardware label stored with common-counter profiling records.",
+    )
     return parser.parse_args()
 
 
@@ -2161,6 +2201,7 @@ def main() -> None:
         benchmark_root=args.benchmark_root,
         output_dir=args.output_dir,
         gpflow_tier=args.gpflow_tier,
+        hardware_class=args.hardware_class,
     )
     print(json.dumps({key: str(path) for key, path in outputs.items()}, indent=2, sort_keys=True))
 

@@ -391,6 +391,19 @@ def test_efficiency_contains_common_counter_profiles_and_cpu_references(tmp_path
     assert "--markdown-output" in summary[0]["argv"]
 
 
+def test_efficiency_profiles_preserve_the_selected_hardware_label(tmp_path: Path) -> None:
+    benchmark = tmp_path / "benchmark"
+    outputs = build_manifests(
+        spec_path=SPEC,
+        benchmark_root=benchmark,
+        hardware_class="NVIDIA RTX 6000 Ada",
+    )
+    rows = read_jsonl(outputs["efficiency"])
+    profiles = [row for row in rows if row["kind"] == "efficiency_profile"]
+    assert profiles
+    assert {row["hardware_class"] for row in profiles} == {"NVIDIA RTX 6000 Ada"}
+
+
 def test_manifests_are_deterministic_and_runner_accepts_argv_jsonl(tmp_path: Path) -> None:
     outputs, benchmark = build(tmp_path)
     before = {name: path.read_text(encoding="utf-8") for name, path in outputs.items()}

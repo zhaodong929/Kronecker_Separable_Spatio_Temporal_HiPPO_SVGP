@@ -130,6 +130,7 @@ def main() -> None:
     parser.add_argument("--manifest-dir", type=Path, required=True)
     parser.add_argument("--max-peak-gib", type=float, default=72.0)
     parser.add_argument("--max-full-hours", type=float, default=6.0)
+    parser.add_argument("--hardware-class", default="NVIDIA A100")
     args = parser.parse_args()
 
     spec = load_spec(args.config.resolve())
@@ -154,6 +155,7 @@ def main() -> None:
         benchmark_root=args.benchmark_root.resolve(),
         output_dir=args.manifest_dir.resolve(),
         gpflow_tier=selected_tier,
+        hardware_class=args.hardware_class,
     )
     payload = {
         "schema_version": 1,

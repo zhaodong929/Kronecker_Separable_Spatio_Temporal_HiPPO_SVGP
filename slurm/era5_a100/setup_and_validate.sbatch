@@ -27,15 +27,18 @@ STVGP_PY="${STVGP_PY:-${ENV_ROOT}/stvgp_legacy/bin/python}"
 ROUTEB_PY="${ROUTEB_PY:-${ENV_ROOT}/routeb/bin/python}"
 TF_PY="${TF_PY:-${ENV_ROOT}/gpflow/bin/python}"
 MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-${ENV_ROOT}/micromamba-root}"
+GPU_NAME_REGEX="${ERA5_GPU_NAME_REGEX:-a100}"
+MIN_GPU_MEMORY_GIB="${ERA5_MIN_GPU_MEMORY_GIB:-75}"
 
 usage() {
   cat >&2 <<'EOF'
 Usage: setup_and_validate.sbatch [--repo PATH] [--env PATH] [--benchmark PATH]
-                                [--stvgp-python PATH]
+                                [--stvgp-python PATH] [--gpu-name-regex REGEX]
+                                [--min-gpu-memory-gib GIB]
 
 The --stvgp-python path must already contain a CUDA-enabled legacy JAX/JAXLIB
 installation. This job never installs or replaces JAX. jax.devices() must
-expose an A100 device; CPU-only legacy environments are rejected.
+expose the required GPU; CPU-only legacy environments are rejected.
 Markovflow/TF2.2 compatibility environments are labeled CPU-only and excluded
 from A100 timing claims.
 EOF
@@ -47,10 +50,18 @@ while [[ $# -gt 0 ]]; do
     --env) ENV_ROOT="$2"; shift 2 ;;
     --benchmark) BENCHMARK_ROOT="$2"; shift 2 ;;
     --stvgp-python) STVGP_PY="$2"; shift 2 ;;
+    --gpu-name-regex) GPU_NAME_REGEX="$2"; shift 2 ;;
+    --min-gpu-memory-gib) MIN_GPU_MEMORY_GIB="$2"; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 2 ;;
   esac
 done
+
+if [[ ! "${MIN_GPU_MEMORY_GIB}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+  echo "--min-gpu-memory-gib must be a positive number" >&2
+  exit 2
+fi
+export GPU_NAME_REGEX MIN_GPU_MEMORY_GIB
 
 REPO_ROOT="$(cd "${REPO_ROOT}" && pwd)"
 BENCHMARK_ROOT="$(mkdir -p "${BENCHMARK_ROOT}" && cd "${BENCHMARK_ROOT}" && pwd)"
@@ -79,11 +90,14 @@ else
   : >"${GPU_QUERY}"
 fi
 
-if ! python3 - "${GPU_CSV}" <<'PY'
+if ! python3 - "${GPU_CSV}" "${GPU_NAME_REGEX}" "${MIN_GPU_MEMORY_GIB}" <<'PY'
 import csv
+import re
 import sys
 
 path = sys.argv[1]
+gpu_name_regex = sys.argv[2]
+minimum_mib = float(sys.argv[3]) * 1024.0
 rows = []
 try:
     with open(path, newline="", encoding="utf-8") as handle:
@@ -98,10 +112,12 @@ for row in rows:
         memory_mib = float(row[2].strip())
     except ValueError:
         continue
-    if "a100" in row[1].lower() and memory_mib >= 75 * 1024:
+    if re.search(gpu_name_regex, row[1], flags=re.IGNORECASE) and memory_mib >= minimum_mib:
         valid.append((row[1].strip(), memory_mib))
 if not valid:
-    raise SystemExit("No visible A100 with at least 75 GiB was found")
+    raise SystemExit(
+        f"No visible GPU matching {gpu_name_regex!r} with at least {minimum_mib / 1024.0:g} GiB was found"
+    )
 for name, memory_mib in valid:
     print(f"validated {name} with {memory_mib:.0f} MiB")
 PY
@@ -129,6 +145,8 @@ check_torch() {
   local output="${TMP_DIR}/torch.json"
   if "${ROUTEB_PY}" - "${output}" >"${TMP_DIR}/torch.log" 2>&1 <<'PY'
 import json
+import os
+import re
 import sys
 import torch
 
@@ -139,8 +157,13 @@ torch.cuda.set_device(0)
 props = torch.cuda.get_device_properties(0)
 name = str(props.name)
 memory_bytes = int(props.total_memory)
-if "a100" not in name.lower() or memory_bytes < 75 * 1024**3:
-    raise SystemExit(f"Torch device is not an A100-80GB: {name}, {memory_bytes} bytes")
+gpu_name_regex = os.environ["GPU_NAME_REGEX"]
+minimum_bytes = float(os.environ["MIN_GPU_MEMORY_GIB"]) * 1024**3
+if not re.search(gpu_name_regex, name, flags=re.IGNORECASE) or memory_bytes < minimum_bytes:
+    raise SystemExit(
+        f"Torch device does not match {gpu_name_regex!r} with at least "
+        f"{minimum_bytes / 1024**3:g} GiB: {name}, {memory_bytes} bytes"
+    )
 torch.ones(1, device="cuda").sum().item()
 torch.cuda.synchronize()
 payload = {
@@ -233,7 +256,9 @@ check_legacy_jax() {
   local output="${TMP_DIR}/legacy_jax.json"
   if JAX_PLATFORM_NAME=gpu "${STVGP_PY}" - "${output}" >"${TMP_DIR}/legacy_jax.log" 2>&1 <<'PY'
 import json
+import os
 import platform
+import re
 import sys
 import jax
 import jax.numpy as jnp
@@ -250,20 +275,23 @@ gpu_devices = [
     for device in devices
     if str(getattr(device, "platform", "")).lower() in {"gpu", "cuda"}
 ]
-a100_devices = [
+validated_gpu_devices = [
     device
     for device in gpu_devices
-    if "a100" in (
-        str(getattr(device, "device_kind", "")) + " " + str(device)
-    ).lower()
-]
-if not a100_devices:
-    raise SystemExit(
-        "Legacy JAX must expose an A100 through jax.devices(); CPU-only jaxlib is rejected"
+    if re.search(
+        os.environ["GPU_NAME_REGEX"],
+        str(getattr(device, "device_kind", "")) + " " + str(device),
+        flags=re.IGNORECASE,
     )
-if str(jax.default_backend()).lower() not in {"gpu", "cuda"}:
-    raise SystemExit(f"Legacy JAX default backend is CPU: {jax.default_backend()}")
-probe = jax.device_put(jnp.ones((1,), dtype=jnp.float32), a100_devices[0])
+]
+if not validated_gpu_devices:
+    raise SystemExit(
+        "Legacy JAX must expose the required GPU through jax.devices(); CPU-only jaxlib is rejected"
+    )
+backend = str(getattr(jax.lib.xla_bridge.get_backend(), "platform", "unknown"))
+if backend.lower() not in {"gpu", "cuda"}:
+    raise SystemExit(f"Legacy JAX backend is CPU: {backend}")
+probe = jax.device_put(jnp.ones((1,), dtype=jnp.float32), validated_gpu_devices[0])
 if hasattr(probe, "block_until_ready"):
     probe.block_until_ready()
 payload = {
@@ -274,10 +302,10 @@ payload = {
     "bayesnewton_version": getattr(bayesnewton, "__version__", "unknown"),
     "objax_version": getattr(objax, "__version__", "unknown"),
     "backend_platform_version": str(getattr(jax.lib.xla_bridge.get_backend(), "platform_version", "unknown")),
-    "default_backend": str(jax.default_backend()),
+    "backend": backend,
     "devices": [str(device) for device in devices],
     "gpu_devices": [str(device) for device in gpu_devices],
-    "a100_devices": [str(device) for device in a100_devices],
+    "validated_gpu_devices": [str(device) for device in validated_gpu_devices],
     "cpu_fallback": False,
 }
 with open(output, "w", encoding="utf-8") as handle:
@@ -358,7 +386,9 @@ payload = {
         "iterations": int(training["iterations"]),
         "loss": loss,
     },
-    "jax_backend": str(runner.jax.default_backend()),
+    "jax_backend": str(
+        getattr(runner.jax.lib.xla_bridge.get_backend(), "platform", "unknown")
+    ),
     "jax_devices": [str(device) for device in runner.jax.devices()],
     "cpu_fallback": False,
 }
@@ -454,7 +484,10 @@ payload = {
         if os.environ.get(key) is not None
     },
     "gpu": {
-        "requirement": "NVIDIA A100 with at least 75 GiB visible memory",
+        "requirement": (
+            f"GPU matching {os.environ.get('GPU_NAME_REGEX', 'a100')} with at least "
+            f"{os.environ.get('MIN_GPU_MEMORY_GIB', '75')} GiB visible memory"
+        ),
         "nvidia_smi": gpu_rows,
         "nvidia_smi_l": Path(gpu_list)
         .read_text(encoding="utf-8", errors="ignore")
@@ -471,11 +504,11 @@ payload = {
     "timing_policy": {
         "accuracy": "one allocated GPU, 16 CPUs, 128G, 24 hours",
         "legacy_jax": "must be a CUDA-enabled pre-created environment; CPU fallback is forbidden",
-        "markovflow": "TF2.2 compatibility stack may remain CPU-only and is excluded from A100 timing claims",
+        "markovflow": "TF2.2 compatibility stack may remain CPU-only and is excluded from GPU timing claims",
     },
     "prerequisites": [
         "Do not replace STVGP_PY with the plain jaxlib==0.1.60 CPU wheel.",
-        "STVGP_PY must expose an A100 in jax.devices().",
+        "STVGP_PY must expose the validated GPU in jax.devices().",
     ],
     "environment_freezes": {
         name: Path(checks_dir, f"{name}_freeze.txt").read_text(encoding="utf-8", errors="ignore").splitlines()

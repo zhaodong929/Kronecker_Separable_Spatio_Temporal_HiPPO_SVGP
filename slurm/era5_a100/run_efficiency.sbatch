@@ -19,11 +19,16 @@ ENV_ROOT="${ERA5_ENV_ROOT:-${ENV_ROOT:-${HOME}/stvgp_envs}}"
 BENCHMARK_ROOT="${BENCHMARK_ROOT:-${REPO_ROOT}/results/experiments_era5_ohsvgp_heldout_fullspace/paper_ready/ICLR Formal experiment/iclr_era5_full_benchmark}"
 MANIFEST=""
 MANIFEST_NAME=""
+GPU_NAME_REGEX="${ERA5_GPU_NAME_REGEX:-a100}"
+MIN_GPU_MEMORY_GIB="${ERA5_MIN_GPU_MEMORY_GIB:-75}"
+REQUIRE_NCU=0
 
 usage() {
   cat >&2 <<'EOF'
 Usage: run_efficiency.sbatch [--manifest PATH | --manifest-name efficiency]
                             [--repo PATH] [--env PATH] [--benchmark PATH]
+                            [--gpu-name-regex REGEX] [--min-gpu-memory-gib GIB]
+                            [--require-ncu]
 EOF
 }
 
@@ -34,10 +39,18 @@ while [[ $# -gt 0 ]]; do
     --repo) REPO_ROOT="$2"; shift 2 ;;
     --env) ENV_ROOT="$2"; shift 2 ;;
     --benchmark) BENCHMARK_ROOT="$2"; shift 2 ;;
+    --gpu-name-regex) GPU_NAME_REGEX="$2"; shift 2 ;;
+    --min-gpu-memory-gib) MIN_GPU_MEMORY_GIB="$2"; shift 2 ;;
+    --require-ncu) REQUIRE_NCU=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage; exit 2 ;;
   esac
 done
+
+if [[ ! "${MIN_GPU_MEMORY_GIB}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+  echo "--min-gpu-memory-gib must be a positive number" >&2
+  exit 2
+fi
 
 if [[ -n "${MANIFEST_NAME}" ]]; then
   if [[ "${MANIFEST_NAME}" != "efficiency" ]]; then
@@ -72,9 +85,14 @@ if [[ ! -f "${MANIFEST}" ]]; then
   exit 1
 fi
 
-GPU_NAME="$(nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null | head -1 || true)"
-if [[ "${GPU_NAME}" != *"NVIDIA A100"* ]]; then
-  echo "A100 common-counter profiling requires NVIDIA A100; found: ${GPU_NAME:-unavailable}" >&2
+GPU_INFO="$(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits 2>/dev/null | head -1 || true)"
+GPU_NAME="${GPU_INFO%%,*}"
+GPU_MEMORY_MIB="${GPU_INFO#*,}"
+GPU_MEMORY_MIB="${GPU_MEMORY_MIB//[[:space:]]/}"
+if [[ -z "${GPU_NAME}" || ! "${GPU_MEMORY_MIB}" =~ ^[0-9]+([.][0-9]+)?$ ]] \
+  || ! [[ "${GPU_NAME,,}" =~ ${GPU_NAME_REGEX,,} ]] \
+  || ! awk -v value="${GPU_MEMORY_MIB}" -v minimum="${MIN_GPU_MEMORY_GIB}" 'BEGIN { exit !(value >= minimum * 1024) }'; then
+  echo "Common-counter profiling requires GPU regex ${GPU_NAME_REGEX} with at least ${MIN_GPU_MEMORY_GIB} GiB; found: ${GPU_INFO:-unavailable}" >&2
   exit 1
 fi
 
@@ -99,6 +117,10 @@ if [[ -n "${NCU_BIN}" ]]; then
   NCU_BIN="$(command -v "${NCU_BIN}" || true)"
 else
   NCU_BIN="$(command -v ncu || true)"
+fi
+if [[ "${REQUIRE_NCU}" -eq 1 && ( -z "${NCU_BIN}" || ! -x "${NCU_BIN}" ) ]]; then
+  echo "--require-ncu was requested but Nsight Compute (ncu) is unavailable" >&2
+  exit 1
 fi
 # Count executed arithmetic instructions for the float64 A100 path.  These
 # are instruction counts, not a peak-throughput percentage.  The report keeps
@@ -334,6 +356,7 @@ else
 fi
 
 echo "Efficiency records processed=${processed} failures=${failures} not_instrumented=${not_instrumented} ncu_parse_failures=${ncu_parse_failures}"
-if [[ "${failures}" -ne 0 || "${SUMMARY_RC}" -ne 0 ]]; then
+if [[ "${failures}" -ne 0 || "${SUMMARY_RC}" -ne 0 \
+  || ( "${REQUIRE_NCU}" -eq 1 && ( "${not_instrumented}" -ne 0 || "${ncu_parse_failures}" -ne 0 ) ) ]]; then
   exit 1
 fi

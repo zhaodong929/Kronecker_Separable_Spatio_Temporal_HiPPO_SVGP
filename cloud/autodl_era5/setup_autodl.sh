@@ -71,8 +71,9 @@ if [[ "${INCLUDE_LEGACY}" == "1" ]]; then
   "${STVGP_PY}" -m pip install --upgrade "pip<24.1" "setuptools<68" wheel
   "${STVGP_PY}" -m pip install \
     numpy==1.19.5 scipy==1.7.1 scikit-learn==1.0.2 \
-    jax==0.2.9 jaxlib==0.1.60 \
+    jax==0.2.9 jaxlib==0.1.60+cuda111 \
     -f https://storage.googleapis.com/jax-releases/jax_releases.html
+  "${STVGP_PY}" -m pip install nvidia-cuda-nvcc-cu11==11.3.58
   "${STVGP_PY}" -m pip install \
     objax==1.3.1 bayesnewton==1.1 numba==0.54.1 \
     matplotlib==3.4.3 pandas==1.3.4 protobuf==3.20.3
