@@ -547,6 +547,7 @@ def main() -> None:
         "online_seconds_total": float(np.sum(seconds)),
         "online_seconds_per_week": float(np.mean(seconds)),
         "online_update_prediction_seconds": [float(value) for value in seconds],
+        "online_posterior_updates": posterior_updates,
         "audit": audit,
     }
     (args.output_dir / "result.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
