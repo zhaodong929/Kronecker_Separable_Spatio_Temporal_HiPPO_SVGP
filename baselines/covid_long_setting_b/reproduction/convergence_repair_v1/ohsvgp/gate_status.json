@@ -1,0 +1,48 @@
+{
+  "status": "pending",
+  "purpose": "Unmodified official OHSVGP gates before multidimensional COVID Setting B adaptation",
+  "source_repository": "https://github.com/harrisonzhu508/HIPPOSVGP",
+  "source_commit": "a1bff1bc81629316af92c97bde53d2792f4d8025",
+  "environment_python": "/home/zd929/projects/stvgp_kronecker/.venv/bin/python",
+  "checks": {
+    "official_1d_online": {
+      "command": [
+        "/home/zd929/projects/stvgp_kronecker/.venv/bin/python",
+        "scripts/onedim/solar/test_hsgp_online_fixedkernel.py",
+        "--data",
+        "solar",
+        "--inducing_size",
+        "16",
+        "--rff_sample_size",
+        "128",
+        "--rff_sample_size_qb",
+        "128",
+        "--rff_sample_size_pred",
+        "128"
+      ],
+      "cwd": "/home/zd929/projects/stvgp_kronecker/baselines/external/harrisonzhu508_HIPPOSVGP",
+      "status": "failed",
+      "returncode": 1,
+      "log": "/home/zd929/projects/stvgp_kronecker/baselines/covid_long_setting_b/reproduction/convergence_repair_v1/ohsvgp/official_1d_online.log"
+    },
+    "official_multidimensional": {
+      "command": [
+        "/home/zd929/projects/stvgp_kronecker/.venv/bin/python",
+        "scripts/multidim/main_hsgp_online_toy.py",
+        "--data",
+        "moon",
+        "--inducing_size",
+        "16",
+        "--rff_sample_size",
+        "128",
+        "--num_iters",
+        "100"
+      ],
+      "cwd": "/home/zd929/projects/stvgp_kronecker/baselines/external/harrisonzhu508_HIPPOSVGP",
+      "status": "failed",
+      "returncode": 1,
+      "log": "/home/zd929/projects/stvgp_kronecker/baselines/covid_long_setting_b/reproduction/convergence_repair_v1/ohsvgp/official_multidimensional.log"
+    }
+  },
+  "adapter_boundary": "The subsequent CDC Setting B RFF choices are adapter-specific and must not be described as the universal official OHSVGP configuration."
+}

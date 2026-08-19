@@ -25,7 +25,7 @@
     },
     {
       "id": "official_adapter_pending",
-      "description": "Official source is locked, but it has not yet passed official reproduction and the Setting B gates."
+      "description": "Official source is locked, but the revised seed-0 convergence, blocked-development, causal and resource gates are incomplete."
     },
     {
       "id": "official_adapter_formal_pending",
@@ -68,13 +68,14 @@
     {
       "id": "ohsvgp_rbf",
       "display_name": "OHSVGP (RBF)",
-      "category": "internal_completed",
+      "category": "official_adapter_pending",
       "family": "online variational GP",
       "likelihood": "Gaussian",
       "source": "baselines/external/harrisonzhu508_HIPPOSVGP",
       "source_commit": "a1bff1b",
-      "setting_b_status": "formal_result_available",
-      "result_root": "results/diagnostics/covid_long_stream_2020_2024_mandatory"
+      "setting_b_status": "validation_pending",
+      "preliminary_result_root": "results/diagnostics/covid_long_stream_2020_2024_mandatory",
+      "validation_pending_reason": "The prior Setting B adapter used an un-audited capacity/RFF configuration. It must first pass one official 1D and one official multidimensional gate, then the seed-0 M={32,64}, RFF={64,128,256} blocked-development audit."
     },
     {
       "id": "bui_osgpr_controlled",
@@ -133,7 +134,7 @@
     {
       "id": "st_svgp",
       "display_name": "ST-SVGP",
-      "category": "official_adapter_completed",
+      "category": "official_adapter_pending",
       "family": "spatio-temporal variational GP",
       "likelihood": "Gaussian",
       "source": "baselines/external/aaltoml_spatio_temporal_gps",
@@ -143,24 +144,15 @@
       "official_entrypoint": "official repository examples/tests; dedicated legacy Python 3.8/JAX environment required",
       "official_reproduction_status": "passed_unmodified_air_quality_fold0_cpu_xla_thread_limited",
       "official_reproduction_evidence": "baselines/covid_long_setting_b/reproduction/st_svgp_official_run.json",
-      "covid_adapter_status": "Task-1-only capacity selected at spatial_inducing=32; seed-0 five-week smoke and 39-week causal-refit diagnostic passed after official-reproduction gate",
-      "formal_adapter_config": {
-        "spatial_inducing": 32,
-        "task1_iterations": 300,
-        "online_inference_steps": 5,
-        "hyperparameters": "learned from Task 1 then frozen; each causal refit uses only arrived observations"
-      },
-      "capacity_selection_evidence": "baselines/covid_long_setting_b/results/task1_capacity_selection/task1_capacity_selection.json",
-      "covid_adapter_evidence": "baselines/covid_long_setting_b/reproduction/st_svgp_covid_seed0_gates.json",
-      "formal_resource_evidence": "baselines/covid_long_setting_b/reproduction/st_svgp_formal_resource_guard.json",
-      "formal_result_root": "baselines/covid_long_setting_b/results/formal_selected_st_svgp_isolated",
-      "formal_evaluation_report": "baselines/covid_long_setting_b/reports/formal_gaussian_st_bui_complete",
-      "setting_b_status": "formal_result_available"
+      "covid_adapter_status": "causal refit adaptation; old Ms=32, 300-step archives are retained only as preliminary audit evidence",
+      "preliminary_result_root": "baselines/covid_long_setting_b/results/formal_selected_st_svgp_isolated",
+      "validation_pending_reason": "Run Ms={16,32,52} on the three blocked seed-0 windows to the objective plateau gate. A causal refit is valid for accuracy, but its refit runtime remains a separately labelled quantity.",
+      "setting_b_status": "validation_pending"
     },
     {
       "id": "ovc_svgp",
       "display_name": "OVC-SVGP",
-      "category": "official_adapter_resource_limited",
+      "category": "official_adapter_pending",
       "family": "online variational conditioning GP",
       "likelihood": "Gaussian",
       "source": "baselines/external/wjmaddox_online_vargp",
@@ -170,27 +162,15 @@
       "official_entrypoint": "official get_fantasy_model conditioning example/test",
       "official_reproduction_status": "passed_official_fantasy_test",
       "official_reproduction_log": "baselines/covid_long_setting_b/reproduction/ovc_official_fantasy_test.log",
-      "covid_adapter_status": "The official exact-fantasy adapter passed its causal adapter gates. Its Task-1-selected 8x32 continuation exceeded the documented host-memory guard on the first formal split; the completed 4x32 archives are retained only as a non-primary feasibility study.",
-      "covid_adapter_evidence": "baselines/covid_long_setting_b/reproduction/ovc_adapter_seed0_diagnostic39.json",
-      "formal_adapter_config": {
-        "inducing_points": 256,
-        "temporal_inducing": 8,
-        "spatial_inducing": 32,
-        "task1_iterations": 300,
-        "online_update": "official exact fantasy conditioning of delayed then visible observations",
-        "runtime_reporting": "CPU accuracy baseline only; exact fantasy state grows with arrivals"
-      },
-      "capacity_selection_evidence": "baselines/covid_long_setting_b/results/task1_capacity_selection/shared_bui_ovc_grid_selection.json",
+      "covid_adapter_status": "official exact-fantasy continuation; old shared-grid capacity selection is invalid for OVC because OVC-alone validation previously favoured 4x32",
       "nonprimary_feasibility_result_root": "baselines/covid_long_setting_b/results/formal_selected_ovc_float32",
-      "formal_failure_reason": "The Task-1-selected 8x32 exact-fantasy formal seed-5 run reached 10.46 GiB RSS after 1,731 seconds without writing an archive. The primary benchmark does not replace it with the lower-capacity 4x32 archive.",
-      "formal_resource_evidence": "baselines/covid_long_setting_b/reproduction/ovc_shared_m8_formal_resource_guard.json",
-      "formal_evaluation_report": "baselines/covid_long_setting_b/reports/formal_gaussian_task1_selected_strict",
-      "setting_b_status": "formal_resource_limited"
+      "validation_pending_reason": "Select OVC alone at 4x32, 8x32 and 12x32 on blocked development, then pass two clean-process 32-week exact-fantasy memory-retention audits before a high-RAM formal run.",
+      "setting_b_status": "validation_pending"
     },
     {
       "id": "lmc_svgp",
       "display_name": "LMC-SVGP",
-      "category": "official_adapter_completed",
+      "category": "official_adapter_pending",
       "family": "multi-output variational GP",
       "likelihood": "Gaussian",
       "source": "baselines/external/SeyoungKimLab_FactorialSDE",
@@ -200,26 +180,15 @@
       "official_entrypoint": "fsde/real_exps/real_lmc.py 1 --natgrad",
       "official_reproduction_status": "pinned official constructors, trainer and predictive covariance execute through the thin adapter; the unmodified 50000-step county-level COVID entrypoint is documented as incomplete and is not used as a benchmark result",
       "official_reproduction_evidence": "baselines/covid_long_setting_b/reproduction/factorial_sde_official_entrypoint_status.json",
-      "covid_adapter_status": "thin official-core adapter: causally refits only variational parameters on arrived complete history and analytically conditions the official 52-output Gaussian predictive distribution on current visible labels",
-      "capacity_selection_status": "shared LMC/IMC M=4, Q=2 selected on seed-0 Task-1 chronological 48-week history plus four Setting B validation weeks",
-      "capacity_selection_evidence": "baselines/covid_long_setting_b/results/task1_capacity_selection_factorial/task1_capacity_selection.json",
-      "seed0_diagnostic_status": "complete_143_week_causal_archive",
-      "seed0_diagnostic_evidence": "baselines/covid_long_setting_b/results/_diagnostic_lmc_svgp_seed0_m4q2/result.json",
-      "formal_adapter_config": {
-        "temporal_inducing": 4,
-        "latent_rank": 2,
-        "task1_iterations": 50,
-        "online_inference_steps": 5,
-        "current_visible_update": "analytic Gaussian conditioning of the official full-output predictive posterior"
-      },
-      "setting_b_status": "formal_result_available",
-      "selected_formal_result_root": "baselines/covid_long_setting_b/results/formal_selected_factorial",
-      "formal_evaluation_report": "baselines/covid_long_setting_b/reports/formal_gaussian_baseline_audit_20260818_final_v4"
+      "covid_adapter_status": "official-core strict-online adaptation with causal variational posterior handoff; LMC lengthscales receive only a deterministic symmetry-breaking initialization",
+      "preliminary_result_root": "baselines/covid_long_setting_b/results/formal_selected_factorial",
+      "validation_pending_reason": "The old M=4, Q=2, 50-step result is not converged. Audit posterior identity/trainability/NGD updates, then select from (16,4), (32,4), (50,4), (32,8), (32,16) using blocked seed-0 development.",
+      "setting_b_status": "validation_pending"
     },
     {
       "id": "imc_svgp",
       "display_name": "IMC-SVGP",
-      "category": "official_adapter_completed",
+      "category": "official_adapter_pending",
       "family": "multi-output variational GP",
       "likelihood": "Gaussian",
       "source": "baselines/external/SeyoungKimLab_FactorialSDE",
@@ -229,26 +198,15 @@
       "official_entrypoint": "fsde/real_exps/real_imc.py 1 --natgrad",
       "official_reproduction_status": "pinned official constructors, trainer and predictive covariance execute through the thin adapter; the unmodified county-level real_imc entrypoint was not run because it is not a Setting B result",
       "official_reproduction_evidence": "baselines/covid_long_setting_b/reproduction/factorial_sde_official_entrypoint_status.json",
-      "covid_adapter_status": "thin official-core adapter: causally refits only variational parameters on arrived complete history and analytically conditions the official 52-output Gaussian predictive distribution on current visible labels",
-      "capacity_selection_status": "shared LMC/IMC M=4, Q=2 selected on seed-0 Task-1 chronological 48-week history plus four Setting B validation weeks",
-      "capacity_selection_evidence": "baselines/covid_long_setting_b/results/task1_capacity_selection_factorial/task1_capacity_selection.json",
-      "seed0_diagnostic_status": "complete_143_week_causal_archive",
-      "seed0_diagnostic_evidence": "baselines/covid_long_setting_b/results/_diagnostic_imc_svgp_seed0_m4q2/result.json",
-      "formal_adapter_config": {
-        "temporal_inducing": 4,
-        "latent_rank": 2,
-        "task1_iterations": 50,
-        "online_inference_steps": 5,
-        "current_visible_update": "analytic Gaussian conditioning of the official full-output predictive posterior"
-      },
-      "setting_b_status": "formal_result_available",
-      "selected_formal_result_root": "baselines/covid_long_setting_b/results/formal_selected_factorial",
-      "formal_evaluation_report": "baselines/covid_long_setting_b/reports/formal_gaussian_baseline_audit_20260818_final_v4"
+      "covid_adapter_status": "official-core strict-online adaptation with causal variational posterior handoff",
+      "preliminary_result_root": "baselines/covid_long_setting_b/results/formal_selected_factorial",
+      "validation_pending_reason": "The old M=4, Q=2, 50-step result is not converged. It remains out of the final table until it passes the same blocked development and posterior-handoff gates as LMC and FSDE-SVI.",
+      "setting_b_status": "validation_pending"
     },
     {
       "id": "fsde_svi",
       "display_name": "FSDE-SVI",
-      "category": "official_adapter_completed",
+      "category": "official_adapter_pending",
       "family": "factorial state-space multi-output GP",
       "likelihood": "Gaussian",
       "source": "baselines/external/SeyoungKimLab_FactorialSDE",
@@ -258,23 +216,10 @@
       "official_entrypoint": "fsde/real_exps/real_fsde_svi.py 1 --natgrad",
       "official_reproduction_status": "pinned official Dataset, FSDE_SVI training and full-output covariance prediction execute in an isolated CPU JAX environment; the unmodified county-level entrypoint is not claimed as a completed Setting B reproduction",
       "official_reproduction_evidence": "baselines/covid_long_setting_b/reproduction/factorial_sde_official_entrypoint_status.json",
-      "covid_adapter_status": "thin official-core adapter: trains only on complete arrived histories and analytically conditions the official 52-output Gaussian predictive distribution on current visible labels",
-      "capacity_selection_status": "inherits the shared LMC/IMC M=4, Q=2 choice and passed the same chronological Task-1 validation geometry",
-      "capacity_selection_evidence": "baselines/covid_long_setting_b/results/task1_capacity_selection_factorial/fsde_svi/temporal_inducing4_latent_rank2/task1_chronological_validation.json",
-      "seed0_diagnostic_status": "complete_143_week_causal_archive",
-      "seed0_diagnostic_evidence": "baselines/covid_long_setting_b/results/_diagnostic_fsde_isolated_seed0_full143/result.json",
-      "formal_adapter_config": {
-        "temporal_inducing": 4,
-        "latent_rank": 2,
-        "task1_iterations": 50,
-        "online_inference_steps": 1,
-        "current_visible_update": "analytic Gaussian conditioning of the official full-output predictive posterior"
-      },
-      "formal_progress": "Complete formal archives for seeds 5-9 use fresh official-core JAX processes per week and hand off only the Task-1 model parameters and variational posterior.",
-      "setting_b_status": "formal_result_available",
-      "runtime_gate_evidence": "baselines/covid_long_setting_b/reproduction/fsde_svi_setting_b_gate.json",
-      "selected_formal_result_root": "baselines/covid_long_setting_b/results/formal_selected_fsde_svi_isolated",
-      "formal_evaluation_report": "baselines/covid_long_setting_b/reports/formal_gaussian_final_shared_capacity"
+      "covid_adapter_status": "official-core strict-online adaptation that freezes Task-1 model parameters and retains the multi-step causal variational state",
+      "preliminary_result_root": "baselines/covid_long_setting_b/results/formal_selected_fsde_svi_isolated",
+      "validation_pending_reason": "The old M=4, Q=2, 50-step, single-update result is insufficient. Use the five predeclared M,Q candidates and select 5/25/100 online variational steps only after a converged capacity selection.",
+      "setting_b_status": "validation_pending"
     },
     {
       "id": "earth",

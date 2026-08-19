@@ -1,0 +1,34 @@
+{
+  "status": "seed0_causal_gates_passed",
+  "method": "ST-SVGP causal refit",
+  "source": "AaltoML/spatio-temporal-GPs",
+  "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+  "protocol": "COVID long-stream Setting B, Gaussian likelihood",
+  "capacity": {
+    "spatial_inducing": 32,
+    "selection": "Task-1-only seed-0 38-fit/4-validation Gaussian NLPD"
+  },
+  "smoke": {
+    "weeks": 5,
+    "archive": "baselines/covid_long_setting_b/results/official_gated_seed0_smoke/st_svgp_m32/predictions.npz",
+    "rmse": 0.29554609482850486,
+    "finite_predictive_mean": true,
+    "finite_predictive_variance": true,
+    "nonnegative_predictive_variance": true,
+    "current_hidden_labels_read": 0,
+    "delayed_hidden_labels": 40,
+    "hidden_predictions": 50
+  },
+  "diagnostic": {
+    "weeks": 39,
+    "archive": "baselines/covid_long_setting_b/results/official_gated_seed0_diagnostic39/st_svgp_m32/predictions.npz",
+    "rmse": 0.2979966178927186,
+    "finite_predictive_mean": true,
+    "finite_predictive_variance": true,
+    "nonnegative_predictive_variance": true,
+    "current_hidden_labels_read": 0,
+    "delayed_hidden_labels": 380,
+    "hidden_predictions": 390
+  },
+  "note": "Partial-prefix archive audits intentionally report passed=false because they contain fewer than the full 143 online weeks. The zero current-hidden count, legal delayed-label count, archive shapes, and finite predictions are the relevant seed-0 gate checks."
+}

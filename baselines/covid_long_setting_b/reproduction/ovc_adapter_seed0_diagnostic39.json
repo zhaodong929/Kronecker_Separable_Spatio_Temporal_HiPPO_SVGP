@@ -1,0 +1,30 @@
+{
+  "status": "covid_adapter_diagnostic_passed_nonfinal_configuration",
+  "method": "OVC-SVGP exact fantasy continuation",
+  "source": "wjmaddox/online_vargp",
+  "source_commit": "7bd3da50eac32d70ca323309e3f3d80a2ae7c419",
+  "command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 baselines/.venvs/ovc_svgp/bin/python baselines/covid_long_setting_b/adapters/run_ovc_svgp.py --protocol-npz data/epidemiology/protocol/covid_long_2020_2024_mandatory/seed0/protocol.npz --output-dir results/diagnostics/covid_long_external_baselines/ovc_svgp/seed0_diagnostic39_m64 --seed 0 --max-weeks 39 --inducing-points 64 --task1-iterations 20",
+  "seed": 0,
+  "weeks": 39,
+  "inducing_points": 64,
+  "task1_iterations": 20,
+  "prediction_archive": "results/diagnostics/covid_long_external_baselines/ovc_svgp/seed0_diagnostic39_m64/predictions.npz",
+  "prediction_archive_sha256": "ed15d5564ccd50cd23e5fb9f413989b23806dbad35058a692b32062ce388e463",
+  "audit": {
+    "online_steps_completed": 39,
+    "delayed_hidden_labels": 380,
+    "current_visible_labels": 1638,
+    "current_hidden_labels_read": 0,
+    "hidden_predictions": 390
+  },
+  "finite_predictions": true,
+  "minimum_predictive_variance": 0.7961182198848558,
+  "diagnostic_metrics": {
+    "rmse": 0.7144941931608811,
+    "crps": 0.40846071910998594,
+    "gaussian_nlpd": 1.0830154196412825,
+    "ece": 0.017435897435897442,
+    "coverage90": 0.9179487179487179
+  },
+  "interpretation": "This is a finite-variance protocol diagnostic using a deliberately small 64-point, 20-step configuration. It is not eligible for the formal table or for comparison with the 1024-budget baselines."
+}

@@ -1,44 +1,60 @@
 {
-  "schema_version": 1,
-  "selection_protocol": "Seed 0 only. Every method receives the predeclared Task-1 candidate budget and is selected by Gaussian NLPD with RMSE as the tie-breaker; formal spatial splits 5-9 are not opened for capacity selection. ST-SVGP, Bui OSGPR and OVC-SVGP use the 38-fit/4-validation spatial split. Bui OSGPR and OVC-SVGP share a three-grid Task-1 budget whose macro-average winner is 8x32. If a method cannot complete the full formal stream at its Task-1-selected capacity, it is reported in the failure table; it is not replaced in the primary benchmark by a lower-capacity result. The official complete-output LMC/IMC/FSDE family shares one M,Q choice using a 48-week history plus four chronological Setting B validation weeks, because these models cannot fit a 38-output subset and then represent the held-out output dimensions without changing their official likelihood. This validation-geometry exception is explicit.",
-  "common_rules": {
-    "likelihood": "Gaussian",
-    "candidate_count_per_method": 3,
-    "selection_metric": "Gaussian NLPD",
-    "tie_breakers": ["RMSE", "smaller persistent inducing representation"],
-    "formal_refit": "After selection, refit with all 52 Task-1 jurisdictions before the delayed Setting B stream."
+  "schema_version": 2,
+  "selection_protocol": "Development uses seed 0 only and three strict-online blocked windows: weeks 1-28 -> 29-36, 1-36 -> 37-44, and 1-44 -> 45-52. Each fold standardizes only its own visible training prefix and is scored after inverse standardization on log1p(weekly admissions per 100,000). Mean Gaussian NLPD selects a configuration; mean RMSE breaks ties. CRPS, ECE and Coverage90 are diagnostics. Formal seeds 5-9 are never read for capacity, checkpoint or online-step selection.",
+  "convergence_gate": {
+    "objective_check_interval_updates": 250,
+    "minimum_updates": 2500,
+    "moving_median_checks": 10,
+    "relative_objective_improvement_threshold": 0.001,
+    "maximum_updates": 50000,
+    "maximum_status": "max_budget_not_converged"
+  },
+  "practical_capacity_stability": {
+    "rule": "The two largest passing budgets must differ by no more than 1% RMSE and 0.01 Gaussian NLPD.",
+    "meaning": "Pre-specified engineering criterion, not a theoretical capacity guarantee."
   },
   "families": {
     "routeb_ordinary_vs_cumulative_hippo": {
       "capacity": {"Mt": 32, "Ms": 32},
-      "rule": "Exact match: both are the same Route-B Kronecker representation, differing only in the temporal state update."
+      "rule": "Exact match: Route-B ordinary and cumulative HiPPO use the same Kronecker representation and differ only in the temporal state update. Existing formal accuracy archives remain frozen."
     },
-    "st_svgp": {
-      "candidates": [{"spatial_inducing": 16}, {"spatial_inducing": 24}, {"spatial_inducing": 32}],
-      "rule": "Tune only spatial inducing points. The temporal state-space representation is replicated through time and has different semantics from Route-B Mt x Ms."
+    "bui_osgpr": {
+      "status": "frozen_existing_accuracy",
+      "rule": "Controlled and adaptive Bui OSGPR accuracy archives are retained without new capacity tuning. A future hardware timing study may use their documented selected grid, but it does not alter accuracy rows."
     },
-    "bui_osgpr_and_ovc_svgp": {
+    "ovc_svgp": {
       "candidates": [
         {"temporal_inducing": 4, "spatial_inducing": 32, "joint_inducing": 128},
         {"temporal_inducing": 8, "spatial_inducing": 32, "joint_inducing": 256},
         {"temporal_inducing": 12, "spatial_inducing": 32, "joint_inducing": 384}
       ],
-      "shared_selection": {
-        "criterion": "macro-average Task-1 validation Gaussian NLPD across OVC-SVGP, controlled Bui OSGPR and adaptive Bui OSGPR; RMSE and smaller grid break ties",
-        "task1_selected": {"temporal_inducing": 8, "spatial_inducing": 32, "joint_inducing": 256},
-        "task1_evidence": "baselines/covid_long_setting_b/results/task1_capacity_selection/shared_bui_ovc_grid_selection.json",
-        "ovc_resource_failure_evidence": "baselines/covid_long_setting_b/reproduction/ovc_shared_m8_formal_resource_guard.json",
-        "nonprimary_lower_capacity_evidence": "baselines/covid_long_setting_b/results/task1_capacity_selection/shared_bui_ovc_feasible_m4_resolution.json"
-      },
-      "rule": "Use the Task-1-selected Cartesian 8x32 time x space inducing grid for OVC-SVGP, controlled Bui OSGPR and adaptive Bui OSGPR. This exact grid match is appropriate because all three retain point-inducing representations over the same time-by-space input domain. OVC-SVGP is reported as resource-limited when its official exact-fantasy continuation cannot finish at that capacity; completed 4x32 archives are non-primary feasibility evidence only."
+      "rule": "OVC is selected alone, not by the former Bui/OVC macro-average. Each candidate uses the same time-by-space inducing grid convention; mean Gaussian NLPD, mean RMSE and smaller grid select its own capacity. Two clean-process 32-week memory audits must pass before formal work."
     },
-    "lmc_imc_svgp_and_fsde_svi": {
+    "st_svgp": {
+      "candidates": [{"spatial_inducing": 16}, {"spatial_inducing": 32}, {"spatial_inducing": 52}],
+      "rule": "Tune spatial inducing locations only. The official filtering representation is replicated through time and is not semantically comparable with Route-B Mt x Ms. Report the resulting causal-refit runtime separately."
+    },
+    "factorial_lmc_imc_fsde": {
       "candidates": [
-        {"temporal_inducing": 4, "latent_rank": 2},
-        {"temporal_inducing": 8, "latent_rank": 4},
-        {"temporal_inducing": 12, "latent_rank": 6}
+        {"temporal_inducing": 16, "latent_rank": 4},
+        {"temporal_inducing": 32, "latent_rank": 4},
+        {"temporal_inducing": 50, "latent_rank": 4},
+        {"temporal_inducing": 32, "latent_rank": 8},
+        {"temporal_inducing": 32, "latent_rank": 16}
       ],
-      "rule": "LMC-SVGP, IMC-SVGP and FSDE-SVI must share the selected temporal inducing count M and latent rank Q. The LMC/IMC Task-1 temporal validation selected M=4, Q=2; FSDE-SVI inherits and validates that frozen shared pair. Because the pinned official multi-output likelihoods require every output to have historical labels, use only Task 1's final four chronological weeks under the same 42-visible/10-hidden conditional-prediction protocol. This exception is explicit and does not open formal seeds 5-9."
+      "online_posterior_steps": [5, 25, 100],
+      "rule": "LMC-SVGP, IMC-SVGP and FSDE-SVI use the same selected M,Q pair because their temporal inducing count and latent rank have comparable semantics. Select the shared capacity only after every family member passes each candidate's convergence and causal gates; then select the multi-step online posterior update budget on the same blocked windows."
+    },
+    "ohsvgp": {
+      "candidates": [
+        {"inducing_size": 32, "rff_sample_size": 64},
+        {"inducing_size": 32, "rff_sample_size": 128},
+        {"inducing_size": 32, "rff_sample_size": 256},
+        {"inducing_size": 64, "rff_sample_size": 64},
+        {"inducing_size": 64, "rff_sample_size": 128},
+        {"inducing_size": 64, "rff_sample_size": 256}
+      ],
+      "rule": "Use deterministic seeded RFF frequencies. This is the official OHSVGP core adapted to multidimensional Setting B; the RFF choices are adapter-specific rather than a universal official setup."
     }
   }
 }

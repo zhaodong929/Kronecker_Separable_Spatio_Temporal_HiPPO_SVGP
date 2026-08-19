@@ -1,0 +1,21 @@
+{
+  "status": "covid_adapter_smoke_passed",
+  "method": "OVC-SVGP exact fantasy continuation",
+  "source": "wjmaddox/online_vargp",
+  "source_commit": "7bd3da50eac32d70ca323309e3f3d80a2ae7c419",
+  "command": "OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 baselines/.venvs/ovc_svgp/bin/python baselines/covid_long_setting_b/adapters/run_ovc_svgp.py --protocol-npz data/epidemiology/protocol/covid_long_2020_2024_mandatory/seed0/protocol.npz --output-dir results/diagnostics/covid_long_external_baselines/ovc_svgp/seed0_smoke --seed 0 --max-weeks 5 --inducing-points 64 --task1-iterations 5",
+  "seed": 0,
+  "weeks": 5,
+  "inducing_points": 64,
+  "task1_iterations": 5,
+  "prediction_archive": "results/diagnostics/covid_long_external_baselines/ovc_svgp/seed0_smoke/predictions.npz",
+  "prediction_archive_sha256": "e3b6615bae4cdb91c7067e1199af1be3f22e590090e55228e01ffef7ccd6c6bf",
+  "audit": {
+    "online_steps_completed": 5,
+    "delayed_hidden_labels": 40,
+    "current_visible_labels": 210,
+    "current_hidden_labels_read": 0,
+    "hidden_predictions": 50
+  },
+  "interpretation": "The adapter obeys the Setting B order for a five-week prefix. This is an interface smoke test, not a scored comparison."
+}

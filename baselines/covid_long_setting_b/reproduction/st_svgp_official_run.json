@@ -1,0 +1,31 @@
+{
+  "status": "official_reproduction_passed",
+  "method": "ST-SVGP",
+  "source": "AaltoML/spatio-temporal-GPs",
+  "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+  "environment": {
+    "python": "3.8.20",
+    "jax": "0.2.9",
+    "jaxlib": "0.1.60",
+    "objax": "1.3.1",
+    "bayesnewton": "1.1",
+    "device": "CPU; official script reported no GPU/TPU"
+  },
+  "command": "cd baselines/external/aaltoml_spatio_temporal_gps/experiments/air_quality/models && env PYTHONUNBUFFERED=1 XLA_FLAGS='--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1' OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 ../../../../../.venvs/st_svgp/bin/python m_bayes_newt.py 0 0 0",
+  "entrypoint": "experiments/air_quality/models/m_bayes_newt.py",
+  "log": "baselines/covid_long_setting_b/reproduction/st_svgp_official_air_quality_fold0_xla_limited.log",
+  "result_directory": "baselines/external/aaltoml_spatio_temporal_gps/experiments/air_quality/results",
+  "completion_criterion": "The process exits successfully and the official result directory contains the CPU RMSE, NLPD and timing files written by the unmodified script.",
+  "completed_at": "2026-08-18T12:33:52+01:00",
+  "official_metrics": {
+    "rmse": 9.40388144970346,
+    "nlpd": 7.56120107,
+    "average_iteration_seconds": 9.56342743953069
+  },
+  "result_files": [
+    "baselines/external/aaltoml_spatio_temporal_gps/experiments/air_quality/results/0_0_0_cpu_time.txt",
+    "baselines/external/aaltoml_spatio_temporal_gps/experiments/air_quality/results/0_0_0_cpu_nlpd.txt",
+    "baselines/external/aaltoml_spatio_temporal_gps/experiments/air_quality/results/0_0_0_cpu_rmse.txt"
+  ],
+  "reporting_rule": "This is an unmodified official Air Quality example run under thread-limiting environment variables. It establishes source reproducibility only; ST-SVGP enters the COVID formal table only after the seed-0 causal gates and formal seeds 5-9 archives complete."
+}

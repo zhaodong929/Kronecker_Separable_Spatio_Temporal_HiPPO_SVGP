@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "development_protocol": true,
+  "dataset": "cdc_covid_nhsn_mandatory_long_stream",
+  "formal_protocol_npz": "/home/zd929/projects/stvgp_kronecker/data/epidemiology/protocol/covid_long_2020_2024_mandatory/seed0/protocol.npz",
+  "formal_protocol_sha256": "3489bb47b97e0bfe0d15113f2efbe33faf555fe2d7d5d2d16cf6391d1a661a86",
+  "split_seed": 0,
+  "fold": {
+    "id": 1,
+    "train_weeks": [
+      1,
+      28
+    ],
+    "validation_weeks": [
+      29,
+      36
+    ],
+    "validation_length": 8
+  },
+  "selection_metric": "gaussian_nlpd_log1p_per_100k",
+  "target": "log1p weekly confirmed COVID hospital admissions per 100,000 population",
+  "target_standardization": {
+    "mean": 2.669176349975429,
+    "scale": 0.8438908920513767,
+    "fit_scope": "development training prefix visible locations only",
+    "metric_scale": "original log1p(per-100k)"
+  },
+  "xlag": {
+    "mode": "availability-aware state lag4 and visible aggregate lag",
+    "delay_weeks": 1,
+    "features": 13,
+    "columns": [
+      "intercept",
+      "time_trend",
+      "season_sin",
+      "season_cos",
+      "state_lag1",
+      "state_lag2",
+      "state_lag3",
+      "state_lag4",
+      "state_rolling4",
+      "state_growth1",
+      "visible_mean_lag1",
+      "latitude",
+      "longitude"
+    ],
+    "test_target_lag_information": "Only delayed hidden labels or current visible labels available at the prediction week."
+  },
+  "num_locations": 52,
+  "num_train_locations": 42,
+  "num_test_locations": 10,
+  "num_calibration_times": 28,
+  "num_stream_times": 8,
+  "npz_sha256": "1e435524949217f36c8e5820e990f32469acad320a42e735c38a66a178d2a497"
+}
