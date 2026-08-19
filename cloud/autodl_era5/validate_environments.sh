@@ -40,9 +40,16 @@ if not torch.cuda.is_available():
 PY
 
 if [[ -x "${ENV_ROOT}/stvgp_legacy/bin/python" ]]; then
-  "${ENV_ROOT}/stvgp_legacy/bin/python" - <<'PY'
-import bayesnewton, jax, jaxlib, objax
+  LEGACY_CUDA_ROOT="${LEGACY_CUDA_ROOT:-/usr/local/cuda-11.8}"
+  [[ -x "${LEGACY_CUDA_ROOT}/bin/ptxas" && -d "${LEGACY_CUDA_ROOT}/nvvm/libdevice" ]]
+  PATH="${LEGACY_CUDA_ROOT}/bin:${PATH}" \
+    XLA_FLAGS="${XLA_FLAGS:+${XLA_FLAGS} }--xla_gpu_cuda_data_dir=${LEGACY_CUDA_ROOT}" \
+    "${ENV_ROOT}/stvgp_legacy/bin/python" - <<'PY'
+import bayesnewton, jax, jaxlib, jax.numpy as jnp, objax
 print("legacy ST-SVGP", jax.__version__, jaxlib.__version__, objax.__version__)
+if jax.lib.xla_bridge.get_backend().platform != "gpu":
+    raise SystemExit("Legacy ST-SVGP environment cannot execute JAX on CUDA")
+print("legacy JAX smoke", jnp.arange(8).reshape(2, 4).sum(axis=1))
 PY
 fi
 

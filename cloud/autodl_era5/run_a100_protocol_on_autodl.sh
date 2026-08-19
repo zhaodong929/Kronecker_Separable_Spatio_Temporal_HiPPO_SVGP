@@ -42,26 +42,24 @@ on_error() {
   exit "${exit_code}"
 }
 
-configure_legacy_ptxas() {
-  local ptxas
-  ptxas="$("${STVGP_PY}" - <<'PY'
-from pathlib import Path
-import site
-
-for root in site.getsitepackages():
-    for relative in ("nvidia/cuda_nvcc/bin/ptxas", "nvidia/cuda_nvcc/cu11/bin/ptxas"):
-        candidate = Path(root) / relative
-        if candidate.is_file():
-            print(candidate)
-            raise SystemExit(0)
-raise SystemExit(1)
-PY
-)"
-  if [[ -z "${ptxas}" || ! -x "${ptxas}" ]]; then
-    echo "Legacy CUDA 11.3 ptxas is missing; rerun setup_autodl.sh with INCLUDE_LEGACY=1." >&2
+configure_legacy_cuda() {
+  local candidate cuda_root="" ptxas=""
+  local candidates=()
+  [[ -z "${LEGACY_CUDA_ROOT:-}" ]] || candidates+=("${LEGACY_CUDA_ROOT}")
+  candidates+=(/usr/local/cuda /usr/local/cuda-*)
+  for candidate in "${candidates[@]}"; do
+    [[ -x "${candidate}/bin/ptxas" && -d "${candidate}/nvvm/libdevice" ]] || continue
+    cuda_root="${candidate}"
+    ptxas="${candidate}/bin/ptxas"
+    break
+  done
+  if [[ -z "${cuda_root}" ]]; then
+    echo "A CUDA toolkit with ptxas and nvvm/libdevice is required for legacy JAX." >&2
     return 1
   fi
   export PATH="$(dirname "${ptxas}"):${PATH}"
+  export XLA_FLAGS="${XLA_FLAGS:+${XLA_FLAGS} }--xla_gpu_cuda_data_dir=${cuda_root}"
+  printf 'Legacy JAX CUDA toolkit: %s\n' "${cuda_root}"
   ptxas --version
 }
 
@@ -234,7 +232,7 @@ done
 [[ -x "${ROUTEB_PY}" && -x "${TF_PY}" && -x "${STVGP_PY}" ]]
 [[ -f "${SPEC}" && -f "${BASE_CONFIG}" && -f "${MANIFEST_BUILDER}" && -f "${MANIFEST_WORKER}" ]]
 run git ls-remote --exit-code origin HEAD
-configure_legacy_ptxas
+configure_legacy_cuda
 GPU_NAME="$(nvidia-smi --query-gpu=name --format=csv,noheader | head -1)"
 export AUTODL_ENV_ROOT="${ENV_ROOT}" BENCHMARK_ROOT PYTHONHASHSEED=0
 export ERA5_GPU_NAME_REGEX="${GPU_NAME_REGEX}" ERA5_MIN_GPU_MEMORY_GIB="${MIN_GPU_MEMORY_GIB}"

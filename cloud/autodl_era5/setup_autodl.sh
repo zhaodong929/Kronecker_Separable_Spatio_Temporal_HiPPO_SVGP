@@ -6,6 +6,7 @@ ENV_ROOT="${AUTODL_ENV_ROOT:-/root/autodl-tmp/stvgp_envs}"
 TOOLS_ROOT="${AUTODL_TOOLS_ROOT:-/root/autodl-tmp/stvgp_tools}"
 INCLUDE_LEGACY="${INCLUDE_LEGACY:-0}"
 INSTALL_TEX="${INSTALL_TEX:-0}"
+LEGACY_JAXLIB_WHEEL="${LEGACY_JAXLIB_WHEEL:-${TOOLS_ROOT}/wheels/jaxlib-0.1.60+cuda111-cp37-none-manylinux2010_x86_64.whl}"
 mkdir -p "${ENV_ROOT}" "${TOOLS_ROOT}"
 
 if command -v micromamba >/dev/null 2>&1; then
@@ -69,12 +70,15 @@ if [[ "${INCLUDE_LEGACY}" == "1" ]]; then
   create_base_env stvgp_legacy 3.7
   STVGP_PY="${ENV_ROOT}/stvgp_legacy/bin/python"
   "${STVGP_PY}" -m pip install --upgrade "pip<24.1" "setuptools<68" wheel
-  "${STVGP_PY}" -m pip install \
-    "https://storage.googleapis.com/jax-releases/cuda111/jaxlib-0.1.60+cuda111-cp37-none-manylinux2010_x86_64.whl"
+  if [[ -f "${LEGACY_JAXLIB_WHEEL}" ]]; then
+    "${STVGP_PY}" -m pip install "${LEGACY_JAXLIB_WHEEL}"
+  else
+    "${STVGP_PY}" -m pip install \
+      "https://storage.googleapis.com/jax-releases/cuda111/jaxlib-0.1.60+cuda111-cp37-none-manylinux2010_x86_64.whl"
+  fi
   "${STVGP_PY}" -m pip install \
     numpy==1.19.5 scipy==1.7.1 scikit-learn==1.0.2 \
     jax==0.2.9
-  "${STVGP_PY}" -m pip install nvidia-cuda-nvcc-cu11==11.3.58
   "${STVGP_PY}" -m pip install \
     objax==1.3.1 bayesnewton==1.1 numba==0.54.1 \
     matplotlib==3.4.3 pandas==1.3.4 protobuf==3.20.3
