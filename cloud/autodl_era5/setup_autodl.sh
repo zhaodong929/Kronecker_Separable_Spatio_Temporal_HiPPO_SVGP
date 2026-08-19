@@ -95,7 +95,7 @@ if [[ "${INCLUDE_LEGACY}" == "1" ]]; then
   "${MARKOV_PY}" -m pip install banded-matrices==0.0.6 --no-deps
   "${MARKOV_PY}" -m pip install \
     -e "${ROOT}/baselines/external/secondmind_labs_markovflow_v0.0.13" \
-    --no-deps
+    --no-build-isolation --no-deps
 fi
 
 if [[ "${INSTALL_TEX}" == "1" ]]; then
