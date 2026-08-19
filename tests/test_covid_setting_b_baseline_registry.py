@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -13,6 +14,7 @@ from baselines.covid_long_setting_b.generate_baseline_fairness_protocol import b
 from baselines.covid_long_setting_b.protocol import COVIDSettingBProtocol
 from baselines.covid_long_setting_b.run_blocked_development import (
     FACTORIAL_GRID,
+    command_for,
     lmc_imc_cross_audits,
     practical_stability,
     summarize_candidate,
@@ -178,6 +180,25 @@ def test_capacity_policy_matches_only_comparable_inducing_semantics() -> None:
         (32, 16),
     ]
     assert multi_output["online_posterior_steps"] == [5, 25, 100]
+
+
+def test_factorial_development_commands_propagate_the_requested_device() -> None:
+    args = SimpleNamespace(
+        factorial_python=Path("factorial/bin/python"),
+        fsde_python=Path("fsde/bin/python"),
+        factorial_device="gpu",
+        factorial_batch_size=16,
+        task1_max_steps=50000,
+        task1_check_interval=250,
+        task1_min_steps=2500,
+        task1_plateau_checks=10,
+        task1_plateau_relative_improvement=1e-3,
+    )
+    candidate = {"temporal_inducing": 16, "latent_rank": 4}
+    for method in ("lmc", "fsde"):
+        command = command_for(method, candidate, Path("fold.npz"), Path("out"), args)
+        device_index = command.index("--device")
+        assert command[device_index + 1] == "gpu"
 
 
 def test_fairness_lock_excludes_failed_gate_without_blocking_other_methods() -> None:
