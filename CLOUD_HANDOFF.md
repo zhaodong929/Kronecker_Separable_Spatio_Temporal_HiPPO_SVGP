@@ -2,8 +2,8 @@
 
 ## Source
 
-- Current HEAD: `4909c7860e3a000737d5327654b08b2717d3da60`.
-- The local tree is dirty. Before cloud work, commit and push the baseline-repair changes, then clone that committed revision on the cloud node. Do not use this dirty checkout as the cloud source.
+- Prepared cloud source commit: `57b0b2d862acd25b09cb0ef676da6899a7fba246`.
+- The local worktree contains unrelated changes. The cloud checkout must remain on `codex/covid-formal-paper-materials` with this commit in its history; verify it with `git rev-parse HEAD` before any experiment.
 
 ## Completed
 
