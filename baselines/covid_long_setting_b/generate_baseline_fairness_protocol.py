@@ -81,10 +81,10 @@ def load(path: Path) -> dict[str, Any]:
     return json.loads(absolute(path).read_text(encoding="utf-8"))
 
 
-def selected(record: dict[str, Any], method: str) -> dict[str, Any]:
+def maybe_selected(record: dict[str, Any], method: str) -> dict[str, Any] | None:
     item = record.get("selected", {}).get(method)
     if not isinstance(item, dict) or not isinstance(item.get("candidate"), dict):
-        raise ValueError(f"No converged blocked-development selection exists for {method}")
+        return None
     return dict(item["candidate"])
 
 
@@ -101,25 +101,58 @@ def locked_code_hashes() -> dict[str, str]:
     return {path: sha256_file(ROOT / path) for path in LOCKED_CODE_FILES}
 
 
-def build_selected_configs(capacity: dict[str, Any], online_steps: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    configs = {
-        "ohsvgp_rbf": selected(capacity, "ohsvgp"),
-        "ovc_svgp": selected(capacity, "ovc"),
-        "st_svgp": selected(capacity, "st_svgp"),
-    }
+def build_selected_configs(
+    capacity: dict[str, Any],
+    online_steps: dict[str, Any],
+    *,
+    ohsvgp_gate_passed: bool,
+    ovc_memory_passed: bool,
+) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+    configs: dict[str, dict[str, Any]] = {}
+    exclusions: dict[str, str] = {}
+
+    ohsvgp = maybe_selected(capacity, "ohsvgp")
+    if ohsvgp is None:
+        exclusions["ohsvgp_rbf"] = "no_configuration_passed_all_development_gates"
+    elif not ohsvgp_gate_passed:
+        exclusions["ohsvgp_rbf"] = "official_ohsvgp_reproduction_gate_not_passed"
+    else:
+        configs["ohsvgp_rbf"] = ohsvgp
+
+    ovc = maybe_selected(capacity, "ovc")
+    if ovc is None:
+        exclusions["ovc_svgp"] = "no_configuration_passed_all_development_gates"
+    elif not ovc_memory_passed:
+        exclusions["ovc_svgp"] = "ovc_clean_process_memory_audit_not_passed"
+    else:
+        configs["ovc_svgp"] = ovc
+
+    st_svgp = maybe_selected(capacity, "st_svgp")
+    if st_svgp is None:
+        exclusions["st_svgp"] = "no_configuration_passed_all_development_gates"
+    else:
+        configs["st_svgp"] = st_svgp
+
     shared = capacity.get("selected", {}).get("factorial_lmc_imc_fsde_shared", {})
     shared_candidate = shared.get("candidate") if isinstance(shared, dict) else None
     if shared.get("status") != "selected" or not isinstance(shared_candidate, dict):
-        raise ValueError("LMC/IMC/FSDE do not have a common converged capacity selection")
-    excluded = set(shared.get("excluded_methods", []))
-    for short, method_id in (("lmc", "lmc_svgp"), ("imc", "imc_svgp"), ("fsde", "fsde_svi")):
-        if short in excluded:
-            continue
-        candidate = selected(online_steps, short)
-        if {key: candidate[key] for key in ("temporal_inducing", "latent_rank")} != shared_candidate:
-            raise ValueError(f"{method_id} online-step result does not use the locked shared M,Q")
-        configs[method_id] = candidate
-    return configs
+        for method_id in ("lmc_svgp", "imc_svgp", "fsde_svi"):
+            exclusions[method_id] = "no_common_factorial_capacity_passed_all_gates"
+    else:
+        excluded = set(shared.get("excluded_methods", []))
+        for short, method_id in (("lmc", "lmc_svgp"), ("imc", "imc_svgp"), ("fsde", "fsde_svi")):
+            if short in excluded:
+                exclusions[method_id] = "empirical_lmc_collapse"
+                continue
+            candidate = maybe_selected(online_steps, short)
+            if candidate is None:
+                exclusions[method_id] = "no_online_posterior_step_configuration_passed_all_gates"
+                continue
+            if {key: candidate[key] for key in ("temporal_inducing", "latent_rank")} != shared_candidate:
+                exclusions[method_id] = "online_step_configuration_does_not_match_shared_capacity"
+                continue
+            configs[method_id] = candidate
+    return configs, exclusions
 
 
 def main() -> None:
@@ -131,13 +164,16 @@ def main() -> None:
     capacity = load(development_root / "capacity" / "capacity_selection.json")
     online_steps = load(development_root / "online_steps" / "online_step_selection.json")
     gate = load(args.ohsvgp_gate)
-    if gate.get("status") != "passed":
-        raise ValueError("OHSVGP cannot be locked until both unmodified official gates pass")
     ovc_assessment = load(args.ovc_memory_assessment)
-    if ovc_assessment.get("status") != "passed":
-        raise ValueError("OVC cannot be locked until both clean-process memory audits pass")
     environment = load(args.environment_lock)
-    configs = build_selected_configs(capacity, online_steps)
+    configs, exclusions = build_selected_configs(
+        capacity,
+        online_steps,
+        ohsvgp_gate_passed=gate.get("status") == "passed",
+        ovc_memory_passed=ovc_assessment.get("status") == "passed",
+    )
+    if not configs:
+        raise ValueError("No baseline passed every development, reproduction and resource gate")
     required_environments = {ENVIRONMENT_BY_METHOD[method] for method in configs}
     if environment.get("status") != "complete" or not required_environments.issubset(environment.get("environments", {})):
         raise ValueError(f"Environment lock must contain {sorted(required_environments)}")
@@ -198,6 +234,7 @@ def main() -> None:
         "formal_result_root": str(absolute(args.formal_result_root)),
         "retained_existing_accuracy": ["persistence", "task1_lag_ridge", "bui_osgpr_controlled", "bui_osgpr_adaptive", "routeb_ordinary", "routeb_cumulative_hippo"],
         "excluded_preliminary_methods": [method for method in METHOD_IDS if method not in configs],
+        "exclusion_reasons": exclusions,
     }
     payload["lock_sha256"] = canonical_json_sha256(payload)
     output.parent.mkdir(parents=True, exist_ok=True)

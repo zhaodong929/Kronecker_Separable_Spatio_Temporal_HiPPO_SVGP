@@ -9,6 +9,7 @@ from baselines.covid_long_setting_b.archive import PredictionArchive
 from baselines.covid_long_setting_b.development import build_development_protocols, sha256_file
 from baselines.covid_long_setting_b.evaluate_formal_gaussian import methods_for_evaluation
 from baselines.covid_long_setting_b.formalization import snapshot_archives, verify_snapshot
+from baselines.covid_long_setting_b.generate_baseline_fairness_protocol import build_selected_configs
 from baselines.covid_long_setting_b.protocol import COVIDSettingBProtocol
 from baselines.covid_long_setting_b.run_blocked_development import (
     FACTORIAL_GRID,
@@ -177,6 +178,39 @@ def test_capacity_policy_matches_only_comparable_inducing_semantics() -> None:
         (32, 16),
     ]
     assert multi_output["online_posterior_steps"] == [5, 25, 100]
+
+
+def test_fairness_lock_excludes_failed_gate_without_blocking_other_methods() -> None:
+    factorial_candidate = {"temporal_inducing": 32, "latent_rank": 8}
+    capacity = {
+        "selected": {
+            "ohsvgp": {"candidate": {"inducing_size": 64, "rff_sample_size": 128}},
+            "ovc": {"candidate": {"temporal_inducing": 4, "spatial_inducing": 32}},
+            "st_svgp": {"candidate": {"spatial_inducing": 32}},
+            "factorial_lmc_imc_fsde_shared": {
+                "status": "selected",
+                "candidate": factorial_candidate,
+                "excluded_methods": [],
+            },
+        }
+    }
+    online_steps = {
+        "selected": {
+            short: {"candidate": {**factorial_candidate, "online_inference_steps": 25}}
+            for short in ("lmc", "imc", "fsde")
+        }
+    }
+
+    configs, exclusions = build_selected_configs(
+        capacity,
+        online_steps,
+        ohsvgp_gate_passed=False,
+        ovc_memory_passed=True,
+    )
+
+    assert "ohsvgp_rbf" not in configs
+    assert exclusions["ohsvgp_rbf"] == "official_ohsvgp_reproduction_gate_not_passed"
+    assert {"ovc_svgp", "st_svgp", "lmc_svgp", "imc_svgp", "fsde_svi"}.issubset(configs)
 
 
 def test_blocked_development_folds_restandardize_prefix_and_pass_causal_audit(tmp_path) -> None:
