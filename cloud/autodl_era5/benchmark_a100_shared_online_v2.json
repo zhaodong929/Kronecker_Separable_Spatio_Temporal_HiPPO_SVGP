@@ -60,9 +60,9 @@
       }
     ],
     "gpflow_feasibility": {
-      "preflight_tier": "8192",
       "selected_tier": "8192",
-      "preflight_iterations": 2,
+      "preflight_tiers": ["8192", "4096", "2048"],
+      "preflight_iterations": 10,
       "tiers": {
         "8192": [
           {
@@ -85,6 +85,18 @@
           {
             "name": "mt32_ms128",
             "mt": 32,
+            "ms": 128
+          }
+        ],
+        "2048": [
+          {
+            "name": "mt32_ms64",
+            "mt": 32,
+            "ms": 64
+          },
+          {
+            "name": "mt16_ms128",
+            "mt": 16,
             "ms": 128
           }
         ]

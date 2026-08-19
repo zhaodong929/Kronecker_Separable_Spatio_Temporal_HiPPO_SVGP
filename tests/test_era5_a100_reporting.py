@@ -296,6 +296,39 @@ def test_audit_reports_manifest_jobs_that_never_started(tmp_path: Path) -> None:
     assert row["issues"] == "missing_manifest_job_artifacts:online_long.jsonl"
 
 
+def test_audit_keeps_preflight_failures_out_of_result_completeness(tmp_path: Path) -> None:
+    root = tmp_path / "benchmark"
+    output_dir = root / "runs" / "task1_2" / "preflight" / "preflight_gpflow_feasibility_8192_mt128_ms64" / "seed0"
+    output_dir.mkdir(parents=True)
+    (output_dir / "status.json").write_text(
+        json.dumps({"status": "runtime_error"}), encoding="utf-8"
+    )
+    manifest_dir = root / "manifests"
+    manifest_dir.mkdir()
+    (manifest_dir / "shared_batch_short.jsonl").write_text(
+        json.dumps(
+            {
+                "kind": "gpflow_feasibility_preflight",
+                "scope": "task1_2",
+                "branch": "preflight",
+                "method": "preflight_gpflow_feasibility_8192_mt128_ms64",
+                "seed": 0,
+                "output_dir": str(output_dir),
+                "expected": [str(output_dir / "result.json")],
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    payload = audit_benchmark_root(root, expected_seeds=(), include_missing_seeds=False)
+
+    assert payload["failed_runs"] == 0
+    assert payload["missing_runs"] == 0
+    assert payload["runs"] == []
+    assert payload["preflight_runs"][0]["status"] == "failed"
+
+
 def test_efficiency_contract_marks_uninstrumented_rows_incomparable(tmp_path: Path) -> None:
     output = tmp_path / "runs" / "task1_2" / "batch" / "gpflow" / "seed0"
     output.mkdir(parents=True)

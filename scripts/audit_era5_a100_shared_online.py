@@ -511,6 +511,8 @@ def _missing_manifest_rows(root: Path, rows: list[dict[str, Any]]) -> list[dict[
                 record = json.loads(line)
             except json.JSONDecodeError:
                 continue
+            if "preflight" in str(record.get("kind", "")):
+                continue
             seed = record.get("seed")
             if not isinstance(seed, int) or isinstance(seed, bool):
                 continue
@@ -553,6 +555,26 @@ def _missing_manifest_rows(root: Path, rows: list[dict[str, Any]]) -> list[dict[
     return missing
 
 
+def _manifest_preflight_methods(root: Path) -> set[str]:
+    methods: set[str] = set()
+    for name in CANONICAL_MANIFESTS:
+        path = root / "manifests" / name
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if "preflight" in str(record.get("kind", "")):
+                method = str(record.get("method", ""))
+                if method:
+                    methods.add(method)
+    return methods
+
+
 def audit_benchmark_root(
     benchmark_root: str | Path,
     expected_seeds: Iterable[int] = DEFAULT_SEEDS,
@@ -577,7 +599,10 @@ def audit_benchmark_root(
             "error": "benchmark_root_not_found",
         }
 
-    rows = [_audit_group(group, root, atol, rtol) for group in _discover_groups(root).values()]
+    preflight_methods = _manifest_preflight_methods(root)
+    all_rows = [_audit_group(group, root, atol, rtol) for group in _discover_groups(root).values()]
+    preflight_rows = [row for row in all_rows if row["method"] in preflight_methods]
+    rows = [row for row in all_rows if row["method"] not in preflight_methods]
     rows.sort(key=lambda row: (str(row["scope"]), str(row["branch"]), str(row["method"]), int(row["seed"])))
     if include_missing_seeds:
         rows.extend(_missing_seed_rows(rows, seeds))
@@ -594,6 +619,7 @@ def audit_benchmark_root(
             any(token in str(row["issues"]) for token in ("_mismatch:", "prediction_length_mismatch"))
             for row in rows
         ),
+        "preflight_runs": preflight_rows,
         "runs": rows,
     }
 

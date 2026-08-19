@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import math
 import os
 from pathlib import Path
 import platform
@@ -98,6 +99,11 @@ def state_bytes(model):
     return int(sum(np.asarray(variable.numpy()).nbytes for variable in model.variables))
 
 
+def require_finite(name, value):
+    if not math.isfinite(float(value)):
+        raise FloatingPointError(f"non-finite {name}: {value}")
+
+
 def predict(model, x, chunk_size):
     means = []
     variances = []
@@ -154,6 +160,7 @@ def train(
         finally:
             pop_range(profile_open)
         iteration_seconds = time.perf_counter() - iteration_started
+        require_finite("training_loss", loss)
         iteration_times.append(iteration_seconds)
         row = {
             "iteration": iteration,
@@ -169,6 +176,8 @@ def train(
             )
             mean = mean + offset_val
             validation_metrics = metrics(y_val, mean, variance)
+            for name, value in validation_metrics.items():
+                require_finite(f"validation_{name}", value)
             row.update(
                 {
                     "validation_nll": validation_metrics["nll"],

@@ -51,6 +51,8 @@ def _nested(payload: dict[str, Any], path: str) -> Any:
 def evaluate_preflight(
     manifest: Path,
     *,
+    tier: str,
+    expected_candidates: int,
     full_iterations: int,
     preflight_iterations: int,
     max_peak_mib: float,
@@ -61,9 +63,16 @@ def evaluate_preflight(
         for line in manifest.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
-    rows = [row for row in rows if row.get("kind") == "gpflow_feasibility_preflight"]
-    if len(rows) != 2:
-        raise ValueError(f"Expected two GPflow preflight records, found {len(rows)}")
+    rows = [
+        row
+        for row in rows
+        if row.get("kind") == "gpflow_feasibility_preflight"
+        and str(row.get("selection", {}).get("tier")) == tier
+    ]
+    if len(rows) != expected_candidates:
+        raise ValueError(
+            f"Expected {expected_candidates} GPflow preflight records for tier {tier}, found {len(rows)}"
+        )
 
     decisions: list[dict[str, Any]] = []
     for row in rows:
@@ -110,6 +119,7 @@ def evaluate_preflight(
         )
         decisions.append(
             {
+                "tier": tier,
                 "method": row.get("method"),
                 "status_path": str(status_path),
                 "result_path": str(result_path),
@@ -117,10 +127,10 @@ def evaluate_preflight(
                 "finite": finite,
                 "peak_cuda_allocated_mib": peak_mib,
                 "estimated_100_step_seconds": estimated_seconds,
-                "accepted_8192": accepted,
+                "accepted": accepted,
             }
         )
-    return all(row["accepted_8192"] for row in decisions), decisions
+    return all(row["accepted"] for row in decisions), decisions
 
 
 def main() -> None:
@@ -134,7 +144,8 @@ def main() -> None:
     args = parser.parse_args()
 
     spec = load_spec(args.config.resolve())
-    preflight_iterations = int(spec["short_batch"]["gpflow_feasibility"]["preflight_iterations"])
+    gpflow = spec["short_batch"]["gpflow_feasibility"]
+    preflight_iterations = int(gpflow["preflight_iterations"])
     base_config = json.loads(
         (args.config.parent / str(spec.get("base_config", "benchmark.json"))).read_text(
             encoding="utf-8"
@@ -142,14 +153,23 @@ def main() -> None:
     )
     full_iterations = int(base_config["gpflow_svgp"]["iterations"])
     manifest = args.manifest_dir / "shared_batch_short.jsonl"
-    use_8192, decisions = evaluate_preflight(
-        manifest,
-        full_iterations=full_iterations,
-        preflight_iterations=preflight_iterations,
-        max_peak_mib=args.max_peak_gib * 1024.0,
-        max_estimated_seconds=args.max_full_hours * 3600.0,
-    )
-    selected_tier = "8192" if use_8192 else "4096"
+    tier_decisions = []
+    selected_tier = None
+    for tier in (str(item) for item in gpflow["preflight_tiers"]):
+        accepted, decisions = evaluate_preflight(
+            manifest,
+            tier=tier,
+            expected_candidates=len(gpflow["tiers"][tier]),
+            full_iterations=full_iterations,
+            preflight_iterations=preflight_iterations,
+            max_peak_mib=args.max_peak_gib * 1024.0,
+            max_estimated_seconds=args.max_full_hours * 3600.0,
+        )
+        tier_decisions.append({"tier": tier, "accepted": accepted, "records": decisions})
+        if accepted and selected_tier is None:
+            selected_tier = tier
+    if selected_tier is None:
+        raise SystemExit("No GPflow inducing tier passed the finite-value and resource preflight")
     outputs = build_manifests(
         spec_path=args.config.resolve(),
         benchmark_root=args.benchmark_root.resolve(),
@@ -158,15 +178,15 @@ def main() -> None:
         hardware_class=args.hardware_class,
     )
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "selected_at": datetime.now(timezone.utc).isoformat(),
         "selected_tier": selected_tier,
-        "selection_basis": "seed-0 runnability only; no test metric was inspected",
+        "selection_basis": "largest seed-0 tier passing finite-value and resource checks; no test metric was inspected",
         "thresholds": {
             "max_peak_gib": args.max_peak_gib,
             "max_estimated_full_hours": args.max_full_hours,
         },
-        "preflight": decisions,
+        "preflight_tiers": tier_decisions,
         "manifests": {key: str(value) for key, value in outputs.items()},
     }
     output = args.benchmark_root / "gpflow_feasibility" / "selected_tier.json"

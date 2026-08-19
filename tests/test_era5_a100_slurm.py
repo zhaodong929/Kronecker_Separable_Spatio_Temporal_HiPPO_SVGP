@@ -102,6 +102,8 @@ def test_autodl_full_protocol_reuses_the_complete_manifest_and_requires_ncu() ->
         "online_long",
     ):
         assert f"run_manifest_phase {phase}" in script
+    assert "if ! run_manifest_phase gpflow_preflight" in script
+    assert "largest fully stable tier" in script
     assert "--include-legacy" in script
     assert "--hardware-class" in script
     assert "--require-ncu" in script

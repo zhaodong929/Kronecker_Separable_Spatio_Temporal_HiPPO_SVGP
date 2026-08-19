@@ -56,6 +56,7 @@ def test_gpflow_preflight_selection_uses_only_runnability(tmp_path: Path) -> Non
         rows.append(
             {
                 "kind": "gpflow_feasibility_preflight",
+                "selection": {"tier": "8192"},
                 "output_dir": str(output),
                 "expected": [str(output / "result.json")],
             }
@@ -63,13 +64,15 @@ def test_gpflow_preflight_selection_uses_only_runnability(tmp_path: Path) -> Non
     manifest.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     selected, decisions = evaluate_preflight(
         manifest,
+        tier="8192",
+        expected_candidates=2,
         full_iterations=100,
         preflight_iterations=2,
         max_peak_mib=72 * 1024,
         max_estimated_seconds=6 * 3600,
     )
     assert selected is True
-    assert all(row["accepted_8192"] for row in decisions)
+    assert all(row["accepted"] for row in decisions)
 
     rows[1]["output_dir"] = str(tmp_path / "preflight1")
     (tmp_path / "preflight1" / "status.json").write_text(
@@ -79,13 +82,15 @@ def test_gpflow_preflight_selection_uses_only_runnability(tmp_path: Path) -> Non
     manifest.write_text("\n".join(json.dumps(row) for row in rows) + "\n", encoding="utf-8")
     selected, decisions = evaluate_preflight(
         manifest,
+        tier="8192",
+        expected_candidates=2,
         full_iterations=100,
         preflight_iterations=2,
         max_peak_mib=72 * 1024,
         max_estimated_seconds=6 * 3600,
     )
     assert selected is False
-    assert decisions[1]["accepted_8192"] is False
+    assert decisions[1]["accepted"] is False
 
 
 def build(tmp_path: Path, *, gpflow_tier: str | None = None) -> tuple[dict[str, Path], Path]:
@@ -108,13 +113,13 @@ def test_exact_manifests_use_benchmark_manifests_root(tmp_path: Path) -> None:
 def test_shared_short_matrix_has_producers_and_required_families(tmp_path: Path) -> None:
     outputs, _ = build(tmp_path)
     rows = read_jsonl(outputs["shared_batch_short"])
-    assert len(rows) == 143
+    assert len(rows) == 147
     assert Counter(row["kind"] for row in rows) == Counter(
         {
             "protocol": 11,
             "calibration": 10,
             "batch": 120,
-            "gpflow_feasibility_preflight": 2,
+            "gpflow_feasibility_preflight": 6,
         }
     )
     assert all(row["schema_version"] == 1 for row in rows)
@@ -200,12 +205,22 @@ def test_shared_short_matrix_has_producers_and_required_families(tmp_path: Path)
 
     gpflow_preflight = [row for row in rows if row["kind"] == "gpflow_feasibility_preflight"]
     gpflow_selected = [row for row in rows if row["method"].startswith("gpflow_feasibility_")]
-    assert len(gpflow_preflight) == 2
+    assert len(gpflow_preflight) == 6
     assert {row["seed"] for row in gpflow_preflight} == {0}
     assert {
-        (int(argument(row, "--mt")), int(argument(row, "--ms"))) for row in gpflow_preflight
-    } == {(128, 64), (64, 128)}
-    assert all(row["selection"] == {"family": "gpflow_feasibility", "role": "preflight", "tier": "8192", "decision_seed": 0} for row in gpflow_preflight)
+        (row["selection"]["tier"], int(argument(row, "--mt")), int(argument(row, "--ms")))
+        for row in gpflow_preflight
+    } == {
+        ("8192", 128, 64), ("8192", 64, 128),
+        ("4096", 64, 64), ("4096", 32, 128),
+        ("2048", 32, 64), ("2048", 16, 128),
+    }
+    assert all(
+        row["selection"]["family"] == "gpflow_feasibility"
+        and row["selection"]["role"] == "preflight"
+        and row["selection"]["decision_seed"] == 0
+        for row in gpflow_preflight
+    )
     assert len(gpflow_selected) == 10
     assert {row["selection"]["tier"] for row in gpflow_selected} == {"8192"}
     assert all(
@@ -219,9 +234,7 @@ def test_gpflow_fallback_keeps_preflight_out_of_main_results(tmp_path: Path) -> 
     rows = read_jsonl(outputs["shared_batch_short"])
     preflight = [row for row in rows if row["kind"] == "gpflow_feasibility_preflight"]
     selected = [row for row in rows if row["method"].startswith("gpflow_feasibility_")]
-    assert {
-        (int(argument(row, "--mt")), int(argument(row, "--ms"))) for row in preflight
-    } == {(128, 64), (64, 128)}
+    assert {row["selection"]["tier"] for row in preflight} == {"8192", "4096", "2048"}
     assert {row["selection"]["tier"] for row in selected} == {"4096"}
     assert {
         (int(argument(row, "--mt")), int(argument(row, "--ms"))) for row in selected

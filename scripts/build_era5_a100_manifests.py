@@ -70,10 +70,14 @@ def load_spec(path: Path) -> dict[str, Any]:
 
     gpflow = spec["short_batch"]["gpflow_feasibility"]
     selected_tier = str(gpflow["selected_tier"])
-    preflight_tier = str(gpflow["preflight_tier"])
     tiers = gpflow["tiers"]
-    if selected_tier not in tiers or preflight_tier not in tiers:
-        raise ValueError("GPflow selected_tier and preflight_tier must name configured tiers")
+    preflight_tiers = [str(tier) for tier in gpflow["preflight_tiers"]]
+    if selected_tier not in tiers or not preflight_tiers or any(
+        tier not in tiers for tier in preflight_tiers
+    ):
+        raise ValueError("GPflow selected_tier and preflight_tiers must name configured tiers")
+    if len(preflight_tiers) != len(set(preflight_tiers)):
+        raise ValueError("GPflow preflight_tiers must be unique")
     for tier_name, candidates in tiers.items():
         expected_total = int(tier_name)
         if any(int(item["mt"]) * int(item["ms"]) != expected_total for item in candidates):
@@ -340,6 +344,10 @@ def _gpflow_candidates(spec: dict[str, Any], tier: str | None = None) -> tuple[s
     return selected, candidates
 
 
+def _gpflow_preflight_tiers(spec: dict[str, Any]) -> list[str]:
+    return [str(tier) for tier in spec["short_batch"]["gpflow_feasibility"]["preflight_tiers"]]
+
+
 def _gpflow_command(
     *,
     base_config: dict[str, Any],
@@ -433,7 +441,6 @@ def _gpflow_job(
 def build_gpflow_preflight_jobs(
     *, spec: dict[str, Any], base_config: dict[str, Any], benchmark: Path, python: Path
 ) -> list[Job]:
-    tier, candidates = _gpflow_candidates(spec, str(spec["short_batch"]["gpflow_feasibility"]["preflight_tier"]))
     iterations = int(spec["short_batch"]["gpflow_feasibility"]["preflight_iterations"])
     return [
         _gpflow_job(
@@ -449,7 +456,8 @@ def build_gpflow_preflight_jobs(
             iterations=iterations,
             device_class="a100_gpflow_preflight",
         )
-        for item in candidates
+        for tier in _gpflow_preflight_tiers(spec)
+        for item in _gpflow_candidates(spec, tier)[1]
     ]
 
 
@@ -1722,9 +1730,7 @@ def job_entry(
 
 def _entry_metadata(job: Job, spec: dict[str, Any], kind: str) -> dict[str, Any]:
     if job.method.startswith("preflight_gpflow_feasibility_"):
-        tier, _ = _gpflow_candidates(
-            spec, str(spec["short_batch"]["gpflow_feasibility"]["preflight_tier"])
-        )
+        tier = job.method.removeprefix("preflight_gpflow_feasibility_").split("_", 1)[0]
         return {
             "selection": {
                 "family": "gpflow_feasibility",
@@ -1827,12 +1833,19 @@ def _validate_entries(
 
     gpflow_preflight = [entry for entry in short_entries if entry["kind"] == "gpflow_feasibility_preflight"]
     gpflow_selected = [entry for entry in short_entries if entry["method"].startswith("gpflow_feasibility_")]
-    if len(gpflow_preflight) != 2 or len(gpflow_selected) != 10:
-        raise AssertionError("GPflow must have two seed0 preflights and one selected tier")
+    if len(gpflow_preflight) != 6 or len(gpflow_selected) != 10:
+        raise AssertionError("GPflow must have six seed0 preflights and one selected tier")
     if {entry["seed"] for entry in gpflow_preflight} != {0}:
         raise AssertionError("GPflow feasibility preflights must use seed0")
     if any(entry["selection"]["role"] != "preflight" for entry in gpflow_preflight):
         raise AssertionError("GPflow preflights must be marked in the selection schema")
+    if {entry["selection"]["tier"] for entry in gpflow_preflight} != {"8192", "4096", "2048"}:
+        raise AssertionError("GPflow preflight tiers are incomplete")
+    if any(
+        sum(entry["selection"]["tier"] == tier for entry in gpflow_preflight) != 2
+        for tier in {"8192", "4096", "2048"}
+    ):
+        raise AssertionError("Each GPflow preflight tier needs two seed0 candidates")
     if any(entry["selection"]["role"] != "selected" for entry in gpflow_selected):
         raise AssertionError("GPflow main jobs must be marked as the selected tier")
     selected_tier = {entry["selection"]["tier"] for entry in gpflow_selected}
@@ -2185,7 +2198,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help="Manifest directory; defaults to ${BENCHMARK_ROOT}/manifests.",
     )
-    parser.add_argument("--gpflow-tier", choices=("8192", "4096"))
+    parser.add_argument("--gpflow-tier", choices=("8192", "4096", "2048"))
     parser.add_argument(
         "--hardware-class",
         default="NVIDIA A100",

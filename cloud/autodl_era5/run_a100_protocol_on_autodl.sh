@@ -105,11 +105,17 @@ from pathlib import Path
 
 root = Path(sys.argv[1])
 require_ncu = bool(int(sys.argv[2]))
+try:
+    selected_gpflow_tier = str(
+        json.loads((root / "gpflow_feasibility" / "selected_tier.json").read_text(encoding="utf-8"))["selected_tier"]
+    )
+except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+    raise SystemExit(f"invalid_gpflow_tier_selection:{exc}")
 names = (
     "shared_batch_short.jsonl", "official_long_preflight.jsonl", "official_long_full.jsonl",
     "online_short.jsonl", "online_long.jsonl", "efficiency.jsonl",
 )
-issues, total, ncu_total = [], 0, 0
+issues, total, ncu_total, rejected_gpflow_preflights = [], 0, 0, 0
 for name in names:
     path = root / "manifests" / name
     if not path.is_file():
@@ -121,6 +127,13 @@ for name in names:
         total += 1
         row = json.loads(line)
         output = Path(row["output_dir"])
+        selection = row.get("selection", {})
+        if (
+            row.get("kind") == "gpflow_feasibility_preflight"
+            and str(selection.get("tier")) != selected_gpflow_tier
+        ):
+            rejected_gpflow_preflights += 1
+            continue
         expected = [Path(item) for item in row.get("expected", [])]
         missing = [str(item) for item in expected if not item.is_file() or item.stat().st_size == 0]
         if missing:
@@ -171,6 +184,7 @@ print(json.dumps({
     "manifest_records": total,
     "ncu_profiles_required": ncu_total if require_ncu else 0,
     "ncu_profiles_pending": 0 if require_ncu else ncu_total,
+    "rejected_gpflow_preflights": rejected_gpflow_preflights,
 }, sort_keys=True))
 PY
 }
@@ -264,7 +278,9 @@ run bash "${VALIDATOR}" --repo "${ROOT}" --env "${ENV_ROOT}" --benchmark "${BENC
 run "${ROUTEB_PY}" "${ROOT}/cloud/autodl_era5/run_benchmark.py" --config "${BASE_CONFIG}" --stage prepare --include-legacy
 run "${ROUTEB_PY}" "${MANIFEST_BUILDER}" --config "${SPEC}" --benchmark-root "${BENCHMARK_ROOT}" --output-dir "${BENCHMARK_ROOT}/manifests" --hardware-class "${GPU_NAME}"
 copy_ncu_audit
-run_manifest_phase gpflow_preflight shared_batch_short kind gpflow_feasibility_preflight
+if ! run_manifest_phase gpflow_preflight shared_batch_short kind gpflow_feasibility_preflight; then
+  echo "GPflow preflight contains rejected tiers; selecting the largest fully stable tier."
+fi
 run "${ROUTEB_PY}" "${GPFLOW_SELECTOR}" --config "${SPEC}" --benchmark-root "${BENCHMARK_ROOT}" --manifest-dir "${BENCHMARK_ROOT}/manifests" --hardware-class "${GPU_NAME}"
 run_manifest_phase shared_batch shared_batch_short not_kind gpflow_feasibility_preflight
 run_manifest_phase official_long_preflight official_long_preflight all
