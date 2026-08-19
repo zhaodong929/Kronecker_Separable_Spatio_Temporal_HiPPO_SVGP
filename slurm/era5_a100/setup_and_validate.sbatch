@@ -23,10 +23,10 @@ DEFAULT_REPO="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 REPO_ROOT="${REPO_ROOT:-${DEFAULT_REPO}}"
 ENV_ROOT="${ERA5_ENV_ROOT:-${ENV_ROOT:-${HOME}/stvgp_envs}}"
 BENCHMARK_ROOT="${BENCHMARK_ROOT:-${REPO_ROOT}/results/experiments_era5_ohsvgp_heldout_fullspace/paper_ready/ICLR Formal experiment/iclr_era5_full_benchmark}"
-STVGP_PY="${STVGP_PY:-${ENV_ROOT}/stvgp_legacy/bin/python}"
-ROUTEB_PY="${ROUTEB_PY:-${ENV_ROOT}/routeb/bin/python}"
-TF_PY="${TF_PY:-${ENV_ROOT}/gpflow/bin/python}"
-MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-${ENV_ROOT}/micromamba-root}"
+STVGP_PY="${STVGP_PY:-}"
+ROUTEB_PY="${ROUTEB_PY:-}"
+TF_PY="${TF_PY:-}"
+MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-}"
 GPU_NAME_REGEX="${ERA5_GPU_NAME_REGEX:-a100}"
 MIN_GPU_MEMORY_GIB="${ERA5_MIN_GPU_MEMORY_GIB:-75}"
 
@@ -61,6 +61,10 @@ if [[ ! "${MIN_GPU_MEMORY_GIB}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
   echo "--min-gpu-memory-gib must be a positive number" >&2
   exit 2
 fi
+STVGP_PY="${STVGP_PY:-${ENV_ROOT}/stvgp_legacy/bin/python}"
+ROUTEB_PY="${ROUTEB_PY:-${ENV_ROOT}/routeb/bin/python}"
+TF_PY="${TF_PY:-${ENV_ROOT}/gpflow/bin/python}"
+MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-${ENV_ROOT}/micromamba-root}"
 export GPU_NAME_REGEX MIN_GPU_MEMORY_GIB
 
 REPO_ROOT="$(cd "${REPO_ROOT}" && pwd)"
