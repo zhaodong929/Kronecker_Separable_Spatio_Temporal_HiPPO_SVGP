@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "selection_protocol": "Seed 0 only. Every method receives the predeclared Task-1 candidate budget and is selected by Gaussian NLPD with RMSE as the tie-breaker; formal spatial splits 5-9 are not opened for capacity selection. ST-SVGP, Bui OSGPR and OVC-SVGP use the 38-fit/4-validation spatial split. Bui OSGPR and OVC-SVGP share a three-grid Task-1 budget whose macro-average winner is 8x32. If a method cannot complete the full formal stream at its Task-1-selected capacity, it is reported in the failure table; it is not replaced in the primary benchmark by a lower-capacity result. The official complete-output LMC/IMC/FSDE family shares one M,Q choice using a 48-week history plus four chronological Setting B validation weeks, because these models cannot fit a 38-output subset and then represent the held-out output dimensions without changing their official likelihood. This validation-geometry exception is explicit.",
+  "common_rules": {
+    "likelihood": "Gaussian",
+    "candidate_count_per_method": 3,
+    "selection_metric": "Gaussian NLPD",
+    "tie_breakers": ["RMSE", "smaller persistent inducing representation"],
+    "formal_refit": "After selection, refit with all 52 Task-1 jurisdictions before the delayed Setting B stream."
+  },
+  "families": {
+    "routeb_ordinary_vs_cumulative_hippo": {
+      "capacity": {"Mt": 32, "Ms": 32},
+      "rule": "Exact match: both are the same Route-B Kronecker representation, differing only in the temporal state update."
+    },
+    "st_svgp": {
+      "candidates": [{"spatial_inducing": 16}, {"spatial_inducing": 24}, {"spatial_inducing": 32}],
+      "rule": "Tune only spatial inducing points. The temporal state-space representation is replicated through time and has different semantics from Route-B Mt x Ms."
+    },
+    "bui_osgpr_and_ovc_svgp": {
+      "candidates": [
+        {"temporal_inducing": 4, "spatial_inducing": 32, "joint_inducing": 128},
+        {"temporal_inducing": 8, "spatial_inducing": 32, "joint_inducing": 256},
+        {"temporal_inducing": 12, "spatial_inducing": 32, "joint_inducing": 384}
+      ],
+      "shared_selection": {
+        "criterion": "macro-average Task-1 validation Gaussian NLPD across OVC-SVGP, controlled Bui OSGPR and adaptive Bui OSGPR; RMSE and smaller grid break ties",
+        "task1_selected": {"temporal_inducing": 8, "spatial_inducing": 32, "joint_inducing": 256},
+        "task1_evidence": "baselines/covid_long_setting_b/results/task1_capacity_selection/shared_bui_ovc_grid_selection.json",
+        "ovc_resource_failure_evidence": "baselines/covid_long_setting_b/reproduction/ovc_shared_m8_formal_resource_guard.json",
+        "nonprimary_lower_capacity_evidence": "baselines/covid_long_setting_b/results/task1_capacity_selection/shared_bui_ovc_feasible_m4_resolution.json"
+      },
+      "rule": "Use the Task-1-selected Cartesian 8x32 time x space inducing grid for OVC-SVGP, controlled Bui OSGPR and adaptive Bui OSGPR. This exact grid match is appropriate because all three retain point-inducing representations over the same time-by-space input domain. OVC-SVGP is reported as resource-limited when its official exact-fantasy continuation cannot finish at that capacity; completed 4x32 archives are non-primary feasibility evidence only."
+    },
+    "lmc_imc_svgp_and_fsde_svi": {
+      "candidates": [
+        {"temporal_inducing": 4, "latent_rank": 2},
+        {"temporal_inducing": 8, "latent_rank": 4},
+        {"temporal_inducing": 12, "latent_rank": 6}
+      ],
+      "rule": "LMC-SVGP, IMC-SVGP and FSDE-SVI must share the selected temporal inducing count M and latent rank Q. The LMC/IMC Task-1 temporal validation selected M=4, Q=2; FSDE-SVI inherits and validates that frozen shared pair. Because the pinned official multi-output likelihoods require every output to have historical labels, use only Task 1's final four chronological weeks under the same 42-visible/10-hidden conditional-prediction protocol. This exception is explicit and does not open formal seeds 5-9."
+    }
+  }
+}
