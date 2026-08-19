@@ -275,7 +275,25 @@ def main() -> None:
 
     output_root.mkdir(parents=True, exist_ok=True)
     (output_root / "suite_manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"status": "complete", "records": len(manifest), "manifest": str(output_root / "suite_manifest.json")}, indent=2))
+    failed = [
+        record
+        for record in manifest
+        if record["status"] in {"failed", "blocked"}
+    ]
+    status = "failed" if failed else "complete"
+    print(
+        json.dumps(
+            {
+                "status": status,
+                "records": len(manifest),
+                "failed_records": len(failed),
+                "manifest": str(output_root / "suite_manifest.json"),
+            },
+            indent=2,
+        )
+    )
+    if failed:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
