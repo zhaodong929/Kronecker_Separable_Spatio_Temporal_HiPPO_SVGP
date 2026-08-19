@@ -21,8 +21,7 @@ OHSVGP_REPRODUCTION_ROOT="$ROOT/baselines/covid_long_setting_b/reproduction/conv
 FROZEN_ARCHIVES="$ROOT/baselines/covid_long_setting_b/reproduction/convergence_repair_v1/frozen_pre_repair_archives.json"
 
 run() {
-    printf '\n[%s] %q' "$(date -Is)" "$1"
-    shift
+    printf '\n[%s]' "$(date -Is)"
     printf ' %q' "$@"
     printf '\n'
     "$@"
