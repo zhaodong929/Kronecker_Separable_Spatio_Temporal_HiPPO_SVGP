@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """ERA5 wrapper for Markovflow's official sparse spatio-temporal models.
 
-This script is intentionally Python 3.7 compatible because Markovflow v0.0.13
-depends on TensorFlow 2.2 and GPflow 2.1. It keeps the upstream inference code
-unchanged and only supplies the shared ERA5 protocol, optimisation loop,
-metrics, and resource accounting.
+This script is intentionally Python 3.7 compatible for Markovflow v0.0.13. It
+keeps the upstream inference code unchanged and only supplies the shared ERA5
+protocol, optimisation loop, metrics, and resource accounting.
 """
 
 from __future__ import print_function
@@ -15,9 +14,21 @@ import json
 import os
 import platform
 import resource
+import sys
 import time
+from pathlib import Path
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+# The legacy TensorFlow compatibility stack is retained as a CPU baseline. It
+# must not reserve or time the AutoDL GPU used by the modern methods.
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "")
+
+ROOT = Path(__file__).resolve().parents[1]
+MARKOVFLOW_ROOT = (
+    ROOT / "baselines" / "external" / "secondmind_labs_markovflow_v0.0.13"
+)
+if str(MARKOVFLOW_ROOT) not in sys.path:
+    sys.path.insert(0, str(MARKOVFLOW_ROOT))
 
 import numpy as np
 import tensorflow as tf

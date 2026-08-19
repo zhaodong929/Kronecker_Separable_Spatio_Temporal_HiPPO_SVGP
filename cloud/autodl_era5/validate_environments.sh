@@ -54,10 +54,13 @@ PY
 fi
 
 if [[ -x "${ENV_ROOT}/markovflow/bin/python" ]]; then
-  PYTHONPATH="${ROOT}/baselines/external/secondmind_labs_markovflow_v0.0.13" \
+  CUDA_VISIBLE_DEVICES="" \
+    PYTHONPATH="${ROOT}/baselines/external/secondmind_labs_markovflow_v0.0.13" \
     "${ENV_ROOT}/markovflow/bin/python" - <<'PY'
 import gpflow, markovflow, tensorflow as tf
 print("legacy Markovflow", gpflow.__version__, tf.__version__)
-print("GPU support is not expected for the TensorFlow 2.2.1 compatibility stack.")
+if tf.config.list_physical_devices("GPU"):
+    raise SystemExit("Markovflow compatibility environment must not see CUDA")
+print("CPU-only Markovflow compatibility stack")
 PY
 fi

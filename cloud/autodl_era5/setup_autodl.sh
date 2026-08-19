@@ -86,16 +86,13 @@ if [[ "${INCLUDE_LEGACY}" == "1" ]]; then
   create_base_env markovflow 3.7
   MARKOV_PY="${ENV_ROOT}/markovflow/bin/python"
   "${MARKOV_PY}" -m pip install --upgrade "pip<24.1" "setuptools<68" wheel
+  # Markovflow v0.0.13 pins TFP 0.11 and banded-matrices 0.0.6. Their released
+  # metadata requires TensorFlow 2.4.x, contrary to the stale TF 2.2.1 pin in
+  # the generated upstream setup.py.
   "${MARKOV_PY}" -m pip install \
-    numpy==1.18.5 scipy==1.4.1 tensorflow==2.2.1 \
+    numpy==1.18.5 scipy==1.4.1 tensorflow==2.4.4 \
     tensorflow-probability==0.11.0 gpflow==2.1.3 \
-    protobuf==3.20.3
-  # The official requirements pin TensorFlow 2.2.1, while the later wheel
-  # metadata for banded-matrices 0.0.6 incorrectly requires TensorFlow >=2.4.
-  "${MARKOV_PY}" -m pip install banded-matrices==0.0.6 --no-deps
-  "${MARKOV_PY}" -m pip install \
-    -e "${ROOT}/baselines/external/secondmind_labs_markovflow_v0.0.13" \
-    --no-build-isolation --no-deps
+    banded-matrices==0.0.6 protobuf==3.20.3
 fi
 
 if [[ "${INSTALL_TEX}" == "1" ]]; then
