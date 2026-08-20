@@ -296,6 +296,32 @@ def test_audit_reports_manifest_jobs_that_never_started(tmp_path: Path) -> None:
     assert row["issues"] == "missing_manifest_job_artifacts:online_long.jsonl"
 
 
+def test_audit_keeps_path_distinguished_variants_separate_from_generic_payload_name(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "benchmark"
+    for method, rmse in (("official_st_svgp_ms64", 0.2), ("official_st_svgp_ms128", 0.3)):
+        run = _write_run(
+            root,
+            scope="short",
+            branch="batch",
+            method=method,
+            seed=0,
+            rmse=rmse,
+            status="complete",
+        )
+        result_path = run / "result.json"
+        result = json.loads(result_path.read_text(encoding="utf-8"))
+        result["method"] = "official_st_svgp"
+        result_path.write_text(json.dumps(result), encoding="utf-8")
+
+    payload = audit_benchmark_root(root, expected_seeds=(), include_missing_seeds=False)
+
+    rows = {(row["method"], row["seed"]): row for row in payload["runs"]}
+    assert set(rows) == {("official_st_svgp_ms64", 0), ("official_st_svgp_ms128", 0)}
+    assert all(row["status"] == "complete" for row in rows.values())
+
+
 def test_audit_keeps_preflight_failures_out_of_result_completeness(tmp_path: Path) -> None:
     root = tmp_path / "benchmark"
     output_dir = root / "runs" / "task1_2" / "preflight" / "preflight_gpflow_feasibility_8192_mt128_ms64" / "seed0"

@@ -216,7 +216,11 @@ def _discover_groups(root: Path) -> dict[tuple[str, str, str, int], dict[str, An
             return
         scope = infer_scope(path, payload)
         branch = infer_branch(path, payload)
-        method = infer_method(path, payload)
+        # The directory names distinguish configured variants such as
+        # ``official_st_svgp_ms64`` and ``official_st_svgp_ms128``.  Result
+        # payloads may deliberately use the shared implementation name, so
+        # using them here would merge distinct runs into one audit group.
+        method = infer_method(path)
         key = (scope, branch, method, seed)
         group = groups.setdefault(
             key,
