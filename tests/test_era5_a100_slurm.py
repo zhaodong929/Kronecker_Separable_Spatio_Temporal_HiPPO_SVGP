@@ -73,6 +73,8 @@ def test_submit_contract_uses_exactly_three_persistent_workers() -> None:
     assert "indices[worker::workers]" in worker
     assert 'failures=$((failures + 1))' in worker
     assert 'if [[ "${failures}" -ne 0 ]]; then exit 1; fi' in worker
+    assert "configure_legacy_cuda" in worker
+    assert "--xla_gpu_cuda_data_dir=${cuda_root}" in worker
     assert "slurm/manifests" not in efficiency
     assert 'MANIFEST_DIR="${BENCHMARK_ROOT}/manifests"' in prepare
     assert '--stage prepare --include-legacy' in prepare

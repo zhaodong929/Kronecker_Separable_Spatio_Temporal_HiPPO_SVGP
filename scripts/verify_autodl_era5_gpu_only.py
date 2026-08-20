@@ -23,7 +23,7 @@ GPU_MANIFEST_POLICIES = {
     },
     "official_long_preflight": {
         "device_classes": {"a100_official_preflight"},
-        "exclude_full_stvgp": False,
+        "exclude_full_stvgp": True,
     },
     "official_long_full": {
         "device_classes": {"a100_official_full"},

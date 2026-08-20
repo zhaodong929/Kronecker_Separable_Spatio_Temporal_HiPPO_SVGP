@@ -65,6 +65,28 @@ if [[ ! -x "${ROUTEB_PY}" || ! -f "${RUNNER}" || ! -f "${MANIFEST}" ]]; then
   exit 1
 fi
 
+configure_legacy_cuda() {
+  local candidate cuda_root="" ptxas=""
+  local candidates=()
+  [[ -z "${LEGACY_CUDA_ROOT:-}" ]] || candidates+=("${LEGACY_CUDA_ROOT}")
+  candidates+=(/usr/local/cuda-11.8 /usr/local/cuda /usr/local/cuda-*)
+  for candidate in "${candidates[@]}"; do
+    [[ -x "${candidate}/bin/ptxas" && -d "${candidate}/nvvm/libdevice" ]] || continue
+    cuda_root="${candidate}"
+    ptxas="${candidate}/bin/ptxas"
+    break
+  done
+  if [[ -z "${cuda_root}" ]]; then
+    echo "Legacy JAX CUDA toolkit not found; non-legacy jobs may still run." >&2
+    return
+  fi
+  export PATH="$(dirname "${ptxas}"):${PATH}"
+  export XLA_FLAGS="${XLA_FLAGS:+${XLA_FLAGS} }--xla_gpu_cuda_data_dir=${cuda_root}"
+  printf 'Legacy JAX CUDA toolkit: %s\n' "${cuda_root}"
+}
+
+configure_legacy_cuda
+
 mapfile -t RECORD_INDICES < <(
   "${ROUTEB_PY}" - "${INDEX_SPEC}" "${SLURM_ARRAY_TASK_ID}" "${WORKER_COUNT}" <<'PY'
 import sys
