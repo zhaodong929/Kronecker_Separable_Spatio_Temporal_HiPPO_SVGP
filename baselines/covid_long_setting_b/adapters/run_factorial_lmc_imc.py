@@ -225,6 +225,10 @@ class PersistentTask1Trainer:
         dataset = tf.data.Dataset.from_tensor_slices((times, targets)).shuffle(
             times.shape[0], seed=0, reshuffle_each_iteration=False
         ).repeat().batch(min(int(batch_size), int(times.shape[0])))
+        full_data = (
+            tf.convert_to_tensor(times, dtype=model.q_mu.dtype),
+            tf.convert_to_tensor(targets, dtype=model.q_mu.dtype),
+        )
         iterator = iter(dataset)
         training_loss = model.training_loss_closure(iterator, compile=True)
         adam = tf.optimizers.Adam(learning_rate=float(learning_rate))
@@ -235,24 +239,27 @@ class PersistentTask1Trainer:
         variational_parameters = [(model.q_mu, model.q_sqrt)]
 
         @tf.function
-        def run_compiled(step_count: tf.Tensor) -> tf.Tensor:
-            values = tf.TensorArray(dtype=model.q_mu.dtype, size=step_count)
-            for index in tf.range(step_count):
-                adam.minimize(training_loss, model.trainable_variables)
-                if ngd is not None:
-                    ngd.minimize(training_loss, variational_parameters)
-                values = values.write(index, -training_loss())
-            return values.stack()
+        def optimization_step() -> None:
+            adam.minimize(training_loss, model.trainable_variables)
+            if ngd is not None:
+                ngd.minimize(training_loss, variational_parameters)
 
-        self._run_compiled = run_compiled
+        @tf.function
+        def full_objective() -> tf.Tensor:
+            return -model.training_loss(full_data)
+
+        self._optimization_step = optimization_step
+        self._full_objective = full_objective
         self.adam = adam
         self.natural_gradient = ngd
 
-    def run(self, steps: int) -> list[float]:
+    def run(self, steps: int) -> float:
         if steps <= 0:
-            return []
-        values = self._run_compiled(tf.convert_to_tensor(steps, dtype=tf.int32))
-        return np.asarray(values.numpy(), dtype=np.float64).tolist()
+            raise ValueError("PersistentTask1Trainer requires at least one update")
+        for _ in range(steps):
+            self._optimization_step()
+        value = self._full_objective()
+        return float(np.asarray(value.numpy(), dtype=np.float64))
 
 
 def fit_task1(
@@ -293,23 +300,24 @@ def fit_task1(
     while completed < int(args.task1_iterations):
         steps = min(int(args.task1_check_interval), int(args.task1_iterations) - completed)
         before_mu, before_sqrt = variational_snapshot(model)
-        chunk = trainer.run(steps)
-        if not chunk or not np.isfinite(chunk).all():
-            raise FloatingPointError("Official Factorial optimiser returned a non-finite ELBO trace")
-        completed += len(chunk)
-        objectives.extend(chunk)
+        objective = trainer.run(steps)
+        if not np.isfinite(objective):
+            raise FloatingPointError("Factorial Task-1 trainer returned a non-finite full-data ELBO")
+        completed += steps
+        objectives.append(objective)
         previous_median = None
         relative_improvement = None
         if len(trace) >= 1:
             previous_median = float(trace[-1]["chunk_elbo_median"])
-            relative_improvement = abs(float(np.median(chunk)) - previous_median) / max(
+            relative_improvement = abs(objective - previous_median) / max(
                 abs(previous_median), 1e-12
             )
         trace.append(
             {
                 "steps_completed": completed,
-                "chunk_elbo_median": float(np.median(chunk)),
-                "chunk_elbo_mean": float(np.mean(chunk)),
+                "chunk_elbo_median": objective,
+                "chunk_elbo_mean": objective,
+                "objective_scope": "complete_training_prefix",
                 "previous_chunk_relative_change": relative_improvement,
                 "q_mu_max_abs_update": float(np.max(np.abs(variational_snapshot(model)[0] - before_mu))),
                 "q_sqrt_max_abs_update": float(np.max(np.abs(variational_snapshot(model)[1] - before_sqrt))),
@@ -341,6 +349,7 @@ def fit_task1(
         "natural_gradient": not args.no_natgrad,
         "persistent_optimizer_state_across_checks": True,
         "compiled_steps_per_host_synchronization": int(args.task1_check_interval),
+        "objective_evaluations": "one_full_training_prefix_elbo_per_check",
         "final_elbo": float(objectives[-1]),
         "trace": trace,
         "lmc_symmetry_audit": lmc_audit,
