@@ -537,6 +537,8 @@ def _routeb_batch_command(
         "10",
         "--prediction-chunk-size",
         str(routeb["prediction_chunk_size"]),
+        "--predictions-output",
+        str(output / "predictions.npz"),
         "--split-seed",
         str(seed),
         "--model-seed",
@@ -1807,6 +1809,8 @@ def _validate_entries(
         raise AssertionError("Short Route B batch capacities are incomplete")
     if any("--include-conditional-residual-variance" not in entry["argv"] for entry in short_routeb):
         raise AssertionError("All Route B batch jobs need the explicit variance protocol")
+    if any("--predictions-output" not in entry["argv"] for entry in short_routeb):
+        raise AssertionError("All Route B batch jobs need prediction artifacts")
     short_official = [entry for entry in short_entries if entry["kind"] == "batch" and entry["method"].startswith("official_")]
     if not any(entry["method"] == "official_st_vgp_full" for entry in short_official):
         raise AssertionError("Short official matrix must name ST-VGP as st_vgp_full")

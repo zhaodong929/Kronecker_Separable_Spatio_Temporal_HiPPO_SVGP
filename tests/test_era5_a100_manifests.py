@@ -129,6 +129,12 @@ def test_shared_short_matrix_has_producers_and_required_families(tmp_path: Path)
         for row in rows
         if "--target-mode" in row["argv"]
     )
+    routeb_batch = [row for row in rows if row["argv"][1] == ROUTE_B_BATCH]
+    assert routeb_batch
+    assert all(
+        argument(row, "--predictions-output") == row["expected"][1]
+        for row in routeb_batch
+    )
 
     protocol = [row for row in rows if row["kind"] == "protocol"]
     shared_protocol = [row for row in protocol if row["method"] == "export_shared_protocol"]
