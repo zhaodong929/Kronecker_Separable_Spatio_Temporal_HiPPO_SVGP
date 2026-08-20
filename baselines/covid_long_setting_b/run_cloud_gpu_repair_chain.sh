@@ -5,9 +5,9 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 PYTHON="$ROOT/.venv/bin/python"
 FSDE_PYTHON="${FSDE_PYTHON:-/root/autodl-tmp/stvgp_envs/fsde_svi_py310_cuda/bin/python}"
-WAIT_PID_FILE="${WAIT_PID_FILE:-$ROOT/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/factorial_lmc_imc_capacity_v3.pid}"
+WAIT_PID_FILE="${WAIT_PID_FILE:-$ROOT/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/factorial_lmc_imc_capacity_v4.pid}"
 DEVELOPMENT_MANIFEST="${DEVELOPMENT_MANIFEST:-$ROOT/baselines/covid_long_setting_b/results/convergence_repair_v1/cloud_4090_development_protocols/development_manifest.json}"
-FACTORIAL_ROOT="${FACTORIAL_ROOT:-$ROOT/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_factorial_v3}"
+FACTORIAL_ROOT="${FACTORIAL_ROOT:-$ROOT/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_factorial_v4}"
 OHSVGP_GATE_ROOT="${OHSVGP_GATE_ROOT:-$ROOT/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/ohsvgp_official_gates}"
 OHSVGP_DEVELOPMENT_ROOT="${OHSVGP_DEVELOPMENT_ROOT:-$ROOT/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_ohsvgp_v2}"
 
