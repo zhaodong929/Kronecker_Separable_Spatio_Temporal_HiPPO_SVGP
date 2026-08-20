@@ -10,7 +10,9 @@ selection only after its convergence, causal and numerical gates pass.
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -62,6 +64,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--phase", choices=("capacity", "online_steps"), default="capacity")
     parser.add_argument("--execute", action="store_true", help="Run commands. The default writes only an execution plan.")
     parser.add_argument("--resume", action="store_true", help="Reuse a completed candidate-fold archive without overwriting it.")
+    parser.add_argument("--jobs", type=int, default=1, help="Independent candidate-fold subprocesses to run concurrently.")
     parser.add_argument("--factorial-python", type=Path, default=Path("baselines/.venvs/factorial_sde_gpflow/bin/python"))
     parser.add_argument("--fsde-python", type=Path, default=Path("baselines/.venvs/factorial_sde_fsde39/bin/python"))
     parser.add_argument("--ovc-python", type=Path, default=Path("baselines/.venvs/ovc_svgp/bin/python"))
@@ -420,12 +423,56 @@ def select_shared_factorial(rows: list[dict[str, Any]], lmc_audits: dict[str, di
 
 def main() -> None:
     args = parse_args()
+    if args.jobs < 1:
+        raise ValueError("--jobs must be positive")
     output_root = absolute(args.output_root)
     folds = load_folds(args.development_manifest)
     phase_root = output_root / args.phase
     phase_root.mkdir(parents=True, exist_ok=True)
-    all_rows: list[dict[str, Any]] = []
     execution_plan: list[dict[str, Any]] = []
+    for method in args.methods:
+        method_candidates = candidates(method, args.phase, output_root / "capacity")
+        for candidate in method_candidates:
+            for fold in folds:
+                fold_id = json.loads(fold.with_suffix(".json").read_text(encoding="utf-8"))["fold"]["id"]
+                output = phase_root / method / tag(candidate) / f"fold_{fold_id}"
+                command = command_for(method, candidate, fold, output, args)
+                execution_plan.append(
+                    {"method": method, "candidate": candidate, "fold": str(fold), "output": str(output), "command": command}
+                )
+
+    def execute_entry(entry: dict[str, Any]) -> int:
+        output = Path(entry["output"])
+        archive = output / "predictions.npz"
+        if args.resume and archive.is_file():
+            return 0
+        if archive.exists():
+            raise FileExistsError(f"Refusing to overwrite a development archive: {archive}")
+        if output.exists() and any(output.iterdir()):
+            raise FileExistsError(f"Refusing to reuse a partial development output: {output}")
+        output.mkdir(parents=True, exist_ok=True)
+        environment = None
+        if entry["method"] in ("lmc", "imc") and args.factorial_device == "gpu":
+            environment = dict(os.environ)
+            environment.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
+            environment.setdefault("TF_NUM_INTRAOP_THREADS", "8")
+            environment.setdefault("TF_NUM_INTEROP_THREADS", "2")
+        elif entry["method"] == "fsde" and args.factorial_device == "gpu":
+            environment = dict(os.environ)
+            environment.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
+        with (output / "run.log").open("w", encoding="utf-8") as handle:
+            completed = subprocess.run(
+                entry["command"], cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT, env=environment
+            )
+        return int(completed.returncode)
+
+    returncodes: dict[str, int] = {}
+    if args.execute:
+        with ThreadPoolExecutor(max_workers=args.jobs) as executor:
+            codes = executor.map(execute_entry, execution_plan)
+            returncodes = {entry["output"]: code for entry, code in zip(execution_plan, codes)}
+
+    all_rows: list[dict[str, Any]] = []
     for method in args.methods:
         method_candidates = candidates(method, args.phase, output_root / "capacity")
         for candidate in method_candidates:
@@ -433,17 +480,12 @@ def main() -> None:
             for fold in folds:
                 fold_id = json.loads(fold.with_suffix(".json").read_text(encoding="utf-8"))["fold"]["id"]
                 output = phase_root / method / tag(candidate) / f"fold_{fold_id}"
-                command = command_for(method, candidate, fold, output, args)
-                execution_plan.append({"method": method, "candidate": candidate, "fold": str(fold), "output": str(output), "command": command})
-                if args.execute and not (args.resume and (output / "predictions.npz").is_file()):
-                    if (output / "predictions.npz").exists():
-                        raise FileExistsError(f"Refusing to overwrite a development archive: {output / 'predictions.npz'}")
-                    output.mkdir(parents=True, exist_ok=True)
-                    with (output / "run.log").open("w", encoding="utf-8") as handle:
-                        completed = subprocess.run(command, cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT)
-                    if completed.returncode:
-                        fold_rows.append({"status": "adapter_failed", "returncode": completed.returncode, "log": str(output / "run.log")})
-                        continue
+                returncode = returncodes.get(str(output), 0)
+                if returncode:
+                    fold_rows.append(
+                        {"status": "adapter_failed", "returncode": returncode, "log": str(output / "run.log")}
+                    )
+                    continue
                 fold_rows.append(score_fold(method, output, fold))
             all_rows.append(summarize_candidate(method, candidate, fold_rows))
     cross_audits: dict[str, dict[str, Any]] = {}
@@ -470,6 +512,7 @@ def main() -> None:
         "schema_version": 1,
         "purpose": "seed-0 blocked development only; formal seed-5--9 archives are immutable and excluded",
         "phase": args.phase,
+        "parallel_subprocesses": args.jobs,
         "selection_metric": "mean Gaussian NLPD on restored log1p(per-100k) scale; mean RMSE tie-breaker",
         "diagnostic_metrics": ["CRPS", "ECE", "Coverage90"],
         "convergence_gate": {
