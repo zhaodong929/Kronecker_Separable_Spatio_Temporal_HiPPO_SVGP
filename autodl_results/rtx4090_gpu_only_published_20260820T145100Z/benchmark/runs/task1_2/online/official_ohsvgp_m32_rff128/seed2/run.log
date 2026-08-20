@@ -1,0 +1,120 @@
+job=array-28
+argv=/root/autodl-tmp/stvgp_envs/routeb/bin/python scripts/run_official_ohsvgp_era5.py --protocol-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed2/protocol.npz --theta-json /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/calibration/routeb_joint_inducing_points/seed2/result.json --output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/official_ohsvgp_m32_rff128/seed2/result.json --blockwise-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/official_ohsvgp_m32_rff128/seed2/blocks.csv --predictions-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/official_ohsvgp_m32_rff128/seed2/predictions.npz --inducing-size 32 --rff-sample-size 128 --microbatch-size 200 --update-steps 1 --seed 2 --device cuda --dtype float64
+/root/autodl-tmp/stvgp_kronecker_routeb_repair_096fc03/baselines/external/harrisonzhu508_HIPPOSVGP/hipposvgp/multidim.py:48: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  torch.tensor(mv_old, dtype=dtype, device=device).detach()
+/root/autodl-tmp/stvgp_kronecker_routeb_repair_096fc03/baselines/external/harrisonzhu508_HIPPOSVGP/hipposvgp/multidim.py:53: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  torch.tensor(Lv_old, dtype=dtype, device=device).detach()
+/root/autodl-tmp/stvgp_kronecker_routeb_repair_096fc03/baselines/external/harrisonzhu508_HIPPOSVGP/hipposvgp/multidim.py:58: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  torch.tensor(Kaa_old, dtype=dtype, device=device).detach()
+/root/autodl-tmp/stvgp_kronecker_routeb_repair_096fc03/baselines/external/harrisonzhu508_HIPPOSVGP/hipposvgp/multidim.py:63: UserWarning: To copy construct from a tensor, it is recommended to use sourceTensor.clone().detach() or sourceTensor.clone().detach().requires_grad_(True), rather than torch.tensor(sourceTensor).
+  torch.tensor(Z_old, dtype=dtype, device=device).detach()
+{"block_id": 0, "block_start": 0, "block_stop": 10, "hours": 10, "update_seconds": 1.3481329455971718, "prediction_seconds": 0.023200441151857376, "rmse": 0.47267679712412936, "nll": 0.7869733205710406, "coverage90": 0.9945, "mean_predictive_std": 0.6958330294132639}
+{"block_id": 1, "block_start": 10, "block_stop": 20, "hours": 10, "update_seconds": 0.4255554676055908, "prediction_seconds": 0.023315493017435074, "rmse": 0.35880217596918945, "nll": 0.6707704726478199, "coverage90": 0.996, "mean_predictive_std": 0.678025154360712}
+{"block_id": 2, "block_start": 20, "block_stop": 30, "hours": 10, "update_seconds": 0.4253989960998297, "prediction_seconds": 0.022781608626246452, "rmse": 0.36972924140826746, "nll": 0.6682977295999971, "coverage90": 0.988, "mean_predictive_std": 0.6633350008130063}
+{"block_id": 3, "block_start": 30, "block_stop": 40, "hours": 10, "update_seconds": 0.42533943243324757, "prediction_seconds": 0.022897379472851753, "rmse": 0.36224759697904707, "nll": 0.6399256517803873, "coverage90": 0.992, "mean_predictive_std": 0.6487538910965907}
+{"block_id": 4, "block_start": 40, "block_stop": 50, "hours": 10, "update_seconds": 0.4238068275153637, "prediction_seconds": 0.022846413776278496, "rmse": 0.4967410959469754, "nll": 0.8092725068319736, "coverage90": 0.9495, "mean_predictive_std": 0.6405793359441492}
+{"block_id": 5, "block_start": 50, "block_stop": 60, "hours": 10, "update_seconds": 0.42413407005369663, "prediction_seconds": 0.022806942462921143, "rmse": 0.5769391996948712, "nll": 0.841093865616984, "coverage90": 0.9335, "mean_predictive_std": 0.6319328108557516}
+{"block_id": 6, "block_start": 60, "block_stop": 70, "hours": 10, "update_seconds": 0.4268975518643856, "prediction_seconds": 0.02287757582962513, "rmse": 0.5164116294188871, "nll": 0.7575582286467047, "coverage90": 0.987, "mean_predictive_std": 0.6255845265844189}
+{"block_id": 7, "block_start": 70, "block_stop": 80, "hours": 10, "update_seconds": 0.423339257016778, "prediction_seconds": 0.022786259651184082, "rmse": 0.5183770961211034, "nll": 0.7953185755889961, "coverage90": 0.9305, "mean_predictive_std": 0.6237756170103873}
+{"block_id": 8, "block_start": 80, "block_stop": 90, "hours": 10, "update_seconds": 0.42481072060763836, "prediction_seconds": 0.02288917265832424, "rmse": 0.4314387599196684, "nll": 0.6988808017473666, "coverage90": 0.9615, "mean_predictive_std": 0.6194665596865816}
+{"block_id": 9, "block_start": 90, "block_stop": 100, "hours": 10, "update_seconds": 0.42585123516619205, "prediction_seconds": 0.023001253604888916, "rmse": 0.5024460489300392, "nll": 0.794029827579948, "coverage90": 0.9545, "mean_predictive_std": 0.6143843307974353}
+{"block_id": 10, "block_start": 100, "block_stop": 110, "hours": 10, "update_seconds": 0.43581113778054714, "prediction_seconds": 0.022768402472138405, "rmse": 0.6085739416370572, "nll": 0.9166745417967076, "coverage90": 0.899, "mean_predictive_std": 0.6118481686688311}
+{"block_id": 11, "block_start": 110, "block_stop": 120, "hours": 10, "update_seconds": 0.41401089169085026, "prediction_seconds": 0.022815100848674774, "rmse": 0.9465915113334868, "nll": 1.6616814061127794, "coverage90": 0.66, "mean_predictive_std": 0.6150564758714959}
+{"block_id": 12, "block_start": 120, "block_stop": 130, "hours": 10, "update_seconds": 0.3893440291285515, "prediction_seconds": 0.02268388867378235, "rmse": 0.919430728826139, "nll": 1.5295314760274696, "coverage90": 0.681, "mean_predictive_std": 0.60947520823471}
+{"block_id": 13, "block_start": 130, "block_stop": 140, "hours": 10, "update_seconds": 0.40795331820845604, "prediction_seconds": 0.022716904059052467, "rmse": 0.5171501194199473, "nll": 0.7776296613045087, "coverage90": 0.945, "mean_predictive_std": 0.6061806078939903}
+{"block_id": 14, "block_start": 140, "block_stop": 150, "hours": 10, "update_seconds": 0.4176643993705511, "prediction_seconds": 0.022848840802907944, "rmse": 0.4837250589199898, "nll": 0.7315105956829356, "coverage90": 0.951, "mean_predictive_std": 0.6082573541181782}
+{"block_id": 15, "block_start": 150, "block_stop": 160, "hours": 10, "update_seconds": 0.4334644302725792, "prediction_seconds": 0.022992350161075592, "rmse": 0.7654060509574342, "nll": 1.2005459069502973, "coverage90": 0.8335, "mean_predictive_std": 0.6099896405554375}
+{"block_id": 16, "block_start": 160, "block_stop": 170, "hours": 10, "update_seconds": 0.4232870563864708, "prediction_seconds": 0.022744230926036835, "rmse": 0.8663685666684954, "nll": 1.41549399915102, "coverage90": 0.6905, "mean_predictive_std": 0.6053858903685417}
+{"block_id": 17, "block_start": 170, "block_stop": 180, "hours": 10, "update_seconds": 0.3637516647577286, "prediction_seconds": 0.022750861942768097, "rmse": 0.7192033696790051, "nll": 1.0789323650294322, "coverage90": 0.832, "mean_predictive_std": 0.6077710125576239}
+{"block_id": 18, "block_start": 180, "block_stop": 186, "hours": 6, "update_seconds": 0.24377767741680145, "prediction_seconds": 0.013626951724290848, "rmse": 0.6362312842960153, "nll": 0.9342520625190637, "coverage90": 0.8916666666666667, "mean_predictive_std": 0.5723078424267475}
+{
+  "implementation": "official HIPPOOSVGP multidimensional class with thin ERA5 wrapper",
+  "source_repository": "https://github.com/harrisonzhu508/HIPPOSVGP",
+  "source_commit": "a1bff1b",
+  "protocol": "strict online; new-block-only labels; no history replay",
+  "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
+  "kernel": "official squared-exponential RFF kernel",
+  "hyperparameters": "Route-B Task-1 empirical-Bayes theta mapped to SE and frozen",
+  "optimizer": "Adam on official variational mv/Lv only",
+  "microbatch_policy": "time-sorted observations; every label used once per update step",
+  "split_seed": 2,
+  "num_stream_times": 186,
+  "num_blocks": 19,
+  "num_train_space": 800,
+  "num_test_space": 200,
+  "inducing_size": 32,
+  "rff_sample_size": 128,
+  "hippo_max_length": 14881,
+  "overall_current_block": {
+    "rmse": 0.6083397330654973,
+    "nll": 0.9319716220525703,
+    "coverage90": 0.8986021505376344,
+    "mean_predictive_std": 0.6268289957143631
+  },
+  "final_block": {
+    "rmse": 0.6362312842960153,
+    "nll": 0.9342520625190637,
+    "coverage90": 0.8916666666666667,
+    "mean_predictive_std": 0.5723078424267475
+  },
+  "timing": {
+    "stream_update_seconds": 8.70233110897243,
+    "stream_prediction_seconds": 0.42535007186234,
+    "mean_block_update_seconds": 0.45801742678802265,
+    "mean_block_prediction_seconds": 0.02238684588749158,
+    "first_block_update_seconds": 1.3481329455971718,
+    "mean_steady_state_block_update_seconds": 0.4085665646319588,
+    "process_total_seconds": 11.226281139999628
+  },
+  "resources": {
+    "device": "cuda",
+    "dtype": "float64",
+    "peak_rss_mib": 1139.45703125,
+    "torch": "2.5.1+cu121",
+    "torch_cuda_build": "12.1",
+    "cuda_available": true,
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "gpu_compute_capability": [
+      8,
+      9
+    ],
+    "gpu_total_memory_mib": 48508.0625,
+    "peak_cuda_allocated_mib": 144.654296875,
+    "peak_cuda_reserved_mib": 162.0,
+    "persistent_state_bytes": 85248,
+    "persistent_state_mib": 0.081298828125,
+    "history_replay_buffer_bytes": 0,
+    "estimated_streaming_flops": 5793280000.000026,
+    "flops_scope": "dense Kff Cholesky and Kff/Kfu products; analytic lower-order estimate"
+  },
+  "environment": {
+    "hostname": "autodl-container-qkb5g0ybu5-f51eca91",
+    "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+    "python": "3.11.15",
+    "processor": "x86_64",
+    "pid": 294626,
+    "git": {
+      "commit": "81800a1462d35357a43151857230c6fe5bfcb852",
+      "branch": "",
+      "dirty": true
+    }
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed2/protocol.npz",
+    "theta_json": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/calibration/routeb_joint_inducing_points/seed2/result.json",
+    "output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/official_ohsvgp_m32_rff128/seed2/result.json",
+    "blockwise_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/official_ohsvgp_m32_rff128/seed2/blocks.csv",
+    "predictions_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/official_ohsvgp_m32_rff128/seed2/predictions.npz",
+    "inducing_size": 32,
+    "rff_sample_size": 128,
+    "microbatch_size": 200,
+    "subsampling_lag": 10,
+    "update_steps": 1,
+    "learning_rate": 0.001,
+    "prediction_chunk_size": 200,
+    "max_blocks": 0,
+    "seed": 2,
+    "device": "cuda",
+    "dtype": "float64"
+  }
+}

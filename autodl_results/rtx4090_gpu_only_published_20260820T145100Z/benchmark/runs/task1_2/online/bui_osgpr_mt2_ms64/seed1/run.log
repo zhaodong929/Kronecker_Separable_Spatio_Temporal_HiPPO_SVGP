@@ -1,0 +1,142 @@
+job=array-14
+argv=/root/autodl-tmp/stvgp_envs/gpflow/bin/python scripts/run_official_bui_osgpr_era5.py --protocol-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed1/protocol.npz --theta-json /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/calibration/routeb_joint_inducing_points/seed1/result.json --output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/bui_osgpr_mt2_ms64/seed1/result.json --blockwise-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/bui_osgpr_mt2_ms64/seed1/blocks.csv --predictions-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/bui_osgpr_mt2_ms64/seed1/predictions.npz --mt 2 --ms 64 --seed 1 --device cuda --dtype float64
+2026-08-20 22:14:03.260218: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2026-08-20 22:14:03.260254: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2026-08-20 22:14:03.261464: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+/root/autodl-tmp/stvgp_envs/gpflow/lib/python3.10/site-packages/gpflow/versions.py:1: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+{"block_id": 0, "block_start": 0, "block_stop": 10, "hours": 10, "update_seconds": 1.9459227751940489, "prediction_seconds": 0.06734240800142288, "rmse": 0.49168981629355707, "nll": 0.8301849783810726, "coverage90": 0.991, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 1, "block_start": 10, "block_stop": 20, "hours": 10, "update_seconds": 0.17444312758743763, "prediction_seconds": 0.1028344351798296, "rmse": 0.3572857321508666, "nll": 0.7227794601122564, "coverage90": 0.9975, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 2, "block_start": 20, "block_stop": 30, "hours": 10, "update_seconds": 0.14386949129402637, "prediction_seconds": 0.08875356428325176, "rmse": 0.3779358590368941, "nll": 0.7370703714238327, "coverage90": 0.998, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 3, "block_start": 30, "block_stop": 40, "hours": 10, "update_seconds": 0.14226805418729782, "prediction_seconds": 0.09278284013271332, "rmse": 0.35503420038743694, "nll": 0.7212698245344676, "coverage90": 0.996, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 4, "block_start": 40, "block_stop": 50, "hours": 10, "update_seconds": 0.15151694603264332, "prediction_seconds": 0.09373339638113976, "rmse": 0.5186367957119228, "nll": 0.8558115689398227, "coverage90": 0.981, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 5, "block_start": 50, "block_stop": 60, "hours": 10, "update_seconds": 0.1476876512169838, "prediction_seconds": 0.08945293352007866, "rmse": 0.5764684479162719, "nll": 0.9154244903364738, "coverage90": 0.954, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 6, "block_start": 60, "block_stop": 70, "hours": 10, "update_seconds": 0.16049909591674805, "prediction_seconds": 0.08954628556966782, "rmse": 0.49516851340709717, "nll": 0.8334163758096388, "coverage90": 0.9925, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 7, "block_start": 70, "block_stop": 80, "hours": 10, "update_seconds": 0.15446578711271286, "prediction_seconds": 0.09065596014261246, "rmse": 0.5328540869096448, "nll": 0.8698830988142018, "coverage90": 0.959, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 8, "block_start": 80, "block_stop": 90, "hours": 10, "update_seconds": 0.1450317483395338, "prediction_seconds": 0.0962943285703659, "rmse": 0.4524558954083198, "nll": 0.7953175687529042, "coverage90": 0.992, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 9, "block_start": 90, "block_stop": 100, "hours": 10, "update_seconds": 0.141741793602705, "prediction_seconds": 0.09850522689521313, "rmse": 0.5873674803570056, "nll": 0.9273643343282868, "coverage90": 0.9825, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 10, "block_start": 100, "block_stop": 110, "hours": 10, "update_seconds": 0.14155406318604946, "prediction_seconds": 0.09341805055737495, "rmse": 0.7029801719052335, "nll": 1.0677850541567522, "coverage90": 0.9305, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 11, "block_start": 110, "block_stop": 120, "hours": 10, "update_seconds": 0.14498466812074184, "prediction_seconds": 0.0898373294621706, "rmse": 1.0733125383896673, "nll": 1.6869767894267298, "coverage90": 0.6945, "mean_predictive_std": 0.7288288050476653}
+{"block_id": 12, "block_start": 120, "block_stop": 130, "hours": 10, "update_seconds": 0.14435620419681072, "prediction_seconds": 0.08853993937373161, "rmse": 1.0807947671379332, "nll": 1.7021478961003214, "coverage90": 0.6895, "mean_predictive_std": 0.7288288050476652}
+{"block_id": 13, "block_start": 130, "block_stop": 140, "hours": 10, "update_seconds": 0.14273113943636417, "prediction_seconds": 0.08846336416900158, "rmse": 0.6528938942325573, "nll": 1.0038620675408856, "coverage90": 0.9435, "mean_predictive_std": 0.728828805047661}
+{"block_id": 14, "block_start": 140, "block_stop": 150, "hours": 10, "update_seconds": 0.14429829642176628, "prediction_seconds": 0.08862562105059624, "rmse": 0.5631245879675526, "nll": 0.901110846426835, "coverage90": 0.9615, "mean_predictive_std": 0.7288288050454319}
+{"block_id": 15, "block_start": 150, "block_stop": 160, "hours": 10, "update_seconds": 0.14402605406939983, "prediction_seconds": 0.08936376124620438, "rmse": 0.8143521872855602, "nll": 1.2268504611463504, "coverage90": 0.877, "mean_predictive_std": 0.7288287532256104}
+{"block_id": 16, "block_start": 160, "block_stop": 170, "hours": 10, "update_seconds": 0.1475642416626215, "prediction_seconds": 0.08923270180821419, "rmse": 0.6586913214449703, "nll": 1.0109696284537588, "coverage90": 0.9575, "mean_predictive_std": 0.728729372954211}
+{"block_id": 17, "block_start": 170, "block_stop": 180, "hours": 10, "update_seconds": 0.1427859254181385, "prediction_seconds": 0.08837202750146389, "rmse": 0.5448278835594829, "nll": 0.8694100791606868, "coverage90": 0.974, "mean_predictive_std": 0.7111507391357806}
+{"block_id": 18, "block_start": 180, "block_stop": 186, "hours": 6, "update_seconds": 0.1423699762672186, "prediction_seconds": 0.08894488215446472, "rmse": 0.2756892215989877, "nll": 1.1203096435450663, "coverage90": 0.8766666666666667, "mean_predictive_std": 0.407444243212981}
+{
+  "implementation": "official Bui OSGPR_VFE (thin ERA5 wrapper)",
+  "source_repository": "https://github.com/thangbui/streaming_sparse_gp",
+  "source_commit": "d95081b",
+  "protocol": "strict online; Task-1 hyperparameter calibration only; Task-2(+) starts from the GP prior; no history replay",
+  "initial_posterior": "GP prior at the first streaming block",
+  "delayed_observations": false,
+  "delayed_observation_rows": 0,
+  "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
+  "split_seed": 1,
+  "num_stream_times": 186,
+  "num_blocks": 19,
+  "calibration_time_range": [
+    -1.0054054054054054,
+    -0.00540540540540535
+  ],
+  "stream_time_range": [
+    0.0,
+    1.0
+  ],
+  "num_train_space": 800,
+  "num_test_space": 200,
+  "joint_inducing": 128,
+  "temporal_grid_count": 2,
+  "spatial_grid_count": 64,
+  "inducing_locations": "fixed global Cartesian product; never optimized",
+  "adaptive": false,
+  "adaptive_optimization": null,
+  "hyperparameters": "Route-B Task-1 empirical-Bayes theta, frozen for controlled posterior-transfer comparison",
+  "learned_theta": {
+    "ell_t": 0.029126166487083275,
+    "ell_s": [
+      0.6582307034364397,
+      0.8308544843817955
+    ],
+    "kernel_variance": 0.5285507081834898,
+    "noise_std": 0.05138792546618016
+  },
+  "final": {
+    "rmse": 0.627145816604073,
+    "nll": 0.986549498923243,
+    "coverage90": 0.9353494623655914,
+    "mean_predictive_std": 0.7175057788686092
+  },
+  "timing": {
+    "task1_calibration_seconds": 0.0,
+    "stream_update_seconds": 4.602117039263248,
+    "stream_prediction_seconds": 1.7146990559995174,
+    "mean_block_update_seconds": 0.24221668627701307,
+    "mean_block_prediction_seconds": 0.09024731873681671,
+    "first_block_update_seconds": 1.9459227751940489,
+    "mean_steady_state_block_update_seconds": 0.1475663480038444,
+    "process_total_seconds": 6.723474912345409
+  },
+  "resources": {
+    "peak_rss_mib": 889.5,
+    "peak_cuda_allocated_mib": 58.843994140625,
+    "current_cuda_allocated_mib": 0.44482421875,
+    "persistent_state_bytes": 266240,
+    "persistent_state_mib": 0.25390625,
+    "history_replay_buffer_bytes": 0,
+    "estimated_streaming_flops": 9961472000.0,
+    "flops_scope": "dominant O(B M^2) covariance accumulation; analytic estimate",
+    "device": "cuda:0",
+    "dtype": "float64",
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ]
+  },
+  "environment": {
+    "hostname": "autodl-container-qkb5g0ybu5-f51eca91",
+    "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+    "python": "3.10.20",
+    "processor": "x86_64",
+    "pid": 292732,
+    "git": {
+      "commit": "81800a1462d35357a43151857230c6fe5bfcb852",
+      "branch": "",
+      "dirty": true
+    }
+  },
+  "versions": {
+    "python": "3.10.20",
+    "tensorflow": "2.15.1",
+    "gpflow": "2.9.2",
+    "numpy": "1.26.4"
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed1/protocol.npz",
+    "theta_json": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/calibration/routeb_joint_inducing_points/seed1/result.json",
+    "output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/bui_osgpr_mt2_ms64/seed1/result.json",
+    "blockwise_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/bui_osgpr_mt2_ms64/seed1/blocks.csv",
+    "predictions_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/bui_osgpr_mt2_ms64/seed1/predictions.npz",
+    "mt": 2,
+    "ms": 64,
+    "prediction_chunk_size": 4096,
+    "max_calibration_blocks": 0,
+    "max_stream_blocks": 0,
+    "task1_posterior_warm_start": false,
+    "delayed_observations": false,
+    "adaptive": false,
+    "adaptive_calibration_steps": 25,
+    "adaptive_online_steps": 5,
+    "adaptive_learning_rate": 0.01,
+    "initial_ell_t": 0.05,
+    "initial_ell_s": [
+      0.35,
+      0.35
+    ],
+    "initial_kernel_variance": 1.0,
+    "initial_noise": 0.1,
+    "seed": 1,
+    "device": "cuda",
+    "dtype": "float64"
+  }
+}

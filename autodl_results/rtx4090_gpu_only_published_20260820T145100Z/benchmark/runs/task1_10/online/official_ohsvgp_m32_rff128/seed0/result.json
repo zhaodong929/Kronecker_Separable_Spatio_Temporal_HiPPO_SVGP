@@ -1,0 +1,91 @@
+{
+  "implementation": "official HIPPOOSVGP multidimensional class with thin ERA5 wrapper",
+  "source_repository": "https://github.com/harrisonzhu508/HIPPOSVGP",
+  "source_commit": "a1bff1b",
+  "protocol": "strict online; new-block-only labels; no history replay",
+  "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
+  "kernel": "official squared-exponential RFF kernel",
+  "hyperparameters": "Route-B Task-1 empirical-Bayes theta mapped to SE and frozen",
+  "optimizer": "Adam on official variational mv/Lv only",
+  "microbatch_policy": "time-sorted observations; every label used once per update step",
+  "split_seed": 0,
+  "num_stream_times": 1674,
+  "num_blocks": 171,
+  "num_train_space": 800,
+  "num_test_space": 200,
+  "inducing_size": 32,
+  "rff_sample_size": 128,
+  "hippo_max_length": 133921,
+  "overall_current_block": {
+    "rmse": 0.7535687012144919,
+    "nll": 1.1826302271838858,
+    "coverage90": 0.8199581839904421,
+    "mean_predictive_std": 0.6048070933006767
+  },
+  "final_block": {
+    "rmse": 0.653164435355495,
+    "nll": 1.0199541984905387,
+    "coverage90": 0.8791666666666667,
+    "mean_predictive_std": 0.5985343984607723
+  },
+  "timing": {
+    "stream_update_seconds": 64.55923339165747,
+    "stream_prediction_seconds": 3.704550091177225,
+    "mean_block_update_seconds": 0.3775393765594004,
+    "mean_block_prediction_seconds": 0.021664035620919446,
+    "first_block_update_seconds": 1.2601813543587923,
+    "mean_steady_state_block_update_seconds": 0.37234736492528636,
+    "process_total_seconds": 84.04546663723886
+  },
+  "resources": {
+    "device": "cuda",
+    "dtype": "float64",
+    "peak_rss_mib": 2730.95703125,
+    "torch": "2.5.1+cu121",
+    "torch_cuda_build": "12.1",
+    "cuda_available": true,
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "gpu_compute_capability": [
+      8,
+      9
+    ],
+    "gpu_total_memory_mib": 48508.0625,
+    "peak_cuda_allocated_mib": 1132.3955078125,
+    "peak_cuda_reserved_mib": 1140.0,
+    "persistent_state_bytes": 85248,
+    "persistent_state_mib": 0.081298828125,
+    "history_replay_buffer_bytes": 0,
+    "estimated_streaming_flops": 52139519999.99644,
+    "flops_scope": "dense Kff Cholesky and Kff/Kfu products; analytic lower-order estimate"
+  },
+  "environment": {
+    "hostname": "autodl-container-qkb5g0ybu5-f51eca91",
+    "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+    "python": "3.11.15",
+    "processor": "x86_64",
+    "pid": 297899,
+    "git": {
+      "commit": "81800a1462d35357a43151857230c6fe5bfcb852",
+      "branch": "",
+      "dirty": true
+    }
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_10/seed0/protocol.npz",
+    "theta_json": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/calibration/routeb_joint_inducing_points/seed0/result.json",
+    "output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_10/online/official_ohsvgp_m32_rff128/seed0/result.json",
+    "blockwise_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_10/online/official_ohsvgp_m32_rff128/seed0/blocks.csv",
+    "predictions_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_10/online/official_ohsvgp_m32_rff128/seed0/predictions.npz",
+    "inducing_size": 32,
+    "rff_sample_size": 128,
+    "microbatch_size": 200,
+    "subsampling_lag": 10,
+    "update_steps": 1,
+    "learning_rate": 0.001,
+    "prediction_chunk_size": 200,
+    "max_blocks": 0,
+    "seed": 0,
+    "device": "cuda",
+    "dtype": "float64"
+  }
+}

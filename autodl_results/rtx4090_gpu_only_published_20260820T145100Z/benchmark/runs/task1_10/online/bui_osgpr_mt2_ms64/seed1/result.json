@@ -1,0 +1,116 @@
+{
+  "implementation": "official Bui OSGPR_VFE (thin ERA5 wrapper)",
+  "source_repository": "https://github.com/thangbui/streaming_sparse_gp",
+  "source_commit": "d95081b",
+  "protocol": "strict online; Task-1 hyperparameter calibration only; Task-2(+) starts from the GP prior; no history replay",
+  "initial_posterior": "GP prior at the first streaming block",
+  "delayed_observations": false,
+  "delayed_observation_rows": 0,
+  "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
+  "split_seed": 1,
+  "num_stream_times": 1674,
+  "num_blocks": 171,
+  "calibration_time_range": [
+    -1.0054054054054054,
+    -0.00540540540540535
+  ],
+  "stream_time_range": [
+    0.0,
+    9.043243243243243
+  ],
+  "num_train_space": 800,
+  "num_test_space": 200,
+  "joint_inducing": 128,
+  "temporal_grid_count": 2,
+  "spatial_grid_count": 64,
+  "inducing_locations": "fixed global Cartesian product; never optimized",
+  "adaptive": false,
+  "adaptive_optimization": null,
+  "hyperparameters": "Route-B Task-1 empirical-Bayes theta, frozen for controlled posterior-transfer comparison",
+  "learned_theta": {
+    "ell_t": 0.029126166487083275,
+    "ell_s": [
+      0.6582307034364397,
+      0.8308544843817955
+    ],
+    "kernel_variance": 0.5285507081834898,
+    "noise_std": 0.05138792546618016
+  },
+  "final": {
+    "rmse": 1.0486367276884043,
+    "nll": 1.6395298449156641,
+    "coverage90": 0.7437126642771804,
+    "mean_predictive_std": 0.7275706909081925
+  },
+  "timing": {
+    "task1_calibration_seconds": 0.0,
+    "stream_update_seconds": 26.279190722852945,
+    "stream_prediction_seconds": 15.35501915588975,
+    "mean_block_update_seconds": 0.15367947791142073,
+    "mean_block_prediction_seconds": 0.08979543366017398,
+    "first_block_update_seconds": 1.8751304559409618,
+    "mean_steady_state_block_update_seconds": 0.14355329568771755,
+    "process_total_seconds": 43.72199749387801
+  },
+  "resources": {
+    "peak_rss_mib": 948.16796875,
+    "peak_cuda_allocated_mib": 58.912109375,
+    "current_cuda_allocated_mib": 0.462890625,
+    "persistent_state_bytes": 266240,
+    "persistent_state_mib": 0.25390625,
+    "history_replay_buffer_bytes": 0,
+    "estimated_streaming_flops": 89653248000.0,
+    "flops_scope": "dominant O(B M^2) covariance accumulation; analytic estimate",
+    "device": "cuda:0",
+    "dtype": "float64",
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ]
+  },
+  "environment": {
+    "hostname": "autodl-container-qkb5g0ybu5-f51eca91",
+    "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+    "python": "3.10.20",
+    "processor": "x86_64",
+    "pid": 298172,
+    "git": {
+      "commit": "81800a1462d35357a43151857230c6fe5bfcb852",
+      "branch": "",
+      "dirty": true
+    }
+  },
+  "versions": {
+    "python": "3.10.20",
+    "tensorflow": "2.15.1",
+    "gpflow": "2.9.2",
+    "numpy": "1.26.4"
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_10/seed1/protocol.npz",
+    "theta_json": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/calibration/routeb_joint_inducing_points/seed1/result.json",
+    "output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_10/online/bui_osgpr_mt2_ms64/seed1/result.json",
+    "blockwise_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_10/online/bui_osgpr_mt2_ms64/seed1/blocks.csv",
+    "predictions_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_10/online/bui_osgpr_mt2_ms64/seed1/predictions.npz",
+    "mt": 2,
+    "ms": 64,
+    "prediction_chunk_size": 4096,
+    "max_calibration_blocks": 0,
+    "max_stream_blocks": 0,
+    "task1_posterior_warm_start": false,
+    "delayed_observations": false,
+    "adaptive": false,
+    "adaptive_calibration_steps": 25,
+    "adaptive_online_steps": 5,
+    "adaptive_learning_rate": 0.01,
+    "initial_ell_t": 0.05,
+    "initial_ell_s": [
+      0.35,
+      0.35
+    ],
+    "initial_kernel_variance": 1.0,
+    "initial_noise": 0.1,
+    "seed": 1,
+    "device": "cuda",
+    "dtype": "float64"
+  }
+}

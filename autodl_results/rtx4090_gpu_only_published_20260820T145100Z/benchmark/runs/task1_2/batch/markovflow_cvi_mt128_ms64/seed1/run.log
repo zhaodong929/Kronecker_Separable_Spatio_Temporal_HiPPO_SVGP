@@ -1,0 +1,7 @@
+job=array-62
+argv=/root/autodl-tmp/stvgp_envs/markovflow/bin/python scripts/run_official_markovflow_stsvgp_era5.py --protocol-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed1/protocol.npz --output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_cvi_mt128_ms64/seed1/result.json --predictions-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_cvi_mt128_ms64/seed1/predictions.npz --model-kind sparse_cvi --target-mode shared_xlag_residual --mt 128 --ms 64 --iterations 100 --seed 1
+2026-08-20 20:37:53.649141: E tensorflow/stream_executor/cuda/cuda_driver.cc:328] failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+WARNING:tensorflow:From /root/autodl-tmp/stvgp_envs/markovflow/lib/python3.7/site-packages/tensorflow/python/ops/linalg/linear_operator_block_diag.py:223: LinearOperator.graph_parents (from tensorflow.python.ops.linalg.linear_operator) is deprecated and will be removed in a future version.
+Instructions for updating:
+Do not call `graph_parents`.
+{"iteration": 1, "training_loss": 7139296.017168036, "iteration_seconds": 146.76729643531144, "validation_nll": 0.9489013729845002, "validation_rmse": 0.3636754447696352, "validation_prediction_seconds": 88.54782340303063}

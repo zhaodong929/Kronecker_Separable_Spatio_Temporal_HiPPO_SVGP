@@ -1,0 +1,54 @@
+job=array-29
+argv=/root/autodl-tmp/stvgp_envs/stvgp_legacy/bin/python scripts/run_official_stvgp_legacy.py --model st_vgp --data-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_2/seed3/data.npz --iterations 300 --seed 3 --use-xlag-mean --jit --parallel --trajectory-every 10 --predictions-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_st_vgp_full/seed3/predictions.npz --trajectory-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_st_vgp_full/seed3/trajectory.json --output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_st_vgp_full/seed3/result.json
+2026-08-20 03:25:57.530012: E external/org_tensorflow/tensorflow/compiler/xla/service/gpu/ir_emission_utils.cc:812] TIM: 
+2026-08-20 03:26:49.689291: W external/org_tensorflow/tensorflow/core/common_runtime/bfc_allocator.cc:457] Allocator (GPU_0_bfc) ran out of memory trying to allocate 269.15GiB (rounded to 289001839616)requested by op 
+2026-08-20 03:26:49.690010: W external/org_tensorflow/tensorflow/core/common_runtime/bfc_allocator.cc:465] ********************________________________________________________________________________________
+2026-08-20 03:26:49.690066: E external/org_tensorflow/tensorflow/compiler/xla/pjrt/pjrt_stream_executor_client.cc:1886] Execution of replica 0 failed: Resource exhausted: Out of memory while trying to allocate 289001839456 bytes.
+/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/bayesnewton/kernels.py:421: UserWarning: You chose a non-deterministic conditional, but 'DTC' will be used because the model is not sparse
+  warn("You chose a non-deterministic conditional, but \'DTC\' will be used because the model is not sparse")
+Traceback (most recent call last):
+  File "scripts/run_official_stvgp_legacy.py", line 852, in <module>
+    main()
+  File "scripts/run_official_stvgp_legacy.py", line 680, in main
+    profile_enabled=not splits["has_validation"],
+  File "scripts/run_official_stvgp_legacy.py", line 472, in _train_phase
+    loss = built["train_op"](built["phase"]["y_train_grid"])
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/objax/module.py", line 239, in __call__
+    output, changes = self._call(self.vc.tensors(), kwargs, *args)
+jax._src.traceback_util.FilteredStackTrace: RuntimeError: Resource exhausted: Out of memory while trying to allocate 289001839456 bytes.: while running replica 0 and partition 0 of a replicated computation (other replicas may have failed as well).
+
+The stack trace above excludes JAX-internal frames.
+The following is the original exception that occurred, unmodified.
+
+--------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "scripts/run_official_stvgp_legacy.py", line 852, in <module>
+    main()
+  File "scripts/run_official_stvgp_legacy.py", line 680, in main
+    profile_enabled=not splits["has_validation"],
+  File "scripts/run_official_stvgp_legacy.py", line 472, in _train_phase
+    loss = built["train_op"](built["phase"]["y_train_grid"])
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/objax/module.py", line 239, in __call__
+    output, changes = self._call(self.vc.tensors(), kwargs, *args)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/_src/traceback_util.py", line 139, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/api.py", line 398, in f_jitted
+    return cpp_jitted_f(context, *args, **kwargs)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/api.py", line 295, in cache_miss
+    donated_invars=donated_invars)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/core.py", line 1275, in bind
+    return call_bind(self, fun, *args, **params)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/core.py", line 1266, in call_bind
+    outs = primitive.process(top_trace, fun, tracers, params)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/core.py", line 1278, in process
+    return trace.process_call(self, fun, tracers, params)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/core.py", line 631, in process_call
+    return primitive.impl(f, *tracers, **params)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/interpreters/xla.py", line 583, in _xla_call_impl
+    return compiled_fun(*args)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/interpreters/xla.py", line 841, in _execute_compiled
+    out_bufs = compiled.execute(input_bufs)
+RuntimeError: Resource exhausted: Out of memory while trying to allocate 289001839456 bytes.: while running replica 0 and partition 0 of a replicated computation (other replicas may have failed as well).

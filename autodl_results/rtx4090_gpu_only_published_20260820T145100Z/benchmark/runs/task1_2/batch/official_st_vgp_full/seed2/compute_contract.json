@@ -1,0 +1,41 @@
+{
+  "argv": [
+    "/root/autodl-tmp/stvgp_envs/stvgp_legacy/bin/python",
+    "scripts/run_official_stvgp_legacy.py",
+    "--model",
+    "st_vgp",
+    "--data-npz",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_2/seed2/data.npz",
+    "--iterations",
+    "300",
+    "--seed",
+    "2",
+    "--use-xlag-mean",
+    "--jit",
+    "--parallel",
+    "--trajectory-every",
+    "10",
+    "--predictions-output",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_st_vgp_full/seed2/predictions.npz",
+    "--trajectory-output",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_st_vgp_full/seed2/trajectory.json",
+    "--output",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_st_vgp_full/seed2/result.json"
+  ],
+  "contract": {
+    "baseline_family": "official_st_vgp",
+    "branch": "batch",
+    "comparison_group": "batch_full_fit_update",
+    "comparison_status": "pending_common_hardware_counter",
+    "data_access_unit": "full_fit_dataset",
+    "measurement_scope": "optimization_update",
+    "native_work_unit": "one_full_fit_optimization_update",
+    "required_measurement_backend": "nsight_compute_executed_gpu_flops",
+    "schema_version": 2,
+    "work_unit": "one_full_fit_optimization_update"
+  },
+  "job": "array-28",
+  "manifest": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/manifests/shared_batch_short.jsonl",
+  "run_status": "oom",
+  "schema_version": 1
+}

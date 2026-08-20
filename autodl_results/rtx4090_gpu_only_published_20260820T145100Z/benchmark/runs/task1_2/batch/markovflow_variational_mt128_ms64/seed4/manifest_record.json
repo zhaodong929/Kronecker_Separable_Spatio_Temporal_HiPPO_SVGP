@@ -1,0 +1,57 @@
+{
+  "argv": [
+    "/root/autodl-tmp/stvgp_envs/markovflow/bin/python",
+    "scripts/run_official_markovflow_stsvgp_era5.py",
+    "--protocol-npz",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed4/protocol.npz",
+    "--output",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_variational_mt128_ms64/seed4/result.json",
+    "--predictions-output",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_variational_mt128_ms64/seed4/predictions.npz",
+    "--model-kind",
+    "sparse_variational",
+    "--target-mode",
+    "shared_xlag_residual",
+    "--mt",
+    "128",
+    "--ms",
+    "64",
+    "--iterations",
+    "100",
+    "--seed",
+    "4"
+  ],
+  "branch": "batch",
+  "compute_contract": {
+    "baseline_family": "markovflow",
+    "branch": "batch",
+    "comparison_group": "stochastic_full_data_pass",
+    "comparison_status": "pending_common_hardware_counter",
+    "data_access_unit": "stochastic_minibatch",
+    "measurement_scope": "optimization_update",
+    "native_work_unit": "one_minibatch_optimization_update",
+    "required_measurement_backend": "nsight_compute_executed_gpu_flops",
+    "schema_version": 2,
+    "work_unit": "one_full_data_pass"
+  },
+  "dependencies": [
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed4/protocol.npz"
+  ],
+  "device_class": "a100_markovflow",
+  "expected": [
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_variational_mt128_ms64/seed4/result.json",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_variational_mt128_ms64/seed4/predictions.npz"
+  ],
+  "job_id": "stage2/task1_2/markovflow_variational_mt128_ms64/seed4",
+  "kind": "batch",
+  "legacy": true,
+  "manifest_id": "era5_a100_shared_online_v2",
+  "method": "markovflow_variational_mt128_ms64",
+  "output_dir": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_variational_mt128_ms64/seed4",
+  "python": "/root/autodl-tmp/stvgp_envs/markovflow/bin/python",
+  "schema_version": 1,
+  "scope": "task1_2",
+  "seed": 4,
+  "stage": "stage2",
+  "timeout_seconds": 43200
+}

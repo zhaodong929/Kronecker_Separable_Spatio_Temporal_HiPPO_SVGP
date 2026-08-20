@@ -1,0 +1,211 @@
+{
+  "implementation": "Aalto GPflow SVGP training path (thin ERA5 wrapper)",
+  "source_repository": "https://github.com/AaltoML/spatio-temporal-GPs",
+  "source_commit": "c5b929e",
+  "target_mode": "shared_xlag_residual",
+  "split_seed": 0,
+  "num_time": 186,
+  "num_train_space": 800,
+  "num_validation_space": 80,
+  "num_test_space": 200,
+  "temporal_inducing": 16,
+  "spatial_inducing": 128,
+  "joint_inducing": 2048,
+  "inducing_initialization": "Cartesian product of global linspace time and protocol k-means spatial points",
+  "inducing_trainable": true,
+  "kernel": "product of three one-dimensional Matern-3/2 kernels",
+  "optimizer": "GPflow NaturalGradient(q) plus Adam(kernel, noise, inducing locations)",
+  "selection": {
+    "trace": [
+      {
+        "iteration": 1,
+        "training_loss": 4161706.040374655,
+        "iteration_seconds": 9.354551823809743,
+        "validation_nll": 2.201896912808452,
+        "validation_rmse": 0.8816042367429466,
+        "validation_prediction_seconds": 0.3506513722240925
+      },
+      {
+        "iteration": 2,
+        "training_loss": 817242.1435558967,
+        "iteration_seconds": 0.35614546202123165
+      },
+      {
+        "iteration": 3,
+        "training_loss": 706711.5449899214,
+        "iteration_seconds": 0.3537827394902706
+      },
+      {
+        "iteration": 4,
+        "training_loss": 723729.7249191834,
+        "iteration_seconds": 0.3560431972146034
+      },
+      {
+        "iteration": 5,
+        "training_loss": 713300.7691548148,
+        "iteration_seconds": 0.35324214585125446
+      },
+      {
+        "iteration": 6,
+        "training_loss": 671038.3120191873,
+        "iteration_seconds": 0.3554528187960386
+      },
+      {
+        "iteration": 7,
+        "training_loss": 652756.629629623,
+        "iteration_seconds": 0.3544823322445154
+      },
+      {
+        "iteration": 8,
+        "training_loss": 593131.9440553689,
+        "iteration_seconds": 0.35630031675100327
+      },
+      {
+        "iteration": 9,
+        "training_loss": 551362.4878357409,
+        "iteration_seconds": 0.35439280048012733
+      },
+      {
+        "iteration": 10,
+        "training_loss": 517494.40928736265,
+        "iteration_seconds": 0.3562273997813463,
+        "validation_nll": -0.09502797015847887,
+        "validation_rmse": 0.17065751311428648,
+        "validation_prediction_seconds": 0.31183941662311554
+      }
+    ],
+    "best_iteration": 10,
+    "best_validation_nll": -0.09502797015847887,
+    "time_to_best_validation_seconds": 13.276773879304528,
+    "training_seconds": 13.385061334818602,
+    "mean_iteration_seconds": 1.2550621036440135,
+    "median_iteration_seconds": 0.355748008005321,
+    "first_iteration_seconds": 9.354551823809743,
+    "mean_steady_state_iteration_seconds": 0.3551188014033768
+  },
+  "refit": {
+    "trace": [
+      {
+        "iteration": 1,
+        "training_loss": 6555133.46558359,
+        "iteration_seconds": 5.626318231225014
+      },
+      {
+        "iteration": 2,
+        "training_loss": 929741.6919475248,
+        "iteration_seconds": 0.35589443519711494
+      },
+      {
+        "iteration": 3,
+        "training_loss": 795572.2341064668,
+        "iteration_seconds": 0.35560485906898975
+      },
+      {
+        "iteration": 4,
+        "training_loss": 812904.0809297308,
+        "iteration_seconds": 0.3555876687169075
+      },
+      {
+        "iteration": 5,
+        "training_loss": 787297.8569453316,
+        "iteration_seconds": 0.3561586011201143
+      },
+      {
+        "iteration": 6,
+        "training_loss": 751690.9660274069,
+        "iteration_seconds": 0.35609726049005985
+      },
+      {
+        "iteration": 7,
+        "training_loss": 729956.5711540857,
+        "iteration_seconds": 0.3558011148124933
+      },
+      {
+        "iteration": 8,
+        "training_loss": 671918.2992133201,
+        "iteration_seconds": 0.35617868788540363
+      },
+      {
+        "iteration": 9,
+        "training_loss": 599611.517528581,
+        "iteration_seconds": 0.35630930960178375
+      },
+      {
+        "iteration": 10,
+        "training_loss": 591978.8276843696,
+        "iteration_seconds": 0.3544783741235733
+      }
+    ],
+    "best_iteration": 1,
+    "best_validation_nll": null,
+    "time_to_best_validation_seconds": null,
+    "training_seconds": 8.8305104970932,
+    "mean_iteration_seconds": 0.8828428542241454,
+    "median_iteration_seconds": 0.3559958478435874,
+    "first_iteration_seconds": 5.626318231225014,
+    "mean_steady_state_iteration_seconds": 0.3557900345573823
+  },
+  "final": {
+    "rmse": 0.17930706678969274,
+    "nll": -0.05606835131585547,
+    "coverage90": 0.9869623655913978,
+    "mean_predictive_std": 0.3301496605908893
+  },
+  "timing": {
+    "selection_training_seconds": 13.385061334818602,
+    "refit_training_seconds": 8.8305104970932,
+    "end_to_end_training_seconds": 22.215571831911802,
+    "prediction_seconds": 0.7504062447696924,
+    "process_total_seconds": 24.71871567890048
+  },
+  "resources": {
+    "peak_rss_mib": 1392.32421875,
+    "peak_cuda_allocated_mib": 1920.933837890625,
+    "current_cuda_allocated_mib": 32.384765625,
+    "persistent_model_state_bytes": 16851000,
+    "persistent_model_state_mib": 16.07036590576172,
+    "history_replay_buffer_bytes": 0,
+    "estimated_training_flops": 1259857073493.3335,
+    "flops_scope": "dominant dense MxM minibatch solves and natural-gradient algebra; analytic estimate",
+    "device": "cuda:0",
+    "dtype": "float64",
+    "physical_gpus": [
+      "/physical_device:GPU:0"
+    ]
+  },
+  "environment": {
+    "hostname": "autodl-container-qkb5g0ybu5-f51eca91",
+    "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+    "python": "3.10.20",
+    "processor": "x86_64",
+    "pid": 73185,
+    "git": {
+      "commit": "9127a7126bfacc70c1c56f017c9aead7b624f0cc",
+      "branch": "codex/ncu-counter-fallback",
+      "dirty": false
+    }
+  },
+  "versions": {
+    "python": "3.10.20",
+    "tensorflow": "2.15.1",
+    "gpflow": "2.9.2",
+    "numpy": "1.26.4"
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed0/protocol.npz",
+    "output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/preflight/preflight_gpflow_feasibility_2048_mt16_ms128/seed0/result.json",
+    "predictions_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/preflight/preflight_gpflow_feasibility_2048_mt16_ms128/seed0/predictions.npz",
+    "target_mode": "shared_xlag_residual",
+    "mt": 16,
+    "ms": 128,
+    "iterations": 10,
+    "batch_size": 2048,
+    "learning_rate": 0.01,
+    "natgrad_gamma": 0.1,
+    "validation_every": 10,
+    "prediction_chunk_size": 8192,
+    "seed": 0,
+    "device": "cuda",
+    "dtype": "float64"
+  }
+}

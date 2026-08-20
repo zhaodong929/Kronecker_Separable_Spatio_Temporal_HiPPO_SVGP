@@ -1,0 +1,51 @@
+{
+  "argv": [
+    "/root/autodl-tmp/stvgp_envs/routeb/bin/python",
+    "scripts/run_iclr_era5_xlag_mean_baselines.py",
+    "--protocol-npz",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed0/protocol.npz",
+    "--protocol-json",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed0/protocol.json",
+    "--output-dir",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/xlag_mean_only/seed0",
+    "--mode",
+    "batch_fixed",
+    "--seed",
+    "0"
+  ],
+  "branch": "batch",
+  "compute_contract": {
+    "baseline_family": "xlag_mean",
+    "branch": "batch",
+    "comparison_group": "not_applicable",
+    "comparison_status": "not_applicable",
+    "data_access_unit": "cpu_only_reference",
+    "measurement_scope": "not_applicable",
+    "native_work_unit": "not_applicable",
+    "required_measurement_backend": "not_applicable",
+    "schema_version": 2,
+    "work_unit": "not_applicable"
+  },
+  "dependencies": [
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed0/protocol.npz",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed0/protocol.json"
+  ],
+  "device_class": "a100_cpu",
+  "expected": [
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/xlag_mean_only/seed0/result.json",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/xlag_mean_only/seed0/blocks.csv",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/xlag_mean_only/seed0/predictions.npz"
+  ],
+  "job_id": "stage2/task1_2/xlag_mean_only/seed0",
+  "kind": "batch",
+  "legacy": false,
+  "manifest_id": "era5_a100_shared_online_v2",
+  "method": "xlag_mean_only",
+  "output_dir": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/xlag_mean_only/seed0",
+  "python": "/root/autodl-tmp/stvgp_envs/routeb/bin/python",
+  "schema_version": 1,
+  "scope": "task1_2",
+  "seed": 0,
+  "stage": "stage2",
+  "timeout_seconds": 21600
+}

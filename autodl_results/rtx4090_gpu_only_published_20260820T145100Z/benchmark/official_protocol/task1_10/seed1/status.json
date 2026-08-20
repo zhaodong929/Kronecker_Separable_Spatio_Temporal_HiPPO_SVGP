@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "job": "prepare/task1_10/export_official_stvgp_protocol/seed1",
+  "stage": "prepare",
+  "scope": "task1_10",
+  "method": "export_official_stvgp_protocol",
+  "seed": 1,
+  "status": "complete",
+  "legacy": false,
+  "device_class": "cpu_protocol",
+  "command": [
+    "/root/autodl-tmp/stvgp_envs/routeb/bin/python",
+    "scripts/export_iclr_protocol_for_official_stvgp.py",
+    "--protocol-npz",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_10/seed1/protocol.npz",
+    "--output",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_10/seed1/data.npz"
+  ],
+  "started_at": "2026-08-19T18:49:25.073504+00:00",
+  "finished_at": "2026-08-19T18:49:29.696158+00:00",
+  "wall_seconds": 4.622694339603186,
+  "timeout_seconds": 14400,
+  "returncode": 0,
+  "expected_artifacts": [
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_10/seed1/data.npz"
+  ],
+  "missing_artifacts": [],
+  "log": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_10/seed1/run.log",
+  "nvidia_smi": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_10/seed1/nvidia_smi.csv",
+  "resource_usage": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_10/seed1/resource_usage.txt",
+  "status_path": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_10/seed1/status.json"
+}

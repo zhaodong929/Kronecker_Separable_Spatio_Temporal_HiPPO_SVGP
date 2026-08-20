@@ -1,0 +1,40 @@
+job=array-57
+argv=/root/autodl-tmp/stvgp_envs/markovflow/bin/python scripts/run_official_markovflow_stsvgp_era5.py --protocol-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed1/protocol.npz --output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_variational_mt128_ms128/seed1/result.json --predictions-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_variational_mt128_ms128/seed1/predictions.npz --model-kind sparse_variational --target-mode shared_xlag_residual --mt 128 --ms 128 --iterations 100 --seed 1
+2026-08-20 12:34:20.157801: E tensorflow/stream_executor/cuda/cuda_driver.cc:328] failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+WARNING:tensorflow:From /root/autodl-tmp/stvgp_envs/markovflow/lib/python3.7/site-packages/tensorflow/python/ops/linalg/linear_operator_block_diag.py:223: LinearOperator.graph_parents (from tensorflow.python.ops.linalg.linear_operator) is deprecated and will be removed in a future version.
+Instructions for updating:
+Do not call `graph_parents`.
+Traceback (most recent call last):
+  File "scripts/run_official_markovflow_stsvgp_era5.py", line 442, in <module>
+    main()
+  File "scripts/run_official_markovflow_stsvgp_era5.py", line 336, in main
+    False,
+  File "scripts/run_official_markovflow_stsvgp_era5.py", line 204, in train
+    loss = float(np.asarray(one_step(x_batch, y_batch)))
+  File "scripts/run_official_markovflow_stsvgp_era5.py", line 189, in one_step
+    return model.loss(data)
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/models/spatio_temporal_variational.py", line 188, in loss
+    return -self.elbo(input_data)
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/models/spatio_temporal_variational.py", line 218, in elbo
+    fx_mus, fx_covs = self.space_time_predict_f(X)
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/models/spatio_temporal_variational.py", line 168, in space_time_predict_f
+    mean_u, cov_u = self.posterior.predict_f(new_time_points=t, full_output_cov=True)
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/posterior.py", line 251, in predict_f
+    *self.predict_state(new_time_points), full_output_cov=full_output_cov
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/posterior.py", line 219, in predict_state
+    initial_covariance=self.kernel.initial_covariance(new_time_points[..., :1]),
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/conditionals.py", line 452, in pairwise_marginals
+    means, covariances = dist.marginals
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/gauss_markov.py", line 116, in marginals
+    return self.marginal_means, self.marginal_covariances
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/state_space_model.py", line 262, in marginal_covariances
+    return self.precision.cholesky.block_diagonal_of_inverse()
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/block_tri_diag.py", line 436, in cholesky
+    return _banded_to_block_tri(cholesky_band(self.as_band), self.inner_dim)
+  File "/root/autodl-tmp/stvgp_envs/markovflow/lib/python3.7/site-packages/banded_matrices/banded.py", line 502, in cholesky_band
+    matrix, should_check_result, relative_tolerance, absolute_tolerance
+  File "<string>", line 403, in cholesky_band
+  File "/root/autodl-tmp/stvgp_envs/markovflow/lib/python3.7/site-packages/tensorflow/python/framework/ops.py", line 6862, in raise_from_not_ok_status
+    six.raise_from(core._status_to_exception(e.code, message), None)
+  File "<string>", line 3, in raise_from
+tensorflow.python.framework.errors_impl.InternalError: Banded Cholesky decomposition failed at matrix entry (32683, 32683). Original entry is: 0.00540379. Reconstructed entry is 0.00540446. Absolute error is : 6.68686e-07. Threshold is: 6.40379e-08. [Op:CholeskyBand]
