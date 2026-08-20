@@ -75,7 +75,9 @@ def metrics(y_true, mean, variance):
     }
 
 
-def build_model(model_kind, z_time, z_space, num_data, initial, cvi_rate):
+def build_model(
+    model_kind, z_time, z_space, num_data, initial, cvi_rate, temporal_jitter
+):
     spatial_0 = gpflow.kernels.Matern32(
         variance=float(initial["kernel_variance"]),
         lengthscales=float(initial["ell_s"][0]),
@@ -88,7 +90,9 @@ def build_model(model_kind, z_time, z_space, num_data, initial, cvi_rate):
     )
     kernel_space = spatial_0 * spatial_1
     kernel_time = MarkovflowMatern32(
-        variance=1.0, lengthscale=float(initial["ell_t"])
+        variance=1.0,
+        lengthscale=float(initial["ell_t"]),
+        jitter=float(temporal_jitter),
     )
     likelihood = gpflow.likelihoods.Gaussian(
         variance=float(initial["noise_variance"])
@@ -270,11 +274,14 @@ def main():
         "--variational-optimizer", choices=["natgrad", "adam"], default="adam"
     )
     parser.add_argument("--cvi-rate", type=float, default=0.1)
+    parser.add_argument("--temporal-jitter", type=float, default=1e-6)
     parser.add_argument("--validation-every", type=int, default=10)
     parser.add_argument("--prediction-chunk-size", type=int, default=4096)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--max-times", type=int, default=0)
     args = parser.parse_args()
+    if args.temporal_jitter < 0.0:
+        raise ValueError("--temporal-jitter must be non-negative")
 
     process_started = time.perf_counter()
     np.random.seed(args.seed)
@@ -316,7 +323,13 @@ def main():
     y_validation = flatten_targets(y_original, validation_indices)
     validation_offset = flatten_targets(offset, validation_indices)
     selection_model, selection_likelihood = build_model(
-        args.model_kind, z_time, z_space, x_fit.shape[0], initial, args.cvi_rate
+        args.model_kind,
+        z_time,
+        z_space,
+        x_fit.shape[0],
+        initial,
+        args.cvi_rate,
+        args.temporal_jitter,
     )
     selection = train(
         selection_model,
@@ -339,7 +352,13 @@ def main():
     x_train = flatten_inputs(times, coordinates, train_indices)
     y_train = flatten_targets(y_model, train_indices)
     final_model, final_likelihood = build_model(
-        args.model_kind, z_time, z_space, x_train.shape[0], initial, args.cvi_rate
+        args.model_kind,
+        z_time,
+        z_space,
+        x_train.shape[0],
+        initial,
+        args.cvi_rate,
+        args.temporal_jitter,
     )
     refit = train(
         final_model,

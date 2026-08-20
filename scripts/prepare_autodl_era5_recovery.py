@@ -115,6 +115,20 @@ def rewrite(args: argparse.Namespace) -> int:
         for row in rows:
             row["cwd"] = str(repo)
             row["recovery_worktree"] = str(repo)
+            argv = row.get("argv")
+            if (
+                isinstance(argv, list)
+                and "scripts/run_official_markovflow_stsvgp_era5.py" in argv
+                and "--temporal-jitter" not in argv
+            ):
+                row["argv"] = [
+                    *argv,
+                    "--temporal-jitter",
+                    str(args.markovflow_temporal_jitter),
+                ]
+                row["recovery_markovflow_temporal_jitter"] = float(
+                    args.markovflow_temporal_jitter
+                )
         _write_records(destination / name, rows)
     metadata = {
         "schema_version": 1,
@@ -236,6 +250,7 @@ def parse_args() -> argparse.Namespace:
     rewrite_parser.add_argument("--source", type=Path, required=True)
     rewrite_parser.add_argument("--destination", type=Path, required=True)
     rewrite_parser.add_argument("--repo", type=Path, required=True)
+    rewrite_parser.add_argument("--markovflow-temporal-jitter", type=float, default=1e-6)
     rewrite_parser.set_defaults(handler=rewrite)
 
     select_parser = subparsers.add_parser("select", help="print incomplete non-excluded records")
