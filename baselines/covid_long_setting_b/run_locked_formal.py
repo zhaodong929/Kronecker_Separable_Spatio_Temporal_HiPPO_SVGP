@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
 import os
@@ -45,6 +46,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--factorial-batch-size", type=int, default=16)
+    parser.add_argument("--gpu-jobs", type=int, default=1, help="Formal seeds to run concurrently for one GPU method.")
     return parser.parse_args()
 
 
@@ -210,6 +212,8 @@ def verify_completed_output(output: Path) -> dict[str, Any]:
 
 def main() -> None:
     args = parse_args()
+    if args.gpu_jobs < 1:
+        raise ValueError("--gpu-jobs must be positive")
     lock = read_json(absolute(args.fairness_protocol))
     validate_lock(lock)
     methods = list(lock["methods"]) if args.methods is None else list(args.methods)
@@ -231,42 +235,56 @@ def main() -> None:
             raise FileExistsError("Formal root already has a manifest; pass --resume only to continue interrupted runs")
     output_root.mkdir(parents=True, exist_ok=True)
     records: list[dict[str, Any]] = []
+
+    def run_seed(method: str, seed: int) -> dict[str, Any]:
+        protocol = protocol_root / f"seed{seed}" / "protocol.npz"
+        if not protocol.is_file() or not protocol.with_suffix(".json").is_file():
+            raise FileNotFoundError(f"Missing audited formal protocol for seed {seed}")
+        output = output_root / f"seed{seed}" / method
+        command = command_for(lock, method, protocol, output, seed, args.factorial_batch_size)
+        if (output / "predictions.npz").is_file():
+            if not args.resume:
+                raise FileExistsError(f"Refusing to overwrite formal archive: {output / 'predictions.npz'}")
+            return {"method": method, "seed": seed, "status": "reused_verified", **verify_completed_output(output)}
+        record: dict[str, Any] = {
+            "method": method,
+            "seed": seed,
+            "resource_class": lock["methods"][method]["resource_class"],
+            "command": command,
+        }
+        if not args.execute:
+            record["status"] = "planned"
+            return record
+        if output.exists():
+            raise FileExistsError(f"Refusing to reuse partial output without a valid archive: {output}")
+        output.mkdir(parents=True)
+        environment = dict(os.environ)
+        if lock["methods"][method]["execution_backend"] == "GPU":
+            environment.setdefault("TF_FORCE_GPU_ALLOW_GROWTH", "true")
+            environment.setdefault("TF_NUM_INTRAOP_THREADS", "8")
+            environment.setdefault("TF_NUM_INTEROP_THREADS", "2")
+            environment.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
+        with (output / "run.log").open("w", encoding="utf-8") as handle:
+            completed = subprocess.run(command, cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT, env=environment)
+        if completed.returncode:
+            return {**record, "status": "failed", "returncode": completed.returncode, "log": str(output / "run.log")}
+        return {**record, "status": "complete", **verify_completed_output(output)}
+
     for method in methods:
-        for seed in lock["formal_seeds"]:
-            protocol = protocol_root / f"seed{seed}" / "protocol.npz"
-            if not protocol.is_file() or not protocol.with_suffix(".json").is_file():
-                raise FileNotFoundError(f"Missing audited formal protocol for seed {seed}")
-            output = output_root / f"seed{seed}" / method
-            command = command_for(lock, method, protocol, output, seed, args.factorial_batch_size)
-            if (output / "predictions.npz").is_file():
-                if not args.resume:
-                    raise FileExistsError(f"Refusing to overwrite formal archive: {output / 'predictions.npz'}")
-                records.append({"method": method, "seed": seed, "status": "reused_verified", **verify_completed_output(output)})
-                continue
-            record: dict[str, Any] = {"method": method, "seed": seed, "resource_class": lock["methods"][method]["resource_class"], "command": command}
-            if not args.execute:
-                record["status"] = "planned"
-                records.append(record)
-                continue
-            if output.exists():
-                raise FileExistsError(f"Refusing to reuse partial output without a valid archive: {output}")
-            output.mkdir(parents=True)
-            with (output / "run.log").open("w", encoding="utf-8") as handle:
-                completed = subprocess.run(command, cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT)
-            if completed.returncode:
-                record.update({"status": "failed", "returncode": completed.returncode, "log": str(output / "run.log")})
-                records.append(record)
-                break
-            record.update({"status": "complete", **verify_completed_output(output)})
-            records.append(record)
-        if records and records[-1]["status"] == "failed":
+        gpu_method = lock["methods"][method]["execution_backend"] == "GPU"
+        workers = args.gpu_jobs if gpu_method else 1
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            method_records = list(executor.map(lambda seed: run_seed(method, seed), lock["formal_seeds"]))
+        records.extend(method_records)
+        if any(record["status"] == "failed" for record in method_records):
             break
     status = "planned" if not args.execute else ("complete" if len(records) == len(methods) * 5 and all(row["status"] in ("complete", "reused_verified") for row in records) else "incomplete_or_failed")
     manifest = {
         "status": status,
         "fairness_lock": str(absolute(args.fairness_protocol)),
         "fairness_lock_sha256": lock["lock_sha256"],
-        "serial_execution": True,
+        "execution_policy": "GPU seeds parallel within one method; CPU and high-RSS methods serial",
+        "gpu_seed_parallelism": args.gpu_jobs,
         "methods": methods,
         "records": records,
     }

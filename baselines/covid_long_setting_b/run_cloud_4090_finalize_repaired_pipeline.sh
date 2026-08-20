@@ -103,7 +103,7 @@ run "$PYTHON" baselines/covid_long_setting_b/generate_baseline_fairness_protocol
     --formal-result-root "${FORMAL_ROOT#$ROOT/}" \
     --output "${FAIRNESS_LOCK#$ROOT/}"
 run "$PYTHON" baselines/covid_long_setting_b/run_locked_formal.py \
-    --fairness-protocol "${FAIRNESS_LOCK#$ROOT/}" --execute --resume
+    --fairness-protocol "${FAIRNESS_LOCK#$ROOT/}" --execute --resume --gpu-jobs 3
 run "$PYTHON" baselines/covid_long_setting_b/evaluate_formal_gaussian.py \
     --fairness-protocol "${FAIRNESS_LOCK#$ROOT/}" --output-dir "${REPORT_ROOT#$ROOT/}"
 
