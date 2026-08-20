@@ -147,9 +147,9 @@ publish_results() {
 - Run label: ${RUN_LABEL}
 - Code commit: ${CODE_COMMIT}
 - Hardware: NVIDIA GeForce RTX 4090
-- Verified scope: shared batch, long batch, short online, and long online GPU rows.
+- Verified scope: shared batch and short/long online GPU rows.
 - Markovflow is excluded because the official TensorFlow 2.4 stack failed at cusolverDnCreate on this RTX 4090.
-- Full ST-VGP rows are explicit RTX 4090 OOM exclusions.
+- Official long-batch ST-VGP/ST-SVGP rows are explicit RTX 4090 OOM exclusions: Ms=32 alone requested 52.11 GiB.
 - CPU preparation, CPU X-lag, CPU postprocessing, and GPflow capacity preflights are excluded.
 - No CPU-to-GPU or cross-device FLOP ratio is asserted.
 EOF

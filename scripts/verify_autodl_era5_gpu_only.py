@@ -24,10 +24,12 @@ GPU_MANIFEST_POLICIES = {
     "official_long_preflight": {
         "device_classes": {"a100_official_preflight"},
         "exclude_full_stvgp": True,
+        "exclude_all": True,
     },
     "official_long_full": {
         "device_classes": {"a100_official_full"},
         "exclude_full_stvgp": True,
+        "exclude_all": True,
     },
     "online_short": {
         "device_classes": {
@@ -78,6 +80,8 @@ def expected_artifacts_exist(record: dict[str, Any]) -> bool:
 def exclusion_reason(record: dict[str, Any], policy: dict[str, Any]) -> str | None:
     method = str(record.get("method", ""))
     device_class = str(record.get("device_class", ""))
+    if policy.get("exclude_all"):
+        return "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib"
     if policy["exclude_full_stvgp"] and method.endswith("st_vgp_full"):
         return "documented_rtx4090_full_stvgp_oom"
     if device_class == "a100_markovflow":
@@ -149,6 +153,9 @@ def main() -> int:
             "included_manifests": list(GPU_MANIFEST_POLICIES),
             "markovflow_gpu_status": "excluded_after_actual_cusolverDnCreate_failure",
             "full_stvgp_gpu_status": "excluded_after_documented_rtx4090_oom",
+            "long_batch_stsvgp_gpu_status": (
+                "excluded_after_ms32_preflight_required_52_11_gib_on_48_gib_rtx4090"
+            ),
             "cpu_rows_included": False,
         },
     }
