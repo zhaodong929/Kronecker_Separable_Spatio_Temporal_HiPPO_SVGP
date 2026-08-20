@@ -35,7 +35,11 @@ if REQUESTED_DEVICE.device == "cpu":
     tf.config.set_visible_devices([], "GPU")
 elif not tf.config.list_physical_devices("GPU"):
     raise RuntimeError("--device gpu was requested, but TensorFlow cannot see a GPU")
+else:
+    for gpu in tf.config.list_physical_devices("GPU"):
+        tf.config.experimental.set_memory_growth(gpu, True)
 
+import gpflow
 from gpflow.utilities import parameter_dict, set_trainable
 
 from fsde.baselines.gpflow_imc_svgp import (
@@ -200,6 +204,57 @@ def run_variational_steps(
     return [float(value) for value in runner(**kwargs)]
 
 
+class PersistentTask1Trainer:
+    """Keep the official Adam+NGD state and compiled graph across ELBO checks."""
+
+    def __init__(
+        self,
+        *,
+        model: object,
+        times: np.ndarray,
+        targets: np.ndarray,
+        batch_size: int,
+        natural_gradient: bool,
+        learning_rate: float,
+        gamma: float,
+    ) -> None:
+        if times.ndim != 2 or times.shape[1] != 1:
+            raise ValueError("Factorial SVGP expects times with shape [time, 1]")
+        if targets.shape != (times.shape[0], model.kernel.W.shape[0]):
+            raise ValueError("Factorial SVGP target shape does not match the output kernel")
+        dataset = tf.data.Dataset.from_tensor_slices((times, targets)).shuffle(
+            times.shape[0], seed=0, reshuffle_each_iteration=False
+        ).repeat().batch(min(int(batch_size), int(times.shape[0])))
+        iterator = iter(dataset)
+        training_loss = model.training_loss_closure(iterator, compile=True)
+        adam = tf.optimizers.Adam(learning_rate=float(learning_rate))
+        ngd = gpflow.optimizers.NaturalGradient(gamma=float(gamma)) if natural_gradient else None
+        if natural_gradient:
+            set_trainable(model.q_mu, False)
+            set_trainable(model.q_sqrt, False)
+        variational_parameters = [(model.q_mu, model.q_sqrt)]
+
+        @tf.function
+        def run_compiled(step_count: tf.Tensor) -> tf.Tensor:
+            values = tf.TensorArray(dtype=model.q_mu.dtype, size=step_count)
+            for index in tf.range(step_count):
+                adam.minimize(training_loss, model.trainable_variables)
+                if ngd is not None:
+                    ngd.minimize(training_loss, variational_parameters)
+                values = values.write(index, -training_loss())
+            return values.stack()
+
+        self._run_compiled = run_compiled
+        self.adam = adam
+        self.natural_gradient = ngd
+
+    def run(self, steps: int) -> list[float]:
+        if steps <= 0:
+            return []
+        values = self._run_compiled(tf.convert_to_tensor(steps, dtype=tf.int32))
+        return np.asarray(values.numpy(), dtype=np.float64).tolist()
+
+
 def fit_task1(
     protocol: COVIDSettingBProtocol,
     args: argparse.Namespace,
@@ -226,20 +281,19 @@ def fit_task1(
     stable_checks = 0
     completed = 0
     status = "max_budget_not_converged"
+    trainer = PersistentTask1Trainer(
+        model=model,
+        times=times,
+        targets=targets,
+        batch_size=args.batch_size,
+        natural_gradient=not args.no_natgrad,
+        learning_rate=1e-3,
+        gamma=1e-2,
+    )
     while completed < int(args.task1_iterations):
         steps = min(int(args.task1_check_interval), int(args.task1_iterations) - completed)
         before_mu, before_sqrt = variational_snapshot(model)
-        chunk = run_variational_steps(
-            method=args.method,
-            model=model,
-            times=times,
-            targets=targets,
-            batch_size=args.batch_size,
-            steps=steps,
-            natgrad=not args.no_natgrad,
-            learning_rate=1e-3,
-            gamma=1e-2,
-        )
+        chunk = trainer.run(steps)
         if not chunk or not np.isfinite(chunk).all():
             raise FloatingPointError("Official Factorial optimiser returned a non-finite ELBO trace")
         completed += len(chunk)
@@ -285,6 +339,8 @@ def fit_task1(
         "moving_median_checks": int(args.task1_plateau_checks),
         "relative_improvement_threshold": float(args.task1_plateau_relative_improvement),
         "natural_gradient": not args.no_natgrad,
+        "persistent_optimizer_state_across_checks": True,
+        "compiled_steps_per_host_synchronization": int(args.task1_check_interval),
         "final_elbo": float(objectives[-1]),
         "trace": trace,
         "lmc_symmetry_audit": lmc_audit,
