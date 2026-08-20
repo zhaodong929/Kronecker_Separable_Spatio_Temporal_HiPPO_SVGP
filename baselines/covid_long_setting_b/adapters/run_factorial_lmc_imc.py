@@ -239,26 +239,21 @@ class PersistentTask1Trainer:
         variational_parameters = [(model.q_mu, model.q_sqrt)]
 
         @tf.function
-        def optimization_step() -> None:
-            adam.minimize(training_loss, model.trainable_variables)
-            if ngd is not None:
-                ngd.minimize(training_loss, variational_parameters)
-
-        @tf.function
-        def full_objective() -> tf.Tensor:
+        def run_compiled(step_count: tf.Tensor) -> tf.Tensor:
+            for _ in tf.range(step_count):
+                adam.minimize(training_loss, model.trainable_variables)
+                if ngd is not None:
+                    ngd.minimize(training_loss, variational_parameters)
             return -model.training_loss(full_data)
 
-        self._optimization_step = optimization_step
-        self._full_objective = full_objective
+        self._run_compiled = run_compiled
         self.adam = adam
         self.natural_gradient = ngd
 
     def run(self, steps: int) -> float:
         if steps <= 0:
             raise ValueError("PersistentTask1Trainer requires at least one update")
-        for _ in range(steps):
-            self._optimization_step()
-        value = self._full_objective()
+        value = self._run_compiled(tf.convert_to_tensor(steps, dtype=tf.int32))
         return float(np.asarray(value.numpy(), dtype=np.float64))
 
 
