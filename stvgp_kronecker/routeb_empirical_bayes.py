@@ -75,6 +75,8 @@ class TemporalFactorModel(nn.Module):
         rff_sample_size: int,
         seed: int,
         temporal_horizon: TemporalBlockSpec | None = None,
+        temporal_kernel: str = "matern32",
+        spectral_mixture: dict[str, tuple[float, ...]] | None = None,
     ) -> None:
         super().__init__()
         self.representation = representation
@@ -87,13 +89,26 @@ class TemporalFactorModel(nn.Module):
                 variance=initial_variance,
                 rff_sample_size=rff_sample_size,
                 seed=seed,
-                kernel_type="matern32",
+                kernel_type=temporal_kernel,
+                spectral_mixture_weights=(
+                    spectral_mixture["weights"] if spectral_mixture else None
+                ),
+                spectral_mixture_means=(
+                    spectral_mixture["means"] if spectral_mixture else None
+                ),
+                spectral_mixture_scales=(
+                    spectral_mixture["scales"] if spectral_mixture else None
+                ),
             )
             self.horizon = temporal_horizon or temporal_spec_for_block(
                 np.asarray(times, dtype=float), slice(0, len(times)), moving=True
             )
             self.register_buffer("z_t", torch.empty(0, dtype=DTYPE))
         elif representation == "inducing_points":
+            if temporal_kernel != "matern32" or spectral_mixture is not None:
+                raise ValueError(
+                    "Spectral-mixture temporal kernels require analytic_hippo_rff"
+                )
             self.builder = None
             self.horizon = None
             self.log_lengthscale = nn.Parameter(
@@ -661,6 +676,8 @@ class BatchRouteBEmpiricalBayes(nn.Module):
         seed: int,
         objective_type: str = "finite_dtc",
         temporal_horizon: TemporalBlockSpec | None = None,
+        temporal_kernel: str = "matern32",
+        spectral_mixture: dict[str, tuple[float, ...]] | None = None,
     ) -> None:
         super().__init__()
         if objective_type not in {"finite_dtc", "vfe"}:
@@ -675,6 +692,8 @@ class BatchRouteBEmpiricalBayes(nn.Module):
             rff_sample_size=rff_sample_size,
             seed=seed,
             temporal_horizon=temporal_horizon,
+            temporal_kernel=temporal_kernel,
+            spectral_mixture=spectral_mixture,
         )
         self.register_buffer(
             "spatial_inducing", torch.as_tensor(spatial_inducing, dtype=DTYPE)

@@ -354,3 +354,21 @@ def test_vfe_trace_is_zero_with_full_inducing_grid() -> None:
         prior_point_variance=variance,
     )
     torch.testing.assert_close(residual, torch.zeros_like(residual), atol=2e-12, rtol=0.0)
+
+
+def test_batch_model_accepts_runner_temporal_kernel_arguments() -> None:
+    model = BatchRouteBEmpiricalBayes(
+        times=np.linspace(0.0, 1.0, 6),
+        spatial_inducing=np.asarray([[-1.0, -0.5], [1.0, 0.8]]),
+        mt=4,
+        representation="analytic_hippo_rff",
+        initial_ell_t=0.1,
+        initial_ell_s=(0.4, 0.5),
+        initial_kernel_variance=0.8,
+        initial_noise_std=0.2,
+        rff_sample_size=32,
+        seed=3,
+        temporal_kernel="matern32",
+        spectral_mixture=None,
+    )
+    assert model.temporal.builder is not None
