@@ -1,0 +1,1858 @@
+{
+  "schema_version": 1,
+  "purpose": "seed-0 blocked development only; formal seed-5--9 archives are immutable and excluded",
+  "phase": "capacity",
+  "selection_metric": "mean Gaussian NLPD on restored log1p(per-100k) scale; mean RMSE tie-breaker",
+  "diagnostic_metrics": [
+    "CRPS",
+    "ECE",
+    "Coverage90"
+  ],
+  "convergence_gate": {
+    "check_interval": 250,
+    "minimum_steps": 2500,
+    "moving_median_checks": 10,
+    "relative_improvement_threshold": 0.001,
+    "max_steps": 50000
+  },
+  "results": [
+    {
+      "method": "st_svgp",
+      "candidate": {
+        "spatial_inducing": 16
+      },
+      "capacity_size": 16,
+      "status": "eligible_for_selection",
+      "folds": [
+        {
+          "status": "scored",
+          "archive": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/predictions.npz",
+          "archive_sha256": "6d734989765198a5d4baa5919d66c575df029ef6aa70811bb8adb8c0d92b1f33",
+          "metrics": {
+            "rmse": 0.30406733472145914,
+            "crps": 0.17331179768361257,
+            "ece": 0.05500000000000001,
+            "coverage90": 0.9125,
+            "native_gaussian_nlpd": 0.2710254228285699
+          },
+          "task1_convergence_status": "converged_objective_plateau",
+          "causal_audit": {
+            "online_steps_completed": 8,
+            "delayed_hidden_labels": 70,
+            "expected_delayed_hidden_labels": 70,
+            "current_visible_labels": 336,
+            "expected_current_visible_labels": 336,
+            "current_hidden_labels_read": 0,
+            "hidden_predictions": 80,
+            "expected_hidden_predictions": 80,
+            "passed": true
+          },
+          "causal_gate_passed": true,
+          "adapter_state_gate_passed": true,
+          "adapter_state_gate_reason": "not_applicable",
+          "result": {
+            "status": "complete",
+            "method": "ST-SVGP causal refit",
+            "source": "AaltoML/spatio-temporal-GPs",
+            "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+            "protocol": "covid_long_setting_b",
+            "seed": 0,
+            "weeks": 8,
+            "task1_seconds": 22530.598305869848,
+            "task1_state_source": "fitted_in_process",
+            "task1_convergence": {
+              "status": "converged_objective_plateau",
+              "steps_completed": 5000,
+              "max_steps": 50000,
+              "check_interval": 250,
+              "minimum_steps": 2500,
+              "moving_median_checks": 10,
+              "relative_improvement_threshold": 0.001,
+              "final_objective": 838.7488022217711,
+              "trace": [
+                {
+                  "steps_completed": 250,
+                  "chunk_objective_median": 914.2059969582466,
+                  "chunk_objective_mean": 951.6211437671138,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_00250.npz"
+                },
+                {
+                  "steps_completed": 500,
+                  "chunk_objective_median": 855.3384868889941,
+                  "chunk_objective_mean": 856.0121886873751,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_00500.npz"
+                },
+                {
+                  "steps_completed": 750,
+                  "chunk_objective_median": 847.4639687398778,
+                  "chunk_objective_mean": 847.4222412796844,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_00750.npz"
+                },
+                {
+                  "steps_completed": 1000,
+                  "chunk_objective_median": 840.7871683361326,
+                  "chunk_objective_mean": 841.0627085592625,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_01000.npz"
+                },
+                {
+                  "steps_completed": 1250,
+                  "chunk_objective_median": 839.5293762625527,
+                  "chunk_objective_mean": 839.5567412588583,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_01250.npz"
+                },
+                {
+                  "steps_completed": 1500,
+                  "chunk_objective_median": 839.0351834897473,
+                  "chunk_objective_mean": 839.0471408845084,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_01500.npz"
+                },
+                {
+                  "steps_completed": 1750,
+                  "chunk_objective_median": 838.8417047036517,
+                  "chunk_objective_mean": 838.846631078915,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_01750.npz"
+                },
+                {
+                  "steps_completed": 2000,
+                  "chunk_objective_median": 838.7734213895222,
+                  "chunk_objective_mean": 838.7753215886396,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_02000.npz"
+                },
+                {
+                  "steps_completed": 2250,
+                  "chunk_objective_median": 838.7520623707945,
+                  "chunk_objective_mean": 838.7526782331317,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_02250.npz"
+                },
+                {
+                  "steps_completed": 2500,
+                  "chunk_objective_median": 838.7460769522531,
+                  "chunk_objective_mean": 838.7465547628442,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_02500.npz"
+                },
+                {
+                  "steps_completed": 2750,
+                  "chunk_objective_median": 838.7446957010654,
+                  "chunk_objective_mean": 838.744951664815,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_02750.npz"
+                },
+                {
+                  "steps_completed": 3000,
+                  "chunk_objective_median": 838.7444028499565,
+                  "chunk_objective_mean": 838.7451694356001,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_03000.npz"
+                },
+                {
+                  "steps_completed": 3250,
+                  "chunk_objective_median": 838.7443167053409,
+                  "chunk_objective_mean": 838.7459263769236,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_03250.npz"
+                },
+                {
+                  "steps_completed": 3500,
+                  "chunk_objective_median": 838.7443472111464,
+                  "chunk_objective_mean": 838.7449140267307,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_03500.npz"
+                },
+                {
+                  "steps_completed": 3750,
+                  "chunk_objective_median": 838.7445908039022,
+                  "chunk_objective_mean": 838.7462236983928,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_03750.npz"
+                },
+                {
+                  "steps_completed": 4000,
+                  "chunk_objective_median": 838.7446900911016,
+                  "chunk_objective_mean": 838.7461940525035,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_04000.npz"
+                },
+                {
+                  "steps_completed": 4250,
+                  "chunk_objective_median": 838.7449728251601,
+                  "chunk_objective_mean": 838.7479013571641,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_04250.npz"
+                },
+                {
+                  "steps_completed": 4500,
+                  "chunk_objective_median": 838.7444738191073,
+                  "chunk_objective_mean": 838.7469995264235,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_04500.npz"
+                },
+                {
+                  "steps_completed": 4750,
+                  "chunk_objective_median": 838.7445262611473,
+                  "chunk_objective_mean": 838.7481824331595,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_04750.npz"
+                },
+                {
+                  "steps_completed": 5000,
+                  "chunk_objective_median": 838.744414421662,
+                  "chunk_objective_mean": 838.7488022217711,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_1/task1_checkpoints/checkpoint_05000.npz",
+                  "moving_median_relative_change": 0.000640761575595292
+                }
+              ]
+            },
+            "online_seconds_total": 3839.002611104399,
+            "online_seconds_per_week": 479.87532638804987,
+            "online_update_prediction_seconds": [
+              590.5952214188874,
+              511.0196931436658,
+              435.1081923954189,
+              393.18260898441076,
+              402.89889185130596,
+              472.5021453015506,
+              529.896815739572,
+              503.7990422695875
+            ],
+            "audit": {
+              "online_steps_completed": 8,
+              "delayed_hidden_labels": 70,
+              "expected_delayed_hidden_labels": 70,
+              "current_visible_labels": 336,
+              "expected_current_visible_labels": 336,
+              "current_hidden_labels_read": 0,
+              "hidden_predictions": 80,
+              "expected_hidden_predictions": 80,
+              "passed": true
+            },
+            "note": "The official API has no posterior extension method for a growing irregular grid. Each online posterior is therefore reconstructed from legal arrived observations with Task-1 kernel, likelihood and inducing locations frozen."
+          }
+        },
+        {
+          "status": "scored",
+          "archive": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/predictions.npz",
+          "archive_sha256": "88aa896d42ede56e1cc3314bfb3af73a2d57492816e7fb7969f37a9319317cae",
+          "metrics": {
+            "rmse": 0.38935156677393307,
+            "crps": 0.2217801230927397,
+            "ece": 0.04625,
+            "coverage90": 0.825,
+            "native_gaussian_nlpd": 0.48561179287322104
+          },
+          "task1_convergence_status": "converged_objective_plateau",
+          "causal_audit": {
+            "online_steps_completed": 8,
+            "delayed_hidden_labels": 70,
+            "expected_delayed_hidden_labels": 70,
+            "current_visible_labels": 336,
+            "expected_current_visible_labels": 336,
+            "current_hidden_labels_read": 0,
+            "hidden_predictions": 80,
+            "expected_hidden_predictions": 80,
+            "passed": true
+          },
+          "causal_gate_passed": true,
+          "adapter_state_gate_passed": true,
+          "adapter_state_gate_reason": "not_applicable",
+          "result": {
+            "status": "complete",
+            "method": "ST-SVGP causal refit",
+            "source": "AaltoML/spatio-temporal-GPs",
+            "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+            "protocol": "covid_long_setting_b",
+            "seed": 0,
+            "weeks": 8,
+            "task1_seconds": 17741.449652273208,
+            "task1_state_source": "fitted_in_process",
+            "task1_convergence": {
+              "status": "converged_objective_plateau",
+              "steps_completed": 5250,
+              "max_steps": 50000,
+              "check_interval": 250,
+              "minimum_steps": 2500,
+              "moving_median_checks": 10,
+              "relative_improvement_threshold": 0.001,
+              "final_objective": 1149.047145259885,
+              "trace": [
+                {
+                  "steps_completed": 250,
+                  "chunk_objective_median": 1221.9820153215503,
+                  "chunk_objective_mean": 1293.8904505160829,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_00250.npz"
+                },
+                {
+                  "steps_completed": 500,
+                  "chunk_objective_median": 1179.6485416808234,
+                  "chunk_objective_mean": 1179.966516397602,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_00500.npz"
+                },
+                {
+                  "steps_completed": 750,
+                  "chunk_objective_median": 1158.7506218102435,
+                  "chunk_objective_mean": 1160.4061430116462,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_00750.npz"
+                },
+                {
+                  "steps_completed": 1000,
+                  "chunk_objective_median": 1153.5654267485193,
+                  "chunk_objective_mean": 1153.6566090948766,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_01000.npz"
+                },
+                {
+                  "steps_completed": 1250,
+                  "chunk_objective_median": 1151.2766714277386,
+                  "chunk_objective_mean": 1151.321961814124,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_01250.npz"
+                },
+                {
+                  "steps_completed": 1500,
+                  "chunk_objective_median": 1150.1122736659395,
+                  "chunk_objective_mean": 1150.135797575334,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_01500.npz"
+                },
+                {
+                  "steps_completed": 1750,
+                  "chunk_objective_median": 1149.5296672027966,
+                  "chunk_objective_mean": 1149.5418946141592,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_01750.npz"
+                },
+                {
+                  "steps_completed": 2000,
+                  "chunk_objective_median": 1149.2492356047628,
+                  "chunk_objective_mean": 1149.2554258690213,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_02000.npz"
+                },
+                {
+                  "steps_completed": 2250,
+                  "chunk_objective_median": 1149.1220721267853,
+                  "chunk_objective_mean": 1149.125138845543,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_02250.npz"
+                },
+                {
+                  "steps_completed": 2500,
+                  "chunk_objective_median": 1149.068892957091,
+                  "chunk_objective_mean": 1149.0702528459633,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_02500.npz"
+                },
+                {
+                  "steps_completed": 2750,
+                  "chunk_objective_median": 1149.050198512075,
+                  "chunk_objective_mean": 1149.054383613158,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_02750.npz"
+                },
+                {
+                  "steps_completed": 3000,
+                  "chunk_objective_median": 1149.0429348827379,
+                  "chunk_objective_mean": 1149.045885448012,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_03000.npz"
+                },
+                {
+                  "steps_completed": 3250,
+                  "chunk_objective_median": 1149.0403649824093,
+                  "chunk_objective_mean": 1149.0449190203274,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_03250.npz"
+                },
+                {
+                  "steps_completed": 3500,
+                  "chunk_objective_median": 1149.0398743451647,
+                  "chunk_objective_mean": 1149.0455821124726,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_03500.npz"
+                },
+                {
+                  "steps_completed": 3750,
+                  "chunk_objective_median": 1149.0397945186655,
+                  "chunk_objective_mean": 1149.045971157517,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_03750.npz"
+                },
+                {
+                  "steps_completed": 4000,
+                  "chunk_objective_median": 1149.0397643219117,
+                  "chunk_objective_mean": 1149.0468825096632,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_04000.npz"
+                },
+                {
+                  "steps_completed": 4250,
+                  "chunk_objective_median": 1149.0397608070957,
+                  "chunk_objective_mean": 1149.0472822709685,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_04250.npz"
+                },
+                {
+                  "steps_completed": 4500,
+                  "chunk_objective_median": 1149.0397600277552,
+                  "chunk_objective_mean": 1149.0478445543297,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_04500.npz"
+                },
+                {
+                  "steps_completed": 4750,
+                  "chunk_objective_median": 1149.0397585297987,
+                  "chunk_objective_mean": 1149.0487337590157,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_04750.npz"
+                },
+                {
+                  "steps_completed": 5000,
+                  "chunk_objective_median": 1149.0397584580842,
+                  "chunk_objective_mean": 1149.041733478831,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_05000.npz",
+                  "moving_median_relative_change": 0.0014379951985761374
+                },
+                {
+                  "steps_completed": 5250,
+                  "chunk_objective_median": 1149.03975880202,
+                  "chunk_objective_mean": 1149.047145259885,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_2/task1_checkpoints/checkpoint_05250.npz",
+                  "moving_median_relative_change": 0.0006794169613807421
+                }
+              ]
+            },
+            "online_seconds_total": 198.85465206205845,
+            "online_seconds_per_week": 24.856831507757306,
+            "online_update_prediction_seconds": [
+              24.210839200764894,
+              23.930043797940016,
+              24.992963820695877,
+              24.806123599410057,
+              25.71723011136055,
+              25.115663181990385,
+              24.981238082051277,
+              25.100550267845392
+            ],
+            "audit": {
+              "online_steps_completed": 8,
+              "delayed_hidden_labels": 70,
+              "expected_delayed_hidden_labels": 70,
+              "current_visible_labels": 336,
+              "expected_current_visible_labels": 336,
+              "current_hidden_labels_read": 0,
+              "hidden_predictions": 80,
+              "expected_hidden_predictions": 80,
+              "passed": true
+            },
+            "note": "The official API has no posterior extension method for a growing irregular grid. Each online posterior is therefore reconstructed from legal arrived observations with Task-1 kernel, likelihood and inducing locations frozen."
+          }
+        },
+        {
+          "status": "scored",
+          "archive": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/predictions.npz",
+          "archive_sha256": "f3a0e355352f0b3c7f66a4c89636ab9a5b64515a129fcddd6924857f28fa72f5",
+          "metrics": {
+            "rmse": 0.5220829811481519,
+            "crps": 0.2713925352036485,
+            "ece": 0.03374999999999998,
+            "coverage90": 0.8375,
+            "native_gaussian_nlpd": 0.9988828241771504
+          },
+          "task1_convergence_status": "converged_objective_plateau",
+          "causal_audit": {
+            "online_steps_completed": 8,
+            "delayed_hidden_labels": 70,
+            "expected_delayed_hidden_labels": 70,
+            "current_visible_labels": 336,
+            "expected_current_visible_labels": 336,
+            "current_hidden_labels_read": 0,
+            "hidden_predictions": 80,
+            "expected_hidden_predictions": 80,
+            "passed": true
+          },
+          "causal_gate_passed": true,
+          "adapter_state_gate_passed": true,
+          "adapter_state_gate_reason": "not_applicable",
+          "result": {
+            "status": "complete",
+            "method": "ST-SVGP causal refit",
+            "source": "AaltoML/spatio-temporal-GPs",
+            "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+            "protocol": "covid_long_setting_b",
+            "seed": 0,
+            "weeks": 8,
+            "task1_seconds": 281.8651787042618,
+            "task1_state_source": "fitted_in_process",
+            "task1_convergence": {
+              "status": "converged_objective_plateau",
+              "steps_completed": 5250,
+              "max_steps": 50000,
+              "check_interval": 250,
+              "minimum_steps": 2500,
+              "moving_median_checks": 10,
+              "relative_improvement_threshold": 0.001,
+              "final_objective": 1464.594401132575,
+              "trace": [
+                {
+                  "steps_completed": 250,
+                  "chunk_objective_median": 1569.8248537678473,
+                  "chunk_objective_mean": 1650.4284374100273,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_00250.npz"
+                },
+                {
+                  "steps_completed": 500,
+                  "chunk_objective_median": 1508.1785388058354,
+                  "chunk_objective_mean": 1510.435957282568,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_00500.npz"
+                },
+                {
+                  "steps_completed": 750,
+                  "chunk_objective_median": 1494.2151391962589,
+                  "chunk_objective_mean": 1494.5436752980042,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_00750.npz"
+                },
+                {
+                  "steps_completed": 1000,
+                  "chunk_objective_median": 1482.4101111738278,
+                  "chunk_objective_mean": 1480.3514812761962,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_01000.npz"
+                },
+                {
+                  "steps_completed": 1250,
+                  "chunk_objective_median": 1467.2004495029214,
+                  "chunk_objective_mean": 1467.286925583012,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_01250.npz"
+                },
+                {
+                  "steps_completed": 1500,
+                  "chunk_objective_median": 1465.80946617236,
+                  "chunk_objective_mean": 1465.8382694057962,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_01500.npz"
+                },
+                {
+                  "steps_completed": 1750,
+                  "chunk_objective_median": 1465.1344963983845,
+                  "chunk_objective_mean": 1465.1489340529522,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_01750.npz"
+                },
+                {
+                  "steps_completed": 2000,
+                  "chunk_objective_median": 1464.8176173979168,
+                  "chunk_objective_mean": 1464.8247118965749,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_02000.npz"
+                },
+                {
+                  "steps_completed": 2250,
+                  "chunk_objective_median": 1464.6769350984227,
+                  "chunk_objective_mean": 1464.6803282644903,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_02250.npz"
+                },
+                {
+                  "steps_completed": 2500,
+                  "chunk_objective_median": 1464.619190686864,
+                  "chunk_objective_mean": 1464.6206971119375,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_02500.npz"
+                },
+                {
+                  "steps_completed": 2750,
+                  "chunk_objective_median": 1464.5981060025342,
+                  "chunk_objective_mean": 1464.5985108046857,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_02750.npz"
+                },
+                {
+                  "steps_completed": 3000,
+                  "chunk_objective_median": 1464.5915325141846,
+                  "chunk_objective_mean": 1464.5943086811676,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_03000.npz"
+                },
+                {
+                  "steps_completed": 3250,
+                  "chunk_objective_median": 1464.5892535130263,
+                  "chunk_objective_mean": 1464.5951290627324,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_03250.npz"
+                },
+                {
+                  "steps_completed": 3500,
+                  "chunk_objective_median": 1464.5884770396303,
+                  "chunk_objective_mean": 1464.5929198275257,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_03500.npz"
+                },
+                {
+                  "steps_completed": 3750,
+                  "chunk_objective_median": 1464.588337834422,
+                  "chunk_objective_mean": 1464.594712734249,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_03750.npz"
+                },
+                {
+                  "steps_completed": 4000,
+                  "chunk_objective_median": 1464.5883347607441,
+                  "chunk_objective_mean": 1464.5960410662997,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_04000.npz"
+                },
+                {
+                  "steps_completed": 4250,
+                  "chunk_objective_median": 1464.588300983657,
+                  "chunk_objective_mean": 1464.5958683037957,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_04250.npz"
+                },
+                {
+                  "steps_completed": 4500,
+                  "chunk_objective_median": 1464.588300401786,
+                  "chunk_objective_mean": 1464.5885568808383,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_04500.npz"
+                },
+                {
+                  "steps_completed": 4750,
+                  "chunk_objective_median": 1464.5883025040557,
+                  "chunk_objective_mean": 1464.5968458689315,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_04750.npz"
+                },
+                {
+                  "steps_completed": 5000,
+                  "chunk_objective_median": 1464.5883025276,
+                  "chunk_objective_mean": 1464.5974454884338,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_05000.npz",
+                  "moving_median_relative_change": 0.0013069315107421336
+                },
+                {
+                  "steps_completed": 5250,
+                  "chunk_objective_median": 1464.5883052270883,
+                  "chunk_objective_mean": 1464.594401132575,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing16/fold_3/task1_checkpoints/checkpoint_05250.npz",
+                  "moving_median_relative_change": 0.0006029875035079151
+                }
+              ]
+            },
+            "online_seconds_total": 168.2466927692294,
+            "online_seconds_per_week": 21.030836596153677,
+            "online_update_prediction_seconds": [
+              20.130159948021173,
+              20.947279177606106,
+              20.797090649604797,
+              20.32327711954713,
+              21.994299296289682,
+              21.947426095604897,
+              20.925240017473698,
+              21.18192046508193
+            ],
+            "audit": {
+              "online_steps_completed": 8,
+              "delayed_hidden_labels": 70,
+              "expected_delayed_hidden_labels": 70,
+              "current_visible_labels": 336,
+              "expected_current_visible_labels": 336,
+              "current_hidden_labels_read": 0,
+              "hidden_predictions": 80,
+              "expected_hidden_predictions": 80,
+              "passed": true
+            },
+            "note": "The official API has no posterior extension method for a growing irregular grid. Each online posterior is therefore reconstructed from legal arrived observations with Task-1 kernel, likelihood and inducing locations frozen."
+          }
+        }
+      ],
+      "mean_rmse": 0.40516729421451475,
+      "mean_crps": 0.2221614853266669,
+      "mean_native_gaussian_nlpd": 0.5851733466263137,
+      "mean_ece": 0.04499999999999999,
+      "mean_coverage90": 0.8583333333333333
+    },
+    {
+      "method": "st_svgp",
+      "candidate": {
+        "spatial_inducing": 32
+      },
+      "capacity_size": 32,
+      "status": "eligible_for_selection",
+      "folds": [
+        {
+          "status": "scored",
+          "archive": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/predictions.npz",
+          "archive_sha256": "cd68985eab1bc595aebd766932ecf839034e3daaccfebe06b06da1199e4ae8f2",
+          "metrics": {
+            "rmse": 0.20633475491093295,
+            "crps": 0.12079217924573453,
+            "ece": 0.07375000000000001,
+            "coverage90": 0.975,
+            "native_gaussian_nlpd": -0.06450189466932418
+          },
+          "task1_convergence_status": "converged_objective_plateau",
+          "causal_audit": {
+            "online_steps_completed": 8,
+            "delayed_hidden_labels": 70,
+            "expected_delayed_hidden_labels": 70,
+            "current_visible_labels": 336,
+            "expected_current_visible_labels": 336,
+            "current_hidden_labels_read": 0,
+            "hidden_predictions": 80,
+            "expected_hidden_predictions": 80,
+            "passed": true
+          },
+          "causal_gate_passed": true,
+          "adapter_state_gate_passed": true,
+          "adapter_state_gate_reason": "not_applicable",
+          "result": {
+            "status": "complete",
+            "method": "ST-SVGP causal refit",
+            "source": "AaltoML/spatio-temporal-GPs",
+            "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+            "protocol": "covid_long_setting_b",
+            "seed": 0,
+            "weeks": 8,
+            "task1_seconds": 498.42323994636536,
+            "task1_state_source": "fitted_in_process",
+            "task1_convergence": {
+              "status": "converged_objective_plateau",
+              "steps_completed": 5000,
+              "max_steps": 50000,
+              "check_interval": 250,
+              "minimum_steps": 2500,
+              "moving_median_checks": 10,
+              "relative_improvement_threshold": 0.001,
+              "final_objective": 525.9153180662112,
+              "trace": [
+                {
+                  "steps_completed": 250,
+                  "chunk_objective_median": 557.3146585352597,
+                  "chunk_objective_mean": 574.2483097743851,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_00250.npz"
+                },
+                {
+                  "steps_completed": 500,
+                  "chunk_objective_median": 534.6042677920041,
+                  "chunk_objective_mean": 534.5966706380268,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_00500.npz"
+                },
+                {
+                  "steps_completed": 750,
+                  "chunk_objective_median": 526.477444868631,
+                  "chunk_objective_mean": 526.9406931133932,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_00750.npz"
+                },
+                {
+                  "steps_completed": 1000,
+                  "chunk_objective_median": 525.966738058217,
+                  "chunk_objective_mean": 525.9786656676873,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_01000.npz"
+                },
+                {
+                  "steps_completed": 1250,
+                  "chunk_objective_median": 525.912097541287,
+                  "chunk_objective_mean": 525.9161719366908,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_01250.npz"
+                },
+                {
+                  "steps_completed": 1500,
+                  "chunk_objective_median": 525.9052378943154,
+                  "chunk_objective_mean": 525.9125914629531,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_01500.npz"
+                },
+                {
+                  "steps_completed": 1750,
+                  "chunk_objective_median": 525.904273437462,
+                  "chunk_objective_mean": 525.9098539063818,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_01750.npz"
+                },
+                {
+                  "steps_completed": 2000,
+                  "chunk_objective_median": 525.9055353721521,
+                  "chunk_objective_mean": 525.9137275477495,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_02000.npz"
+                },
+                {
+                  "steps_completed": 2250,
+                  "chunk_objective_median": 525.9055372872195,
+                  "chunk_objective_mean": 525.9120386957728,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_02250.npz"
+                },
+                {
+                  "steps_completed": 2500,
+                  "chunk_objective_median": 525.9068793841519,
+                  "chunk_objective_mean": 525.912033577059,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_02500.npz"
+                },
+                {
+                  "steps_completed": 2750,
+                  "chunk_objective_median": 525.9087049346203,
+                  "chunk_objective_mean": 525.9123146639013,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_02750.npz"
+                },
+                {
+                  "steps_completed": 3000,
+                  "chunk_objective_median": 525.9111762684508,
+                  "chunk_objective_mean": 525.9142095875593,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_03000.npz"
+                },
+                {
+                  "steps_completed": 3250,
+                  "chunk_objective_median": 525.909166664703,
+                  "chunk_objective_mean": 525.9147654037408,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_03250.npz"
+                },
+                {
+                  "steps_completed": 3500,
+                  "chunk_objective_median": 525.9078087491514,
+                  "chunk_objective_mean": 525.9131797403165,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_03500.npz"
+                },
+                {
+                  "steps_completed": 3750,
+                  "chunk_objective_median": 525.91086074291,
+                  "chunk_objective_mean": 525.9156527279217,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_03750.npz"
+                },
+                {
+                  "steps_completed": 4000,
+                  "chunk_objective_median": 525.9095126095258,
+                  "chunk_objective_mean": 525.9140058278371,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_04000.npz"
+                },
+                {
+                  "steps_completed": 4250,
+                  "chunk_objective_median": 525.9097466476414,
+                  "chunk_objective_mean": 525.915911227065,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_04250.npz"
+                },
+                {
+                  "steps_completed": 4500,
+                  "chunk_objective_median": 525.9091224459489,
+                  "chunk_objective_mean": 525.9141992256967,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_04500.npz"
+                },
+                {
+                  "steps_completed": 4750,
+                  "chunk_objective_median": 525.9095641330907,
+                  "chunk_objective_mean": 525.9164867457769,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_04750.npz"
+                },
+                {
+                  "steps_completed": 5000,
+                  "chunk_objective_median": 525.9109480386167,
+                  "chunk_objective_mean": 525.9153180662112,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_1/task1_checkpoints/checkpoint_05000.npz",
+                  "moving_median_relative_change": 9.489957838034854e-08
+                }
+              ]
+            },
+            "online_seconds_total": 129.03757101297379,
+            "online_seconds_per_week": 16.129696376621723,
+            "online_update_prediction_seconds": [
+              18.5249806009233,
+              15.326348312199116,
+              15.438282027840614,
+              15.880423478782177,
+              15.917032949626446,
+              16.109952982515097,
+              15.862045176327229,
+              15.978505484759808
+            ],
+            "audit": {
+              "online_steps_completed": 8,
+              "delayed_hidden_labels": 70,
+              "expected_delayed_hidden_labels": 70,
+              "current_visible_labels": 336,
+              "expected_current_visible_labels": 336,
+              "current_hidden_labels_read": 0,
+              "hidden_predictions": 80,
+              "expected_hidden_predictions": 80,
+              "passed": true
+            },
+            "note": "The official API has no posterior extension method for a growing irregular grid. Each online posterior is therefore reconstructed from legal arrived observations with Task-1 kernel, likelihood and inducing locations frozen."
+          }
+        },
+        {
+          "status": "scored",
+          "archive": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/predictions.npz",
+          "archive_sha256": "90b38524d1574c8d9334e59166773e3d8b90af14211399bab47b45c7ec3d6a80",
+          "metrics": {
+            "rmse": 0.24737897697289424,
+            "crps": 0.13028454539120413,
+            "ece": 0.09624999999999999,
+            "coverage90": 0.925,
+            "native_gaussian_nlpd": -0.00429476204264837
+          },
+          "task1_convergence_status": "converged_objective_plateau",
+          "causal_audit": {
+            "online_steps_completed": 8,
+            "delayed_hidden_labels": 70,
+            "expected_delayed_hidden_labels": 70,
+            "current_visible_labels": 336,
+            "expected_current_visible_labels": 336,
+            "current_hidden_labels_read": 0,
+            "hidden_predictions": 80,
+            "expected_hidden_predictions": 80,
+            "passed": true
+          },
+          "causal_gate_passed": true,
+          "adapter_state_gate_passed": true,
+          "adapter_state_gate_reason": "not_applicable",
+          "result": {
+            "status": "complete",
+            "method": "ST-SVGP causal refit",
+            "source": "AaltoML/spatio-temporal-GPs",
+            "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+            "protocol": "covid_long_setting_b",
+            "seed": 0,
+            "weeks": 8,
+            "task1_seconds": 654.9923184514046,
+            "task1_state_source": "fitted_in_process",
+            "task1_convergence": {
+              "status": "converged_objective_plateau",
+              "steps_completed": 5000,
+              "max_steps": 50000,
+              "check_interval": 250,
+              "minimum_steps": 2500,
+              "moving_median_checks": 10,
+              "relative_improvement_threshold": 0.001,
+              "final_objective": 722.2724955122862,
+              "trace": [
+                {
+                  "steps_completed": 250,
+                  "chunk_objective_median": 763.0573472330104,
+                  "chunk_objective_mean": 787.4228603870405,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_00250.npz"
+                },
+                {
+                  "steps_completed": 500,
+                  "chunk_objective_median": 726.4880935077346,
+                  "chunk_objective_mean": 735.7954679511557,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_00500.npz"
+                },
+                {
+                  "steps_completed": 750,
+                  "chunk_objective_median": 722.556299295095,
+                  "chunk_objective_mean": 722.6566115123961,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_00750.npz"
+                },
+                {
+                  "steps_completed": 1000,
+                  "chunk_objective_median": 722.2816428367339,
+                  "chunk_objective_mean": 722.287782996719,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_01000.npz"
+                },
+                {
+                  "steps_completed": 1250,
+                  "chunk_objective_median": 722.2580806193755,
+                  "chunk_objective_mean": 722.2664958405283,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_01250.npz"
+                },
+                {
+                  "steps_completed": 1500,
+                  "chunk_objective_median": 722.2570440126146,
+                  "chunk_objective_mean": 722.2667569008495,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_01500.npz"
+                },
+                {
+                  "steps_completed": 1750,
+                  "chunk_objective_median": 722.2576601298927,
+                  "chunk_objective_mean": 722.2749428232354,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_01750.npz"
+                },
+                {
+                  "steps_completed": 2000,
+                  "chunk_objective_median": 722.2574735866256,
+                  "chunk_objective_mean": 722.2676794790016,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_02000.npz"
+                },
+                {
+                  "steps_completed": 2250,
+                  "chunk_objective_median": 722.2570464560018,
+                  "chunk_objective_mean": 722.2706315572789,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_02250.npz"
+                },
+                {
+                  "steps_completed": 2500,
+                  "chunk_objective_median": 722.2578327577125,
+                  "chunk_objective_mean": 722.268511542976,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_02500.npz"
+                },
+                {
+                  "steps_completed": 2750,
+                  "chunk_objective_median": 722.2582282692108,
+                  "chunk_objective_mean": 722.2723862167378,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_02750.npz"
+                },
+                {
+                  "steps_completed": 3000,
+                  "chunk_objective_median": 722.2591708268606,
+                  "chunk_objective_mean": 722.2762295521636,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_03000.npz"
+                },
+                {
+                  "steps_completed": 3250,
+                  "chunk_objective_median": 722.2596170032497,
+                  "chunk_objective_mean": 722.2729795891444,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_03250.npz"
+                },
+                {
+                  "steps_completed": 3500,
+                  "chunk_objective_median": 722.2606572286049,
+                  "chunk_objective_mean": 722.2720917780998,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_03500.npz"
+                },
+                {
+                  "steps_completed": 3750,
+                  "chunk_objective_median": 722.2687664860941,
+                  "chunk_objective_mean": 722.2738698182322,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_03750.npz"
+                },
+                {
+                  "steps_completed": 4000,
+                  "chunk_objective_median": 722.2633018182299,
+                  "chunk_objective_mean": 722.2723942160011,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_04000.npz"
+                },
+                {
+                  "steps_completed": 4250,
+                  "chunk_objective_median": 722.2593434382482,
+                  "chunk_objective_mean": 722.2779496755984,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_04250.npz"
+                },
+                {
+                  "steps_completed": 4500,
+                  "chunk_objective_median": 722.2587897177865,
+                  "chunk_objective_mean": 722.2765788836775,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_04500.npz"
+                },
+                {
+                  "steps_completed": 4750,
+                  "chunk_objective_median": 722.2595216069836,
+                  "chunk_objective_mean": 722.2743731837339,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_04750.npz"
+                },
+                {
+                  "steps_completed": 5000,
+                  "chunk_objective_median": 722.25851135409,
+                  "chunk_objective_mean": 722.2724955122862,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_2/task1_checkpoints/checkpoint_05000.npz",
+                  "moving_median_relative_change": 2.043361458684264e-06
+                }
+              ]
+            },
+            "online_seconds_total": 125.77309888601303,
+            "online_seconds_per_week": 15.721637360751629,
+            "online_update_prediction_seconds": [
+              15.015224050730467,
+              15.552698280662298,
+              15.374496426433325,
+              15.690343726426363,
+              15.521880831569433,
+              16.008821800351143,
+              16.160105772316456,
+              16.449527997523546
+            ],
+            "audit": {
+              "online_steps_completed": 8,
+              "delayed_hidden_labels": 70,
+              "expected_delayed_hidden_labels": 70,
+              "current_visible_labels": 336,
+              "expected_current_visible_labels": 336,
+              "current_hidden_labels_read": 0,
+              "hidden_predictions": 80,
+              "expected_hidden_predictions": 80,
+              "passed": true
+            },
+            "note": "The official API has no posterior extension method for a growing irregular grid. Each online posterior is therefore reconstructed from legal arrived observations with Task-1 kernel, likelihood and inducing locations frozen."
+          }
+        },
+        {
+          "status": "scored",
+          "archive": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/predictions.npz",
+          "archive_sha256": "d1d2b1a7f3d973566a76533510e51a87388b655bde54fc4629dc1b4c2d605666",
+          "metrics": {
+            "rmse": 0.3575637624830709,
+            "crps": 0.17233181765537042,
+            "ece": 0.06749999999999999,
+            "coverage90": 0.8875,
+            "native_gaussian_nlpd": 0.37505796580428624
+          },
+          "task1_convergence_status": "converged_objective_plateau",
+          "causal_audit": {
+            "online_steps_completed": 8,
+            "delayed_hidden_labels": 70,
+            "expected_delayed_hidden_labels": 70,
+            "current_visible_labels": 336,
+            "expected_current_visible_labels": 336,
+            "current_hidden_labels_read": 0,
+            "hidden_predictions": 80,
+            "expected_hidden_predictions": 80,
+            "passed": true
+          },
+          "causal_gate_passed": true,
+          "adapter_state_gate_passed": true,
+          "adapter_state_gate_reason": "not_applicable",
+          "result": {
+            "status": "complete",
+            "method": "ST-SVGP causal refit",
+            "source": "AaltoML/spatio-temporal-GPs",
+            "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+            "protocol": "covid_long_setting_b",
+            "seed": 0,
+            "weeks": 8,
+            "task1_seconds": 787.7666346430779,
+            "task1_state_source": "fitted_in_process",
+            "task1_convergence": {
+              "status": "converged_objective_plateau",
+              "steps_completed": 5000,
+              "max_steps": 50000,
+              "check_interval": 250,
+              "minimum_steps": 2500,
+              "moving_median_checks": 10,
+              "relative_improvement_threshold": 0.001,
+              "final_objective": 947.8179370162696,
+              "trace": [
+                {
+                  "steps_completed": 250,
+                  "chunk_objective_median": 992.4698551060485,
+                  "chunk_objective_mean": 1022.1327365939519,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_00250.npz"
+                },
+                {
+                  "steps_completed": 500,
+                  "chunk_objective_median": 954.7435089159153,
+                  "chunk_objective_mean": 958.6942097907569,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_00500.npz"
+                },
+                {
+                  "steps_completed": 750,
+                  "chunk_objective_median": 948.161381862307,
+                  "chunk_objective_mean": 948.2770978743999,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_00750.npz"
+                },
+                {
+                  "steps_completed": 1000,
+                  "chunk_objective_median": 947.8240301634992,
+                  "chunk_objective_mean": 947.8297007718664,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_01000.npz"
+                },
+                {
+                  "steps_completed": 1250,
+                  "chunk_objective_median": 947.7920760374611,
+                  "chunk_objective_mean": 947.7973778242294,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_01250.npz"
+                },
+                {
+                  "steps_completed": 1500,
+                  "chunk_objective_median": 947.7929238779194,
+                  "chunk_objective_mean": 947.8031291469327,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_01500.npz"
+                },
+                {
+                  "steps_completed": 1750,
+                  "chunk_objective_median": 947.7920406938898,
+                  "chunk_objective_mean": 947.8054847539448,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_01750.npz"
+                },
+                {
+                  "steps_completed": 2000,
+                  "chunk_objective_median": 947.792021207214,
+                  "chunk_objective_mean": 947.8053020408161,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_02000.npz"
+                },
+                {
+                  "steps_completed": 2250,
+                  "chunk_objective_median": 947.7919026135686,
+                  "chunk_objective_mean": 947.8051011431389,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_02250.npz"
+                },
+                {
+                  "steps_completed": 2500,
+                  "chunk_objective_median": 947.7944393695742,
+                  "chunk_objective_mean": 947.8105660005994,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_02500.npz"
+                },
+                {
+                  "steps_completed": 2750,
+                  "chunk_objective_median": 947.7953426126144,
+                  "chunk_objective_mean": 947.809332181131,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_02750.npz"
+                },
+                {
+                  "steps_completed": 3000,
+                  "chunk_objective_median": 947.7925775266588,
+                  "chunk_objective_mean": 947.808964262735,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_03000.npz"
+                },
+                {
+                  "steps_completed": 3250,
+                  "chunk_objective_median": 947.7953348295764,
+                  "chunk_objective_mean": 947.8121765539978,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_03250.npz"
+                },
+                {
+                  "steps_completed": 3500,
+                  "chunk_objective_median": 947.8008060464603,
+                  "chunk_objective_mean": 947.8152796368623,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_03500.npz"
+                },
+                {
+                  "steps_completed": 3750,
+                  "chunk_objective_median": 947.7957016422,
+                  "chunk_objective_mean": 947.8107843628134,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_03750.npz"
+                },
+                {
+                  "steps_completed": 4000,
+                  "chunk_objective_median": 947.7923791300041,
+                  "chunk_objective_mean": 947.8137659377772,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_04000.npz"
+                },
+                {
+                  "steps_completed": 4250,
+                  "chunk_objective_median": 947.7970280686313,
+                  "chunk_objective_mean": 947.8141395277376,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_04250.npz"
+                },
+                {
+                  "steps_completed": 4500,
+                  "chunk_objective_median": 947.7954509971371,
+                  "chunk_objective_mean": 947.8148895476979,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_04500.npz"
+                },
+                {
+                  "steps_completed": 4750,
+                  "chunk_objective_median": 947.7958034886827,
+                  "chunk_objective_mean": 947.8112959144025,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_04750.npz"
+                },
+                {
+                  "steps_completed": 5000,
+                  "chunk_objective_median": 947.7978239069608,
+                  "chunk_objective_mean": 947.8179370162696,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing32/fold_3/task1_checkpoints/checkpoint_05000.npz",
+                  "moving_median_relative_change": 1.999059456110664e-06
+                }
+              ]
+            },
+            "online_seconds_total": 126.86439826712012,
+            "online_seconds_per_week": 15.858049783390015,
+            "online_update_prediction_seconds": [
+              15.568715199828148,
+              15.868609175086021,
+              15.585583008825779,
+              15.95312624052167,
+              15.75616468116641,
+              15.743067521601915,
+              16.21835769712925,
+              16.17077474296093
+            ],
+            "audit": {
+              "online_steps_completed": 8,
+              "delayed_hidden_labels": 70,
+              "expected_delayed_hidden_labels": 70,
+              "current_visible_labels": 336,
+              "expected_current_visible_labels": 336,
+              "current_hidden_labels_read": 0,
+              "hidden_predictions": 80,
+              "expected_hidden_predictions": 80,
+              "passed": true
+            },
+            "note": "The official API has no posterior extension method for a growing irregular grid. Each online posterior is therefore reconstructed from legal arrived observations with Task-1 kernel, likelihood and inducing locations frozen."
+          }
+        }
+      ],
+      "mean_rmse": 0.2704258314556327,
+      "mean_crps": 0.14113618076410303,
+      "mean_native_gaussian_nlpd": 0.10208710303077123,
+      "mean_ece": 0.07916666666666666,
+      "mean_coverage90": 0.9291666666666666
+    },
+    {
+      "method": "st_svgp",
+      "candidate": {
+        "spatial_inducing": 52
+      },
+      "capacity_size": 52,
+      "status": "eligible_for_selection",
+      "folds": [
+        {
+          "status": "scored",
+          "archive": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/predictions.npz",
+          "archive_sha256": "e4ea2010acc9c9f2612be6fc667a33fc721996e079e521b48bcbb2fe06f69a7f",
+          "metrics": {
+            "rmse": 0.15982558822644016,
+            "crps": 0.09161777263422494,
+            "ece": 0.10499999999999998,
+            "coverage90": 0.95,
+            "native_gaussian_nlpd": -0.3238236012560912
+          },
+          "task1_convergence_status": "converged_objective_plateau",
+          "causal_audit": {
+            "online_steps_completed": 8,
+            "delayed_hidden_labels": 70,
+            "expected_delayed_hidden_labels": 70,
+            "current_visible_labels": 336,
+            "expected_current_visible_labels": 336,
+            "current_hidden_labels_read": 0,
+            "hidden_predictions": 80,
+            "expected_hidden_predictions": 80,
+            "passed": true
+          },
+          "causal_gate_passed": true,
+          "adapter_state_gate_passed": true,
+          "adapter_state_gate_reason": "not_applicable",
+          "result": {
+            "status": "complete",
+            "method": "ST-SVGP causal refit",
+            "source": "AaltoML/spatio-temporal-GPs",
+            "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+            "protocol": "covid_long_setting_b",
+            "seed": 0,
+            "weeks": 8,
+            "task1_seconds": 2247.245127234608,
+            "task1_state_source": "fitted_in_process",
+            "task1_convergence": {
+              "status": "converged_objective_plateau",
+              "steps_completed": 5000,
+              "max_steps": 50000,
+              "check_interval": 250,
+              "minimum_steps": 2500,
+              "moving_median_checks": 10,
+              "relative_improvement_threshold": 0.001,
+              "final_objective": 169.66147822425557,
+              "trace": [
+                {
+                  "steps_completed": 250,
+                  "chunk_objective_median": 200.3218966917431,
+                  "chunk_objective_mean": 236.86832607347006,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_00250.npz"
+                },
+                {
+                  "steps_completed": 500,
+                  "chunk_objective_median": 175.37631366738412,
+                  "chunk_objective_mean": 175.97839580150415,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_00500.npz"
+                },
+                {
+                  "steps_completed": 750,
+                  "chunk_objective_median": 170.9114863456105,
+                  "chunk_objective_mean": 171.0259169556288,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_00750.npz"
+                },
+                {
+                  "steps_completed": 1000,
+                  "chunk_objective_median": 169.8192810105283,
+                  "chunk_objective_mean": 169.82922544544144,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_01000.npz"
+                },
+                {
+                  "steps_completed": 1250,
+                  "chunk_objective_median": 169.6111321492449,
+                  "chunk_objective_mean": 169.66760449162942,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_01250.npz"
+                },
+                {
+                  "steps_completed": 1500,
+                  "chunk_objective_median": 169.5561200502895,
+                  "chunk_objective_mean": 169.65073456427976,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_01500.npz"
+                },
+                {
+                  "steps_completed": 1750,
+                  "chunk_objective_median": 169.54551027396457,
+                  "chunk_objective_mean": 169.63051799008534,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_01750.npz"
+                },
+                {
+                  "steps_completed": 2000,
+                  "chunk_objective_median": 169.56383857697358,
+                  "chunk_objective_mean": 169.6537724687909,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_02000.npz"
+                },
+                {
+                  "steps_completed": 2250,
+                  "chunk_objective_median": 169.54775533037025,
+                  "chunk_objective_mean": 169.6247044688653,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_02250.npz"
+                },
+                {
+                  "steps_completed": 2500,
+                  "chunk_objective_median": 169.54375019595403,
+                  "chunk_objective_mean": 169.65077679457505,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_02500.npz"
+                },
+                {
+                  "steps_completed": 2750,
+                  "chunk_objective_median": 169.53427337008253,
+                  "chunk_objective_mean": 169.63057587954634,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_02750.npz"
+                },
+                {
+                  "steps_completed": 3000,
+                  "chunk_objective_median": 169.5703319295946,
+                  "chunk_objective_mean": 169.64928751458862,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_03000.npz"
+                },
+                {
+                  "steps_completed": 3250,
+                  "chunk_objective_median": 169.54739852928986,
+                  "chunk_objective_mean": 169.6271398879316,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_03250.npz"
+                },
+                {
+                  "steps_completed": 3500,
+                  "chunk_objective_median": 169.54786735219335,
+                  "chunk_objective_mean": 169.63860863395433,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_03500.npz"
+                },
+                {
+                  "steps_completed": 3750,
+                  "chunk_objective_median": 169.5609798943646,
+                  "chunk_objective_mean": 169.6451623413809,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_03750.npz"
+                },
+                {
+                  "steps_completed": 4000,
+                  "chunk_objective_median": 169.58780535401576,
+                  "chunk_objective_mean": 169.63337125133012,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_04000.npz"
+                },
+                {
+                  "steps_completed": 4250,
+                  "chunk_objective_median": 169.56367259839726,
+                  "chunk_objective_mean": 169.63731755897982,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_04250.npz"
+                },
+                {
+                  "steps_completed": 4500,
+                  "chunk_objective_median": 169.5853100045373,
+                  "chunk_objective_mean": 169.71656532313705,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_04500.npz"
+                },
+                {
+                  "steps_completed": 4750,
+                  "chunk_objective_median": 169.52643536166642,
+                  "chunk_objective_mean": 169.6876993941576,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_04750.npz"
+                },
+                {
+                  "steps_completed": 5000,
+                  "chunk_objective_median": 169.5123926015255,
+                  "chunk_objective_mean": 169.66147822425557,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_1/task1_checkpoints/checkpoint_05000.npz",
+                  "moving_median_relative_change": 0.00019495388919453418
+                }
+              ]
+            },
+            "online_seconds_total": 125.02868233248591,
+            "online_seconds_per_week": 15.62858529156074,
+            "online_update_prediction_seconds": [
+              18.866950139403343,
+              15.235558457672596,
+              15.016449194401503,
+              15.374990604817867,
+              14.896185256540775,
+              15.002945121377707,
+              15.728822901844978,
+              14.906780656427145
+            ],
+            "audit": {
+              "online_steps_completed": 8,
+              "delayed_hidden_labels": 70,
+              "expected_delayed_hidden_labels": 70,
+              "current_visible_labels": 336,
+              "expected_current_visible_labels": 336,
+              "current_hidden_labels_read": 0,
+              "hidden_predictions": 80,
+              "expected_hidden_predictions": 80,
+              "passed": true
+            },
+            "note": "The official API has no posterior extension method for a growing irregular grid. Each online posterior is therefore reconstructed from legal arrived observations with Task-1 kernel, likelihood and inducing locations frozen."
+          }
+        },
+        {
+          "status": "scored",
+          "archive": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/predictions.npz",
+          "archive_sha256": "3fbe3fcc1ca40406066a0b6ab306ad2d4f5e69c501260ae97d1774a6b92d8c15",
+          "metrics": {
+            "rmse": 0.21005477032410677,
+            "crps": 0.10190826371620336,
+            "ece": 0.095,
+            "coverage90": 0.9625,
+            "native_gaussian_nlpd": -0.15555611506212194
+          },
+          "task1_convergence_status": "converged_objective_plateau",
+          "causal_audit": {
+            "online_steps_completed": 8,
+            "delayed_hidden_labels": 70,
+            "expected_delayed_hidden_labels": 70,
+            "current_visible_labels": 336,
+            "expected_current_visible_labels": 336,
+            "current_hidden_labels_read": 0,
+            "hidden_predictions": 80,
+            "expected_hidden_predictions": 80,
+            "passed": true
+          },
+          "causal_gate_passed": true,
+          "adapter_state_gate_passed": true,
+          "adapter_state_gate_reason": "not_applicable",
+          "result": {
+            "status": "complete",
+            "method": "ST-SVGP causal refit",
+            "source": "AaltoML/spatio-temporal-GPs",
+            "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+            "protocol": "covid_long_setting_b",
+            "seed": 0,
+            "weeks": 8,
+            "task1_seconds": 2731.3462258316576,
+            "task1_state_source": "fitted_in_process",
+            "task1_convergence": {
+              "status": "converged_objective_plateau",
+              "steps_completed": 5000,
+              "max_steps": 50000,
+              "check_interval": 250,
+              "minimum_steps": 2500,
+              "moving_median_checks": 10,
+              "relative_improvement_threshold": 0.001,
+              "final_objective": 198.1405965500658,
+              "trace": [
+                {
+                  "steps_completed": 250,
+                  "chunk_objective_median": 262.5451540346651,
+                  "chunk_objective_mean": 308.43973859663345,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_00250.npz"
+                },
+                {
+                  "steps_completed": 500,
+                  "chunk_objective_median": 205.30862499245495,
+                  "chunk_objective_mean": 206.70703859190778,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_00500.npz"
+                },
+                {
+                  "steps_completed": 750,
+                  "chunk_objective_median": 199.0721089225027,
+                  "chunk_objective_mean": 199.22380326660885,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_00750.npz"
+                },
+                {
+                  "steps_completed": 1000,
+                  "chunk_objective_median": 198.22940753440383,
+                  "chunk_objective_mean": 198.25584831960026,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_01000.npz"
+                },
+                {
+                  "steps_completed": 1250,
+                  "chunk_objective_median": 198.08835891334166,
+                  "chunk_objective_mean": 198.1521351699012,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_01250.npz"
+                },
+                {
+                  "steps_completed": 1500,
+                  "chunk_objective_median": 198.0555577105048,
+                  "chunk_objective_mean": 198.13582805829006,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_01500.npz"
+                },
+                {
+                  "steps_completed": 1750,
+                  "chunk_objective_median": 198.01776010962766,
+                  "chunk_objective_mean": 198.16177453063742,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_01750.npz"
+                },
+                {
+                  "steps_completed": 2000,
+                  "chunk_objective_median": 197.99895557678815,
+                  "chunk_objective_mean": 198.14231838490994,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_02000.npz"
+                },
+                {
+                  "steps_completed": 2250,
+                  "chunk_objective_median": 197.98570777116527,
+                  "chunk_objective_mean": 198.11792825826,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_02250.npz"
+                },
+                {
+                  "steps_completed": 2500,
+                  "chunk_objective_median": 198.02217938038166,
+                  "chunk_objective_mean": 198.15652860439187,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_02500.npz"
+                },
+                {
+                  "steps_completed": 2750,
+                  "chunk_objective_median": 198.00868528784076,
+                  "chunk_objective_mean": 198.12746613175386,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_02750.npz"
+                },
+                {
+                  "steps_completed": 3000,
+                  "chunk_objective_median": 198.0501419865779,
+                  "chunk_objective_mean": 198.15682432313602,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_03000.npz"
+                },
+                {
+                  "steps_completed": 3250,
+                  "chunk_objective_median": 198.00386300637206,
+                  "chunk_objective_mean": 198.14351890511094,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_03250.npz"
+                },
+                {
+                  "steps_completed": 3500,
+                  "chunk_objective_median": 198.02736877985996,
+                  "chunk_objective_mean": 198.16077276088095,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_03500.npz"
+                },
+                {
+                  "steps_completed": 3750,
+                  "chunk_objective_median": 198.01316813992912,
+                  "chunk_objective_mean": 198.15492841507668,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_03750.npz"
+                },
+                {
+                  "steps_completed": 4000,
+                  "chunk_objective_median": 198.02593167253582,
+                  "chunk_objective_mean": 198.13296989071034,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_04000.npz"
+                },
+                {
+                  "steps_completed": 4250,
+                  "chunk_objective_median": 198.01590408263075,
+                  "chunk_objective_mean": 198.14859971469437,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_04250.npz"
+                },
+                {
+                  "steps_completed": 4500,
+                  "chunk_objective_median": 198.06485506984075,
+                  "chunk_objective_mean": 198.17881039244082,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_04500.npz"
+                },
+                {
+                  "steps_completed": 4750,
+                  "chunk_objective_median": 197.99631054956467,
+                  "chunk_objective_mean": 198.29671205352125,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_04750.npz"
+                },
+                {
+                  "steps_completed": 5000,
+                  "chunk_objective_median": 197.94839261861046,
+                  "chunk_objective_mean": 198.1405965500658,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_2/task1_checkpoints/checkpoint_05000.npz",
+                  "moving_median_relative_change": 0.0002899057551238994
+                }
+              ]
+            },
+            "online_seconds_total": 120.39986030757427,
+            "online_seconds_per_week": 15.049982538446784,
+            "online_update_prediction_seconds": [
+              14.564923483878374,
+              14.656051214784384,
+              14.786665756255388,
+              14.914214685559273,
+              15.695975672453642,
+              15.325693745166063,
+              15.397452164441347,
+              15.058883585035801
+            ],
+            "audit": {
+              "online_steps_completed": 8,
+              "delayed_hidden_labels": 70,
+              "expected_delayed_hidden_labels": 70,
+              "current_visible_labels": 336,
+              "expected_current_visible_labels": 336,
+              "current_hidden_labels_read": 0,
+              "hidden_predictions": 80,
+              "expected_hidden_predictions": 80,
+              "passed": true
+            },
+            "note": "The official API has no posterior extension method for a growing irregular grid. Each online posterior is therefore reconstructed from legal arrived observations with Task-1 kernel, likelihood and inducing locations frozen."
+          }
+        },
+        {
+          "status": "scored",
+          "archive": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/predictions.npz",
+          "archive_sha256": "5d20db69bb57301f70631e4c19cb243b16f96b1995258e3181baafef4892306d",
+          "metrics": {
+            "rmse": 0.31109029017950507,
+            "crps": 0.13160729771708896,
+            "ece": 0.026249999999999996,
+            "coverage90": 0.8875,
+            "native_gaussian_nlpd": 0.4279030496191636
+          },
+          "task1_convergence_status": "converged_objective_plateau",
+          "causal_audit": {
+            "online_steps_completed": 8,
+            "delayed_hidden_labels": 70,
+            "expected_delayed_hidden_labels": 70,
+            "current_visible_labels": 336,
+            "expected_current_visible_labels": 336,
+            "current_hidden_labels_read": 0,
+            "hidden_predictions": 80,
+            "expected_hidden_predictions": 80,
+            "passed": true
+          },
+          "causal_gate_passed": true,
+          "adapter_state_gate_passed": true,
+          "adapter_state_gate_reason": "not_applicable",
+          "result": {
+            "status": "complete",
+            "method": "ST-SVGP causal refit",
+            "source": "AaltoML/spatio-temporal-GPs",
+            "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+            "protocol": "covid_long_setting_b",
+            "seed": 0,
+            "weeks": 8,
+            "task1_seconds": 3241.475391406566,
+            "task1_state_source": "fitted_in_process",
+            "task1_convergence": {
+              "status": "converged_objective_plateau",
+              "steps_completed": 5000,
+              "max_steps": 50000,
+              "check_interval": 250,
+              "minimum_steps": 2500,
+              "moving_median_checks": 10,
+              "relative_improvement_threshold": 0.001,
+              "final_objective": 252.10657764720065,
+              "trace": [
+                {
+                  "steps_completed": 250,
+                  "chunk_objective_median": 313.136939543307,
+                  "chunk_objective_mean": 383.80590533609245,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_00250.npz"
+                },
+                {
+                  "steps_completed": 500,
+                  "chunk_objective_median": 260.11747573086865,
+                  "chunk_objective_mean": 261.3122439729756,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_00500.npz"
+                },
+                {
+                  "steps_completed": 750,
+                  "chunk_objective_median": 253.5173025306185,
+                  "chunk_objective_mean": 253.67939335332386,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_00750.npz"
+                },
+                {
+                  "steps_completed": 1000,
+                  "chunk_objective_median": 252.24658101397972,
+                  "chunk_objective_mean": 252.31839231158344,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_01000.npz"
+                },
+                {
+                  "steps_completed": 1250,
+                  "chunk_objective_median": 252.0427463029024,
+                  "chunk_objective_mean": 252.07641686161585,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_01250.npz"
+                },
+                {
+                  "steps_completed": 1500,
+                  "chunk_objective_median": 251.97821357303462,
+                  "chunk_objective_mean": 252.08676353731127,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_01500.npz"
+                },
+                {
+                  "steps_completed": 1750,
+                  "chunk_objective_median": 251.9673244410393,
+                  "chunk_objective_mean": 252.06416593198105,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_01750.npz"
+                },
+                {
+                  "steps_completed": 2000,
+                  "chunk_objective_median": 251.93907685165738,
+                  "chunk_objective_mean": 252.0530034201449,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_02000.npz"
+                },
+                {
+                  "steps_completed": 2250,
+                  "chunk_objective_median": 251.92896302090816,
+                  "chunk_objective_mean": 252.07996193855735,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_02250.npz"
+                },
+                {
+                  "steps_completed": 2500,
+                  "chunk_objective_median": 251.89289045478574,
+                  "chunk_objective_mean": 252.07789990098738,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_02500.npz"
+                },
+                {
+                  "steps_completed": 2750,
+                  "chunk_objective_median": 251.94654472287436,
+                  "chunk_objective_mean": 252.07941027354505,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_02750.npz"
+                },
+                {
+                  "steps_completed": 3000,
+                  "chunk_objective_median": 251.97691210325866,
+                  "chunk_objective_mean": 252.05860589081436,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_03000.npz"
+                },
+                {
+                  "steps_completed": 3250,
+                  "chunk_objective_median": 251.9219882953845,
+                  "chunk_objective_mean": 252.0666827466644,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_03250.npz"
+                },
+                {
+                  "steps_completed": 3500,
+                  "chunk_objective_median": 251.9769063842973,
+                  "chunk_objective_mean": 252.07451864041997,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_03500.npz"
+                },
+                {
+                  "steps_completed": 3750,
+                  "chunk_objective_median": 251.93357071512565,
+                  "chunk_objective_mean": 252.08605520610413,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_03750.npz"
+                },
+                {
+                  "steps_completed": 4000,
+                  "chunk_objective_median": 251.95465098484965,
+                  "chunk_objective_mean": 252.06213971381524,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_04000.npz"
+                },
+                {
+                  "steps_completed": 4250,
+                  "chunk_objective_median": 251.93239594284165,
+                  "chunk_objective_mean": 252.06529519043707,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_04250.npz"
+                },
+                {
+                  "steps_completed": 4500,
+                  "chunk_objective_median": 251.9546573163027,
+                  "chunk_objective_mean": 252.07568705151192,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_04500.npz"
+                },
+                {
+                  "steps_completed": 4750,
+                  "chunk_objective_median": 251.94861837309463,
+                  "chunk_objective_mean": 252.06104697814223,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_04750.npz"
+                },
+                {
+                  "steps_completed": 5000,
+                  "chunk_objective_median": 251.97704794473213,
+                  "chunk_objective_mean": 252.10657764720065,
+                  "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/blocked_development_st_svgp_v2/capacity/st_svgp/spatial_inducing52/fold_3/task1_checkpoints/checkpoint_05000.npz",
+                  "moving_median_relative_change": 0.00023350322181385228
+                }
+              ]
+            },
+            "online_seconds_total": 124.64962461590767,
+            "online_seconds_per_week": 15.581203076988459,
+            "online_update_prediction_seconds": [
+              15.213955730199814,
+              15.432811062783003,
+              15.52539025619626,
+              15.444635834544897,
+              15.782920680940151,
+              15.870537959039211,
+              15.54407911002636,
+              15.835293982177973
+            ],
+            "audit": {
+              "online_steps_completed": 8,
+              "delayed_hidden_labels": 70,
+              "expected_delayed_hidden_labels": 70,
+              "current_visible_labels": 336,
+              "expected_current_visible_labels": 336,
+              "current_hidden_labels_read": 0,
+              "hidden_predictions": 80,
+              "expected_hidden_predictions": 80,
+              "passed": true
+            },
+            "note": "The official API has no posterior extension method for a growing irregular grid. Each online posterior is therefore reconstructed from legal arrived observations with Task-1 kernel, likelihood and inducing locations frozen."
+          }
+        }
+      ],
+      "mean_rmse": 0.22699021624335067,
+      "mean_crps": 0.10837777802250576,
+      "mean_native_gaussian_nlpd": -0.0171588888996832,
+      "mean_ece": 0.07541666666666666,
+      "mean_coverage90": 0.9333333333333332
+    }
+  ],
+  "lmc_imc_cross_audits": {},
+  "selected": {
+    "st_svgp": {
+      "candidate": {
+        "spatial_inducing": 52
+      },
+      "mean_gaussian_nlpd": -0.0171588888996832,
+      "mean_rmse": 0.22699021624335067
+    }
+  },
+  "practical_capacity_stability": {
+    "st_svgp": {
+      "status": "capacity_unresolved",
+      "engineering_criterion": "upper-budget RMSE change <= 1% and Gaussian NLPD change <= 0.01; not a theoretical capacity guarantee",
+      "lower_candidate": {
+        "spatial_inducing": 32
+      },
+      "upper_candidate": {
+        "spatial_inducing": 52
+      },
+      "rmse_relative_change": 0.16061932759337114,
+      "gaussian_nlpd_absolute_change": 0.11924599193045443
+    }
+  }
+}

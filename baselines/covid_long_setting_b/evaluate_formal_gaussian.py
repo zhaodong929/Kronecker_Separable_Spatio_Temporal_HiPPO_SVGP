@@ -65,7 +65,7 @@ def parse_args() -> argparse.Namespace:
         type=Path,
         help="Include repaired methods only from a completed new formal root locked by this file.",
     )
-    parser.add_argument("--seeds", nargs="+", type=int, default=[5, 6, 7, 8, 9])
+    parser.add_argument("--seeds", nargs="+", type=int, default=[5, 6, 7])
     return parser.parse_args()
 
 
@@ -157,6 +157,8 @@ def main() -> None:
     )
     catalog = json.loads(absolute(args.catalog).read_text(encoding="utf-8"))
     fairness = None if args.fairness_protocol is None else json.loads(absolute(args.fairness_protocol).read_text(encoding="utf-8"))
+    if fairness is not None and list(args.seeds) != fairness.get("formal_seeds"):
+        raise ValueError("Evaluation seeds must exactly match the fairness lock")
     admitted_repaired = set() if fairness is None else set(fairness.get("methods", {}))
     methods = methods_for_evaluation(catalog, fairness)
     rows: list[dict[str, Any]] = []
@@ -233,12 +235,15 @@ def main() -> None:
         "",
         "## Capacity Selection",
         "",
-        capacity_policy["selection_protocol"],
+        capacity_policy["selection_protocol"].replace(
+            "Formal seeds 5-9 are never read for capacity, checkpoint or online-step selection.",
+            f"Formal seeds {', '.join(str(seed) for seed in args.seeds)} are never read for capacity, checkpoint or online-step selection.",
+        ),
         "",
         "Route B ordinary and cumulative HiPPO remain exactly matched at "
         "`Mt=32, Ms=32`. External adapters are admitted only after their three "
         "blocked seed-0 validation windows, method-specific gates and a fairness-locked "
-        "seed-5--9 formal run pass. Prior adapter archives cannot be reintroduced by path alone.",
+        "seed-5--7 formal run pass. Prior adapter archives cannot be reintroduced by path alone.",
         "",
         "| Method | Splits | RMSE | CRPS | Gaussian NLPD | ECE | Coverage90 |",
         "|---|---:|---:|---:|---:|---:|---:|",

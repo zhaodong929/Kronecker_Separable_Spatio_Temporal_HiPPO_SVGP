@@ -448,8 +448,8 @@ def main() -> None:
     if args.device == "gpu" and jax.default_backend() != "gpu":
         raise RuntimeError("--device gpu was requested, but JAX did not initialize a GPU backend")
     protocol = COVIDSettingBProtocol(args.protocol_npz, args.protocol_json)
-    if not 1 <= args.temporal_inducing <= protocol.calibration_weeks + protocol.online_weeks:
-        raise ValueError("--temporal-inducing is outside the study horizon")
+    if args.temporal_inducing < 1:
+        raise ValueError("--temporal-inducing must be positive")
     if not 1 <= args.latent_rank <= protocol.locations:
         raise ValueError("--latent-rank must be between 1 and 52")
     if not 1 <= args.validation_weeks < protocol.calibration_weeks:

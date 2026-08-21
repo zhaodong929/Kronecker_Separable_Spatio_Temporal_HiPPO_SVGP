@@ -1,0 +1,3101 @@
+{
+  "status": "complete",
+  "method": "LMC-SVGP",
+  "source": "SeyoungKimLab/FactorialSDE",
+  "seed": 5,
+  "capacity": {
+    "temporal_inducing": 32,
+    "latent_rank": 8
+  },
+  "execution_device": "gpu",
+  "task1_convergence": {
+    "status": "max_budget_not_converged",
+    "steps_completed": 50000,
+    "max_steps": 50000,
+    "check_interval": 250,
+    "minimum_steps": 2500,
+    "moving_median_checks": 10,
+    "relative_improvement_threshold": 0.001,
+    "natural_gradient": true,
+    "persistent_optimizer_state_across_checks": true,
+    "compiled_steps_per_host_synchronization": 250,
+    "objective_evaluations": "one_full_training_prefix_elbo_per_check",
+    "final_elbo": 280.60607980066163,
+    "trace": [
+      {
+        "steps_completed": 250,
+        "chunk_elbo_median": -4214.001217658237,
+        "chunk_elbo_mean": -4214.001217658237,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": null,
+        "q_mu_max_abs_update": 0.7831608862336126,
+        "q_sqrt_max_abs_update": 0.9182536301702787,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_00250.npz"
+      },
+      {
+        "steps_completed": 500,
+        "chunk_elbo_median": -3657.50529068428,
+        "chunk_elbo_mean": -3657.50529068428,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.1320587959590593,
+        "q_mu_max_abs_update": 0.3635341713490301,
+        "q_sqrt_max_abs_update": 0.03953845347450438,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_00500.npz"
+      },
+      {
+        "steps_completed": 750,
+        "chunk_elbo_median": -3181.0812118007398,
+        "chunk_elbo_mean": -3181.0812118007398,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.13025929999253852,
+        "q_mu_max_abs_update": 0.3641063087599229,
+        "q_sqrt_max_abs_update": 0.030516708258791603,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_00750.npz"
+      },
+      {
+        "steps_completed": 1000,
+        "chunk_elbo_median": -2786.126237077447,
+        "chunk_elbo_mean": -2786.126237077447,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.12415746358758235,
+        "q_mu_max_abs_update": 0.28173130878190444,
+        "q_sqrt_max_abs_update": 0.02507927309702429,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_01000.npz"
+      },
+      {
+        "steps_completed": 1250,
+        "chunk_elbo_median": -2424.2504622494853,
+        "chunk_elbo_mean": -2424.2504622494853,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.12988491691875287,
+        "q_mu_max_abs_update": 0.22450721631931225,
+        "q_sqrt_max_abs_update": 0.0465402673776652,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_01250.npz"
+      },
+      {
+        "steps_completed": 1500,
+        "chunk_elbo_median": -2051.7486297558307,
+        "chunk_elbo_mean": -2051.7486297558307,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.15365649642818116,
+        "q_mu_max_abs_update": 0.2556726023161229,
+        "q_sqrt_max_abs_update": 0.04860337368122103,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_01500.npz"
+      },
+      {
+        "steps_completed": 1750,
+        "chunk_elbo_median": -1694.16308238732,
+        "chunk_elbo_mean": -1694.16308238732,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.17428331238172456,
+        "q_mu_max_abs_update": 0.27944974197553485,
+        "q_sqrt_max_abs_update": 0.03611567589540454,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_01750.npz"
+      },
+      {
+        "steps_completed": 2000,
+        "chunk_elbo_median": -1363.9335804256157,
+        "chunk_elbo_mean": -1363.9335804256157,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.1949219088733555,
+        "q_mu_max_abs_update": 0.3335063822102917,
+        "q_sqrt_max_abs_update": 0.02650971738229002,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_02000.npz"
+      },
+      {
+        "steps_completed": 2250,
+        "chunk_elbo_median": -1068.5170873971513,
+        "chunk_elbo_mean": -1068.5170873971513,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.21659155348039721,
+        "q_mu_max_abs_update": 0.2966565881152121,
+        "q_sqrt_max_abs_update": 0.023848577265726534,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_02250.npz"
+      },
+      {
+        "steps_completed": 2500,
+        "chunk_elbo_median": -815.4298831468515,
+        "chunk_elbo_mean": -815.4298831468515,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.2368583593424849,
+        "q_mu_max_abs_update": 0.28467318119366114,
+        "q_sqrt_max_abs_update": 0.022529293129751826,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_02500.npz"
+      },
+      {
+        "steps_completed": 2750,
+        "chunk_elbo_median": -596.8594629432682,
+        "chunk_elbo_mean": -596.8594629432682,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.2680431815425885,
+        "q_mu_max_abs_update": 0.2813716085310457,
+        "q_sqrt_max_abs_update": 0.021757262250450826,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_02750.npz"
+      },
+      {
+        "steps_completed": 3000,
+        "chunk_elbo_median": -407.87444008984363,
+        "chunk_elbo_mean": -407.87444008984363,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.31663236421098295,
+        "q_mu_max_abs_update": 0.30983042793375404,
+        "q_sqrt_max_abs_update": 0.022609939885555375,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_03000.npz"
+      },
+      {
+        "steps_completed": 3250,
+        "chunk_elbo_median": -257.07840743552606,
+        "chunk_elbo_mean": -257.07840743552606,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.3697118961931062,
+        "q_mu_max_abs_update": 0.3274573763055382,
+        "q_sqrt_max_abs_update": 0.022452949576680314,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_03250.npz"
+      },
+      {
+        "steps_completed": 3500,
+        "chunk_elbo_median": -143.13538547841927,
+        "chunk_elbo_mean": -143.13538547841927,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.443222840431214,
+        "q_mu_max_abs_update": 0.3255329795577002,
+        "q_sqrt_max_abs_update": 0.02076471590153539,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_03500.npz"
+      },
+      {
+        "steps_completed": 3750,
+        "chunk_elbo_median": -57.8609007304627,
+        "chunk_elbo_mean": -57.8609007304627,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.5957610304603087,
+        "q_mu_max_abs_update": 0.29612693869860873,
+        "q_sqrt_max_abs_update": 0.018419693675406634,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_03750.npz"
+      },
+      {
+        "steps_completed": 4000,
+        "chunk_elbo_median": 5.124692026153156,
+        "chunk_elbo_mean": 5.124692026153156,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 1.08856917126171,
+        "q_mu_max_abs_update": 0.24061778184907157,
+        "q_sqrt_max_abs_update": 0.014060514282744352,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_04000.npz"
+      },
+      {
+        "steps_completed": 4250,
+        "chunk_elbo_median": 51.75996384908768,
+        "chunk_elbo_mean": 51.75996384908768,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 9.100112081845676,
+        "q_mu_max_abs_update": 0.19579601179137462,
+        "q_sqrt_max_abs_update": 0.012650167907739318,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_04250.npz"
+      },
+      {
+        "steps_completed": 4500,
+        "chunk_elbo_median": 87.76697739507219,
+        "chunk_elbo_mean": 87.76697739507219,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.6956537614857543,
+        "q_mu_max_abs_update": 0.19950152939003396,
+        "q_sqrt_max_abs_update": 0.009902553281701199,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_04500.npz"
+      },
+      {
+        "steps_completed": 4750,
+        "chunk_elbo_median": 117.22628449196202,
+        "chunk_elbo_mean": 117.22628449196202,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.3356536589414764,
+        "q_mu_max_abs_update": 0.1978702448071361,
+        "q_sqrt_max_abs_update": 0.0067867218064551205,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_04750.npz"
+      },
+      {
+        "steps_completed": 5000,
+        "chunk_elbo_median": 142.15506834351226,
+        "chunk_elbo_mean": 142.15506834351226,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.2126552416088864,
+        "q_mu_max_abs_update": 0.17450881918428518,
+        "q_sqrt_max_abs_update": 0.004147387638854749,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_05000.npz",
+        "moving_median_relative_change": 0.9882180028144996
+      },
+      {
+        "steps_completed": 5250,
+        "chunk_elbo_median": 163.07491694094006,
+        "chunk_elbo_mean": 163.07491694094006,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.14716217185359717,
+        "q_mu_max_abs_update": 0.14656915651988056,
+        "q_sqrt_max_abs_update": 0.0035530520531733556,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_05250.npz",
+        "moving_median_relative_change": 1.0151857972762244
+      },
+      {
+        "steps_completed": 5500,
+        "chunk_elbo_median": 180.26465139193238,
+        "chunk_elbo_mean": 180.26465139193238,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.10541004572283688,
+        "q_mu_max_abs_update": 0.11657515446613997,
+        "q_sqrt_max_abs_update": 0.006563250525541395,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_05500.npz",
+        "moving_median_relative_change": 1.0456254188890872
+      },
+      {
+        "steps_completed": 5750,
+        "chunk_elbo_median": 194.07895433715822,
+        "chunk_elbo_mean": 194.07895433715822,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.07663345441581176,
+        "q_mu_max_abs_update": 0.09424441856776244,
+        "q_sqrt_max_abs_update": 0.0029138758918673124,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_05750.npz",
+        "moving_median_relative_change": 1.0842743758789235
+      },
+      {
+        "steps_completed": 6000,
+        "chunk_elbo_median": 205.05672757086415,
+        "chunk_elbo_mean": 205.05672757086415,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.05656343971554537,
+        "q_mu_max_abs_update": 0.08088862939933072,
+        "q_sqrt_max_abs_update": 0.00593419547983097,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_06000.npz",
+        "moving_median_relative_change": 1.1376797526103275
+      },
+      {
+        "steps_completed": 6250,
+        "chunk_elbo_median": 213.74912385213685,
+        "chunk_elbo_mean": 213.74912385213685,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.04239020286846598,
+        "q_mu_max_abs_update": 0.06407487616691299,
+        "q_sqrt_max_abs_update": 0.0028657166270663614,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_06250.npz",
+        "moving_median_relative_change": 1.2161242567817085
+      },
+      {
+        "steps_completed": 6500,
+        "chunk_elbo_median": 220.65967830883847,
+        "chunk_elbo_mean": 220.65967830883847,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.03233021184911179,
+        "q_mu_max_abs_update": 0.050073611651827665,
+        "q_sqrt_max_abs_update": 0.0026750803977624305,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_06500.npz",
+        "moving_median_relative_change": 1.341721890041126
+      },
+      {
+        "steps_completed": 6750,
+        "chunk_elbo_median": 226.1433319285589,
+        "chunk_elbo_mean": 226.1433319285589,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.024851181066463026,
+        "q_mu_max_abs_update": 0.05044984513531148,
+        "q_sqrt_max_abs_update": 0.0027945453502392636,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_06750.npz",
+        "moving_median_relative_change": 1.5629626327975208
+      },
+      {
+        "steps_completed": 7000,
+        "chunk_elbo_median": 230.57631218759377,
+        "chunk_elbo_mean": 230.57631218759377,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.01960252474052741,
+        "q_mu_max_abs_update": 0.04451600159825553,
+        "q_sqrt_max_abs_update": 0.0027681336517448862,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_07000.npz",
+        "moving_median_relative_change": 1.9973061622937252
+      },
+      {
+        "steps_completed": 7250,
+        "chunk_elbo_median": 234.1687967331058,
+        "chunk_elbo_mean": 234.1687967331058,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.01558045798993107,
+        "q_mu_max_abs_update": 0.04617391615960642,
+        "q_sqrt_max_abs_update": 0.004099195802780065,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_07250.npz",
+        "moving_median_relative_change": 3.0836496998146727
+      },
+      {
+        "steps_completed": 7500,
+        "chunk_elbo_median": 237.15963005239553,
+        "chunk_elbo_mean": 237.15963005239553,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.012772125752939349,
+        "q_mu_max_abs_update": 0.04109383083706675,
+        "q_sqrt_max_abs_update": 0.002490613924754026,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_07500.npz",
+        "moving_median_relative_change": 9.237391591737156
+      },
+      {
+        "steps_completed": 7750,
+        "chunk_elbo_median": 239.7297144102248,
+        "chunk_elbo_mean": 239.7297144102248,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.010836938636063255,
+        "q_mu_max_abs_update": 0.0456696888038266,
+        "q_sqrt_max_abs_update": 0.0025467853825811015,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_07750.npz",
+        "moving_median_relative_change": 6.854543608689901
+      },
+      {
+        "steps_completed": 8000,
+        "chunk_elbo_median": 241.89791668916098,
+        "chunk_elbo_mean": 241.89791668916098,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.009044361831699998,
+        "q_mu_max_abs_update": 0.043491007333049225,
+        "q_sqrt_max_abs_update": 0.0024445658637906043,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_08000.npz",
+        "moving_median_relative_change": 2.2733437717733196
+      },
+      {
+        "steps_completed": 8250,
+        "chunk_elbo_median": 243.8187632688754,
+        "chunk_elbo_mean": 243.8187632688754,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.007940732214666804,
+        "q_mu_max_abs_update": 0.04966812921722763,
+        "q_sqrt_max_abs_update": 0.004704300062779887,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_08250.npz",
+        "moving_median_relative_change": 1.2671238295471734
+      },
+      {
+        "steps_completed": 8500,
+        "chunk_elbo_median": 245.51758650925473,
+        "chunk_elbo_mean": 245.51758650925473,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.006967565652467581,
+        "q_mu_max_abs_update": 0.04590868183045593,
+        "q_sqrt_max_abs_update": 0.002087965990262286,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_08500.npz",
+        "moving_median_relative_change": 0.8171253316134302
+      },
+      {
+        "steps_completed": 8750,
+        "chunk_elbo_median": 247.04787275344904,
+        "chunk_elbo_mean": 247.04787275344904,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.006232898693538725,
+        "q_mu_max_abs_update": 0.04080585537695569,
+        "q_sqrt_max_abs_update": 0.006369817423242843,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_08750.npz",
+        "moving_median_relative_change": 0.5623934981951196
+      },
+      {
+        "steps_completed": 9000,
+        "chunk_elbo_median": 248.40527334425462,
+        "chunk_elbo_mean": 248.40527334425462,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.005494484027232458,
+        "q_mu_max_abs_update": 0.045501614355423214,
+        "q_sqrt_max_abs_update": 0.002447161177717816,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_09000.npz",
+        "moving_median_relative_change": 0.4027734508958233
+      },
+      {
+        "steps_completed": 9250,
+        "chunk_elbo_median": 249.63483739604834,
+        "chunk_elbo_mean": 249.63483739604834,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.004949830715106091,
+        "q_mu_max_abs_update": 0.05139946210255886,
+        "q_sqrt_max_abs_update": 0.006018297182820362,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_09250.npz",
+        "moving_median_relative_change": 0.29751563142645354
+      },
+      {
+        "steps_completed": 9500,
+        "chunk_elbo_median": 250.78595916431948,
+        "chunk_elbo_mean": 250.78595916431948,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.004611222457083872,
+        "q_mu_max_abs_update": 0.047983280300325504,
+        "q_sqrt_max_abs_update": 0.0020770567100983905,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_09500.npz",
+        "moving_median_relative_change": 0.2259899877628424
+      },
+      {
+        "steps_completed": 9750,
+        "chunk_elbo_median": 251.86694221051948,
+        "chunk_elbo_mean": 251.86694221051948,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00431038105084553,
+        "q_mu_max_abs_update": 0.044275129244052636,
+        "q_sqrt_max_abs_update": 0.0018999239114386723,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_09750.npz",
+        "moving_median_relative_change": 0.17611885695743137
+      },
+      {
+        "steps_completed": 10000,
+        "chunk_elbo_median": 252.839574641068,
+        "chunk_elbo_mean": 252.839574641068,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0038616915027123873,
+        "q_mu_max_abs_update": 0.04108418009273507,
+        "q_sqrt_max_abs_update": 0.0020088725283774755,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_10000.npz",
+        "moving_median_relative_change": 0.14052280624393898
+      },
+      {
+        "steps_completed": 10250,
+        "chunk_elbo_median": 253.77508578428785,
+        "chunk_elbo_mean": 253.77508578428785,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0037000186562879274,
+        "q_mu_max_abs_update": 0.04209336455416235,
+        "q_sqrt_max_abs_update": 0.0018732303817685647,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_10250.npz",
+        "moving_median_relative_change": 0.11467492234593961
+      },
+      {
+        "steps_completed": 10500,
+        "chunk_elbo_median": 254.6159437443726,
+        "chunk_elbo_mean": 254.6159437443726,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0033133983877341204,
+        "q_mu_max_abs_update": 0.042481524983148944,
+        "q_sqrt_max_abs_update": 0.002924741469865877,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_10500.npz",
+        "moving_median_relative_change": 0.09568485395189417
+      },
+      {
+        "steps_completed": 10750,
+        "chunk_elbo_median": 255.40816916434648,
+        "chunk_elbo_mean": 255.40816916434648,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.003111452520700145,
+        "q_mu_max_abs_update": 0.04241691368437728,
+        "q_sqrt_max_abs_update": 0.0020619828292084696,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_10750.npz",
+        "moving_median_relative_change": 0.08156684540946436
+      },
+      {
+        "steps_completed": 11000,
+        "chunk_elbo_median": 256.1959028868181,
+        "chunk_elbo_mean": 256.1959028868181,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0030842150626933726,
+        "q_mu_max_abs_update": 0.0430708414398957,
+        "q_sqrt_max_abs_update": 0.0024401654562722086,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_11000.npz",
+        "moving_median_relative_change": 0.07081705275815309
+      },
+      {
+        "steps_completed": 11250,
+        "chunk_elbo_median": 256.8969328999276,
+        "chunk_elbo_mean": 256.8969328999276,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0027363045435555484,
+        "q_mu_max_abs_update": 0.03772913186968907,
+        "q_sqrt_max_abs_update": 0.0020197035297061516,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_11250.npz",
+        "moving_median_relative_change": 0.062331684085395744
+      },
+      {
+        "steps_completed": 11500,
+        "chunk_elbo_median": 257.59148482564717,
+        "chunk_elbo_mean": 257.59148482564717,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.002703620934198243,
+        "q_mu_max_abs_update": 0.0426283273913981,
+        "q_sqrt_max_abs_update": 0.004111325287155937,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_11500.npz",
+        "moving_median_relative_change": 0.05556865242175431
+      },
+      {
+        "steps_completed": 11750,
+        "chunk_elbo_median": 258.2377403057643,
+        "chunk_elbo_mean": 258.2377403057643,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.002508838677468538,
+        "q_mu_max_abs_update": 0.037047443854266504,
+        "q_sqrt_max_abs_update": 0.0018767721771162094,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_11750.npz",
+        "moving_median_relative_change": 0.05004446821299766
+      },
+      {
+        "steps_completed": 12000,
+        "chunk_elbo_median": 258.8585818155275,
+        "chunk_elbo_mean": 258.8585818155275,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0024041470817862606,
+        "q_mu_max_abs_update": 0.030391214022916557,
+        "q_sqrt_max_abs_update": 0.006339513847544526,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_12000.npz",
+        "moving_median_relative_change": 0.045505963910367285
+      },
+      {
+        "steps_completed": 12250,
+        "chunk_elbo_median": 259.4333182884318,
+        "chunk_elbo_mean": 259.4333182884318,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.002220272045351329,
+        "q_mu_max_abs_update": 0.034989235536716734,
+        "q_sqrt_max_abs_update": 0.0022126408704582212,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_12250.npz",
+        "moving_median_relative_change": 0.04167441329476962
+      },
+      {
+        "steps_completed": 12500,
+        "chunk_elbo_median": 259.9743355165008,
+        "chunk_elbo_mean": 259.9743355165008,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0020853806736862717,
+        "q_mu_max_abs_update": 0.04108647413801236,
+        "q_sqrt_max_abs_update": 0.006032060909584774,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_12500.npz",
+        "moving_median_relative_change": 0.03841992280762981
+      },
+      {
+        "steps_completed": 12750,
+        "chunk_elbo_median": 260.50823335263584,
+        "chunk_elbo_mean": 260.50823335263584,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.002053655931360837,
+        "q_mu_max_abs_update": 0.036553547165652844,
+        "q_sqrt_max_abs_update": 0.002069519463009789,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_12750.npz",
+        "moving_median_relative_change": 0.03571823635784314
+      },
+      {
+        "steps_completed": 13000,
+        "chunk_elbo_median": 261.0321985439562,
+        "chunk_elbo_mean": 261.0321985439562,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.002011319122536555,
+        "q_mu_max_abs_update": 0.03295898177041323,
+        "q_sqrt_max_abs_update": 0.0019304338357492012,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_13000.npz",
+        "moving_median_relative_change": 0.033323006708639726
+      },
+      {
+        "steps_completed": 13250,
+        "chunk_elbo_median": 261.49914695662443,
+        "chunk_elbo_mean": 261.49914695662443,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0017888536941912366,
+        "q_mu_max_abs_update": 0.02969266190310904,
+        "q_sqrt_max_abs_update": 0.00198301863459302,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_13250.npz",
+        "moving_median_relative_change": 0.031112918449978235
+      },
+      {
+        "steps_completed": 13500,
+        "chunk_elbo_median": 261.97696111915184,
+        "chunk_elbo_mean": 261.97696111915184,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0018272111710049485,
+        "q_mu_max_abs_update": 0.03031110259560066,
+        "q_sqrt_max_abs_update": 0.001837162876446391,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_13500.npz",
+        "moving_median_relative_change": 0.02912809021181724
+      },
+      {
+        "steps_completed": 13750,
+        "chunk_elbo_median": 262.40086708406085,
+        "chunk_elbo_mean": 262.40086708406085,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.001618103985549366,
+        "q_mu_max_abs_update": 0.03090707391439551,
+        "q_sqrt_max_abs_update": 0.0022438151827295083,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_13750.npz",
+        "moving_median_relative_change": 0.02737368166988551
+      },
+      {
+        "steps_completed": 14000,
+        "chunk_elbo_median": 262.81163483359103,
+        "chunk_elbo_mean": 262.81163483359103,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0015654207019010703,
+        "q_mu_max_abs_update": 0.03127068496646146,
+        "q_sqrt_max_abs_update": 0.0019858356295039403,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_14000.npz",
+        "moving_median_relative_change": 0.025864741122837424
+      },
+      {
+        "steps_completed": 14250,
+        "chunk_elbo_median": 263.2478715018151,
+        "chunk_elbo_mean": 263.2478715018151,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0016598833932915053,
+        "q_mu_max_abs_update": 0.03179468173047084,
+        "q_sqrt_max_abs_update": 0.0024029804721370507,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_14250.npz",
+        "moving_median_relative_change": 0.02452282602979603
+      },
+      {
+        "steps_completed": 14500,
+        "chunk_elbo_median": 263.62368264410406,
+        "chunk_elbo_mean": 263.62368264410406,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.001427594229518303,
+        "q_mu_max_abs_update": 0.026319186169015296,
+        "q_sqrt_max_abs_update": 0.0019415341385290164,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_14500.npz",
+        "moving_median_relative_change": 0.023205515110568443
+      },
+      {
+        "steps_completed": 14750,
+        "chunk_elbo_median": 264.0189540298715,
+        "chunk_elbo_mean": 264.0189540298715,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0014993773768841028,
+        "q_mu_max_abs_update": 0.03206289377391869,
+        "q_sqrt_max_abs_update": 0.004098991429346138,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_14750.npz",
+        "moving_median_relative_change": 0.021994055713452334
+      },
+      {
+        "steps_completed": 15000,
+        "chunk_elbo_median": 264.38156250591237,
+        "chunk_elbo_mean": 264.38156250591237,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.001373418349350159,
+        "q_mu_max_abs_update": 0.02617111616600809,
+        "q_sqrt_max_abs_update": 0.0017520344114896336,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_15000.npz",
+        "moving_median_relative_change": 0.020844170291501728
+      },
+      {
+        "steps_completed": 15250,
+        "chunk_elbo_median": 264.7383825026976,
+        "chunk_elbo_mean": 264.7383825026976,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0013496402449670382,
+        "q_mu_max_abs_update": 0.02225100498652388,
+        "q_sqrt_max_abs_update": 0.006318847595428098,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_15250.npz",
+        "moving_median_relative_change": 0.019832690172582615
+      },
+      {
+        "steps_completed": 15500,
+        "chunk_elbo_median": 265.0724586569967,
+        "chunk_elbo_mean": 265.0724586569967,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.001261910536511081,
+        "q_mu_max_abs_update": 0.024348355890637663,
+        "q_sqrt_max_abs_update": 0.0021148402039252723,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_15500.npz",
+        "moving_median_relative_change": 0.018904083449145983
+      },
+      {
+        "steps_completed": 15750,
+        "chunk_elbo_median": 265.38890389282324,
+        "chunk_elbo_mean": 265.38890389282324,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0011938065441798428,
+        "q_mu_max_abs_update": 0.031193341654244477,
+        "q_sqrt_max_abs_update": 0.006038588929614799,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_15750.npz",
+        "moving_median_relative_change": 0.018041448396436018
+      },
+      {
+        "steps_completed": 16000,
+        "chunk_elbo_median": 265.7112191247152,
+        "chunk_elbo_mean": 265.7112191247152,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0012145015377966137,
+        "q_mu_max_abs_update": 0.02627558277739439,
+        "q_sqrt_max_abs_update": 0.0019699546934511813,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_16000.npz",
+        "moving_median_relative_change": 0.017313689286197337
+      },
+      {
+        "steps_completed": 16250,
+        "chunk_elbo_median": 266.03450528986343,
+        "chunk_elbo_mean": 266.03450528986343,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0012166824051056163,
+        "q_mu_max_abs_update": 0.022980058594178843,
+        "q_sqrt_max_abs_update": 0.001844733773756796,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_16250.npz",
+        "moving_median_relative_change": 0.016594938343929385
+      },
+      {
+        "steps_completed": 16500,
+        "chunk_elbo_median": 266.31186633066415,
+        "chunk_elbo_mean": 266.31186633066415,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.001042575437718158,
+        "q_mu_max_abs_update": 0.01984268833655989,
+        "q_sqrt_max_abs_update": 0.0018439279425761235,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_16500.npz",
+        "moving_median_relative_change": 0.01585765696635778
+      },
+      {
+        "steps_completed": 16750,
+        "chunk_elbo_median": 266.6134949372336,
+        "chunk_elbo_mean": 266.6134949372336,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0011326142192813551,
+        "q_mu_max_abs_update": 0.020491777639904285,
+        "q_sqrt_max_abs_update": 0.0016999949758131072,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_16750.npz",
+        "moving_median_relative_change": 0.015176155684291778
+      },
+      {
+        "steps_completed": 17000,
+        "chunk_elbo_median": 266.87209577075845,
+        "chunk_elbo_mean": 266.87209577075845,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0009699465272218048,
+        "q_mu_max_abs_update": 0.024381329851097533,
+        "q_sqrt_max_abs_update": 0.002176204702088763,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_17000.npz",
+        "moving_median_relative_change": 0.014564208039574134
+      },
+      {
+        "steps_completed": 17250,
+        "chunk_elbo_median": 267.12701759273375,
+        "chunk_elbo_mean": 267.12701759273375,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0009552209692027071,
+        "q_mu_max_abs_update": 0.022144556977302443,
+        "q_sqrt_max_abs_update": 0.0018294492522764882,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_17250.npz",
+        "moving_median_relative_change": 0.014050739400276091
+      },
+      {
+        "steps_completed": 17500,
+        "chunk_elbo_median": 267.4165958887904,
+        "chunk_elbo_mean": 267.4165958887904,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0010840472022121351,
+        "q_mu_max_abs_update": 0.024133167999091043,
+        "q_sqrt_max_abs_update": 0.0022876367428573685,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_17500.npz",
+        "moving_median_relative_change": 0.013582825383684828
+      },
+      {
+        "steps_completed": 17750,
+        "chunk_elbo_median": 267.6534474992908,
+        "chunk_elbo_mean": 267.6534474992908,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0008857027355133376,
+        "q_mu_max_abs_update": 0.01736548495566126,
+        "q_sqrt_max_abs_update": 0.0017990101839867878,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_17750.npz",
+        "moving_median_relative_change": 0.013051479632637003
+      },
+      {
+        "steps_completed": 18000,
+        "chunk_elbo_median": 267.91848829878325,
+        "chunk_elbo_mean": 267.91848829878325,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.000990238690996707,
+        "q_mu_max_abs_update": 0.024239272034845882,
+        "q_sqrt_max_abs_update": 0.004093826721743771,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_18000.npz",
+        "moving_median_relative_change": 0.012553413654670591
+      },
+      {
+        "steps_completed": 18250,
+        "chunk_elbo_median": 268.1543065335253,
+        "chunk_elbo_mean": 268.1543065335253,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0008801864934347876,
+        "q_mu_max_abs_update": 0.017843975378404764,
+        "q_sqrt_max_abs_update": 0.00157672082141741,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_18250.npz",
+        "moving_median_relative_change": 0.012046935269645592
+      },
+      {
+        "steps_completed": 18500,
+        "chunk_elbo_median": 268.3913404121632,
+        "chunk_elbo_mean": 268.3913404121632,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.000883945820979158,
+        "q_mu_max_abs_update": 0.021581277608122562,
+        "q_sqrt_max_abs_update": 0.0063039971017493646,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_18500.npz",
+        "moving_median_relative_change": 0.011625834482552444
+      },
+      {
+        "steps_completed": 18750,
+        "chunk_elbo_median": 268.6148930676991,
+        "chunk_elbo_mean": 268.6148930676991,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0008329354262794254,
+        "q_mu_max_abs_update": 0.016230105708736176,
+        "q_sqrt_max_abs_update": 0.0019715533277528396,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_18750.npz",
+        "moving_median_relative_change": 0.011245273279907085
+      },
+      {
+        "steps_completed": 19000,
+        "chunk_elbo_median": 268.8263244614916,
+        "chunk_elbo_mean": 268.8263244614916,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0007871171675474519,
+        "q_mu_max_abs_update": 0.02653049003655461,
+        "q_sqrt_max_abs_update": 0.0060423833072834054,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_19000.npz",
+        "moving_median_relative_change": 0.010873870805983094
+      },
+      {
+        "steps_completed": 19250,
+        "chunk_elbo_median": 269.0484295013039,
+        "chunk_elbo_mean": 269.0484295013039,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0008262027175247593,
+        "q_mu_max_abs_update": 0.018796990963728888,
+        "q_sqrt_max_abs_update": 0.0018791639858237452,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_19250.npz",
+        "moving_median_relative_change": 0.01057839963219116
+      },
+      {
+        "steps_completed": 19500,
+        "chunk_elbo_median": 269.27453109768,
+        "chunk_elbo_mean": 269.27453109768,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0008403750833825823,
+        "q_mu_max_abs_update": 0.019315489914305317,
+        "q_sqrt_max_abs_update": 0.0017272514946183315,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_19500.npz",
+        "moving_median_relative_change": 0.01025329065489653
+      },
+      {
+        "steps_completed": 19750,
+        "chunk_elbo_median": 269.45862713544284,
+        "chunk_elbo_mean": 269.45862713544284,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0006836741559344687,
+        "q_mu_max_abs_update": 0.01733352471626226,
+        "q_sqrt_max_abs_update": 0.0016775776171188417,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_19750.npz",
+        "moving_median_relative_change": 0.00989290336292784
+      },
+      {
+        "steps_completed": 20000,
+        "chunk_elbo_median": 269.6730796811481,
+        "chunk_elbo_mean": 269.6730796811481,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0007958644634431797,
+        "q_mu_max_abs_update": 0.0176437678125847,
+        "q_sqrt_max_abs_update": 0.0015388614761777109,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_20000.npz",
+        "moving_median_relative_change": 0.009570546885017194
+      },
+      {
+        "steps_completed": 20250,
+        "chunk_elbo_median": 269.8487355356692,
+        "chunk_elbo_mean": 269.8487355356692,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.000651365923245975,
+        "q_mu_max_abs_update": 0.024034601516300214,
+        "q_sqrt_max_abs_update": 0.0020926467237433466,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_20250.npz",
+        "moving_median_relative_change": 0.009287215536379186
+      },
+      {
+        "steps_completed": 20500,
+        "chunk_elbo_median": 270.02425480048623,
+        "chunk_elbo_mean": 270.02425480048623,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00065043575049034,
+        "q_mu_max_abs_update": 0.015492577752809211,
+        "q_sqrt_max_abs_update": 0.0016556692474749557,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_20500.npz",
+        "moving_median_relative_change": 0.009067479938065602
+      },
+      {
+        "steps_completed": 20750,
+        "chunk_elbo_median": 270.23851573561353,
+        "chunk_elbo_mean": 270.23851573561353,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0007934877379278806,
+        "q_mu_max_abs_update": 0.024385199993028905,
+        "q_sqrt_max_abs_update": 0.002150912562184082,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_20750.npz",
+        "moving_median_relative_change": 0.0088652672844575
+      },
+      {
+        "steps_completed": 21000,
+        "chunk_elbo_median": 270.4029786263562,
+        "chunk_elbo_mean": 270.4029786263562,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0006085841993875599,
+        "q_mu_max_abs_update": 0.01383403989824572,
+        "q_sqrt_max_abs_update": 0.0016429900479307258,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_21000.npz",
+        "moving_median_relative_change": 0.008583197365663353
+      },
+      {
+        "steps_completed": 21250,
+        "chunk_elbo_median": 270.5995676477817,
+        "chunk_elbo_mean": 270.5995676477817,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.000727022396070569,
+        "q_mu_max_abs_update": 0.022808019659453116,
+        "q_sqrt_max_abs_update": 0.004091145934525919,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_21250.npz",
+        "moving_median_relative_change": 0.008319979568557718
+      },
+      {
+        "steps_completed": 21500,
+        "chunk_elbo_median": 270.76759060754455,
+        "chunk_elbo_mean": 270.76759060754455,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0006209284117612671,
+        "q_mu_max_abs_update": 0.01455717103834786,
+        "q_sqrt_max_abs_update": 0.0013947165817163598,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_21500.npz",
+        "moving_median_relative_change": 0.008030769072453859
+      },
+      {
+        "steps_completed": 21750,
+        "chunk_elbo_median": 270.94016601250445,
+        "chunk_elbo_mean": 270.94016601250445,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0006373562085945298,
+        "q_mu_max_abs_update": 0.021223264818662102,
+        "q_sqrt_max_abs_update": 0.0062925985083847336,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_21750.npz",
+        "moving_median_relative_change": 0.007816057341805427
+      },
+      {
+        "steps_completed": 22000,
+        "chunk_elbo_median": 271.10384767010027,
+        "chunk_elbo_mean": 271.10384767010027,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0006041247409151664,
+        "q_mu_max_abs_update": 0.011197698486823171,
+        "q_sqrt_max_abs_update": 0.001820066178994606,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_22000.npz",
+        "moving_median_relative_change": 0.007633735246193937
+      },
+      {
+        "steps_completed": 22250,
+        "chunk_elbo_median": 271.25769070120884,
+        "chunk_elbo_mean": 271.25769070120884,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0005674690065475827,
+        "q_mu_max_abs_update": 0.026272343251859454,
+        "q_sqrt_max_abs_update": 0.006045258776579077,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_22250.npz",
+        "moving_median_relative_change": 0.007441836882188738
+      },
+      {
+        "steps_completed": 22500,
+        "chunk_elbo_median": 271.42447287229464,
+        "chunk_elbo_mean": 271.42447287229464,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0006148477141962783,
+        "q_mu_max_abs_update": 0.01725930705749157,
+        "q_sqrt_max_abs_update": 0.00178884137212601,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_22500.npz",
+        "moving_median_relative_change": 0.007304874650635473
+      },
+      {
+        "steps_completed": 22750,
+        "chunk_elbo_median": 271.5960744253482,
+        "chunk_elbo_mean": 271.5960744253482,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0006322257946662807,
+        "q_mu_max_abs_update": 0.016781092890411742,
+        "q_sqrt_max_abs_update": 0.0016044124578750707,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_22750.npz",
+        "moving_median_relative_change": 0.007126199229493118
+      },
+      {
+        "steps_completed": 23000,
+        "chunk_elbo_median": 271.72734906298876,
+        "chunk_elbo_mean": 271.72734906298876,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0004833451216786311,
+        "q_mu_max_abs_update": 0.01600565009118604,
+        "q_sqrt_max_abs_update": 0.0015122458249541837,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_23000.npz",
+        "moving_median_relative_change": 0.0069123060987042045
+      },
+      {
+        "steps_completed": 23250,
+        "chunk_elbo_median": 271.8923563976673,
+        "chunk_elbo_mean": 271.8923563976673,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0006072533193568405,
+        "q_mu_max_abs_update": 0.015868002480583066,
+        "q_sqrt_max_abs_update": 0.001380011053138508,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_23250.npz",
+        "moving_median_relative_change": 0.0067350228637980784
+      },
+      {
+        "steps_completed": 23500,
+        "chunk_elbo_median": 272.0204620538466,
+        "chunk_elbo_mean": 272.0204620538466,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0004711631392532434,
+        "q_mu_max_abs_update": 0.02371272493116905,
+        "q_sqrt_max_abs_update": 0.002010293840963101,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_23500.npz",
+        "moving_median_relative_change": 0.006585509091789159
+      },
+      {
+        "steps_completed": 23750,
+        "chunk_elbo_median": 272.15005916763005,
+        "chunk_elbo_mean": 272.15005916763005,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00047642413664383625,
+        "q_mu_max_abs_update": 0.012391745856106695,
+        "q_sqrt_max_abs_update": 0.001487989056426442,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_23750.npz",
+        "moving_median_relative_change": 0.0064848760182561445
+      },
+      {
+        "steps_completed": 24000,
+        "chunk_elbo_median": 272.3205901323389,
+        "chunk_elbo_mean": 272.3205901323389,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0006266063848394084,
+        "q_mu_max_abs_update": 0.0244639310534307,
+        "q_sqrt_max_abs_update": 0.0020155040775147737,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_24000.npz",
+        "moving_median_relative_change": 0.00639119425113874
+      },
+      {
+        "steps_completed": 24250,
+        "chunk_elbo_median": 272.4425414418886,
+        "chunk_elbo_mean": 272.4425414418886,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00044782258106303277,
+        "q_mu_max_abs_update": 0.01351551558124875,
+        "q_sqrt_max_abs_update": 0.001493902437043504,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_24250.npz",
+        "moving_median_relative_change": 0.006213522581289899
+      },
+      {
+        "steps_completed": 24500,
+        "chunk_elbo_median": 272.598735489187,
+        "chunk_elbo_mean": 272.598735489187,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0005733100508891311,
+        "q_mu_max_abs_update": 0.021446768013256623,
+        "q_sqrt_max_abs_update": 0.004089355958634744,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_24500.npz",
+        "moving_median_relative_change": 0.006050819486959152
+      },
+      {
+        "steps_completed": 24750,
+        "chunk_elbo_median": 272.7262701688979,
+        "chunk_elbo_mean": 272.7262701688979,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0004678476570407634,
+        "q_mu_max_abs_update": 0.012198941160235677,
+        "q_sqrt_max_abs_update": 0.0012250051298935416,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_24750.npz",
+        "moving_median_relative_change": 0.005855748682065264
+      },
+      {
+        "steps_completed": 25000,
+        "chunk_elbo_median": 272.8602699328118,
+        "chunk_elbo_mean": 272.8602699328118,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.000491334273852336,
+        "q_mu_max_abs_update": 0.021009443068427558,
+        "q_sqrt_max_abs_update": 0.006283454881159833,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_25000.npz",
+        "moving_median_relative_change": 0.00573269175515615
+      },
+      {
+        "steps_completed": 25250,
+        "chunk_elbo_median": 272.98797239842975,
+        "chunk_elbo_mean": 272.98797239842975,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.000468014143830529,
+        "q_mu_max_abs_update": 0.010284185824483316,
+        "q_sqrt_max_abs_update": 0.0016779648694539295,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_25250.npz",
+        "moving_median_relative_change": 0.005640264361807119
+      },
+      {
+        "steps_completed": 25500,
+        "chunk_elbo_median": 273.10688008589443,
+        "chunk_elbo_mean": 273.10688008589443,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0004355784850884821,
+        "q_mu_max_abs_update": 0.025993889157183148,
+        "q_sqrt_max_abs_update": 0.0060501280581523875,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_25500.npz",
+        "moving_median_relative_change": 0.005529556959973944
+      },
+      {
+        "steps_completed": 25750,
+        "chunk_elbo_median": 273.23998996220865,
+        "chunk_elbo_mean": 273.23998996220865,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0004873911498397918,
+        "q_mu_max_abs_update": 0.018064735136762877,
+        "q_sqrt_max_abs_update": 0.001708564683044922,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_25750.npz",
+        "moving_median_relative_change": 0.005464007082203775
+      },
+      {
+        "steps_completed": 26000,
+        "chunk_elbo_median": 273.3780431079897,
+        "chunk_elbo_mean": 273.3780431079897,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0005052450258109633,
+        "q_mu_max_abs_update": 0.014515993296626561,
+        "q_sqrt_max_abs_update": 0.0014900273526737284,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_26000.npz",
+        "moving_median_relative_change": 0.0053518923656552106
+      },
+      {
+        "steps_completed": 26250,
+        "chunk_elbo_median": 273.476588262914,
+        "chunk_elbo_mean": 273.476588262914,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00036047209133532356,
+        "q_mu_max_abs_update": 0.015169473259117439,
+        "q_sqrt_max_abs_update": 0.0013623997159489254,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_26250.npz",
+        "moving_median_relative_change": 0.00520734445072239
+      },
+      {
+        "steps_completed": 26500,
+        "chunk_elbo_median": 273.61099243410547,
+        "chunk_elbo_mean": 273.61099243410547,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0004914649990523648,
+        "q_mu_max_abs_update": 0.014572175192268944,
+        "q_sqrt_max_abs_update": 0.001236993050526658,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_26500.npz",
+        "moving_median_relative_change": 0.005100882598054783
+      },
+      {
+        "steps_completed": 26750,
+        "chunk_elbo_median": 273.70939047216257,
+        "chunk_elbo_mean": 273.70939047216257,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00035962750319980594,
+        "q_mu_max_abs_update": 0.02337408515347761,
+        "q_sqrt_max_abs_update": 0.001937539161429136,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_26750.npz",
+        "moving_median_relative_change": 0.005016677210286189
+      },
+      {
+        "steps_completed": 27000,
+        "chunk_elbo_median": 273.8101890594288,
+        "chunk_elbo_mean": 273.8101890594288,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00036826864833668137,
+        "q_mu_max_abs_update": 0.011489926650614102,
+        "q_sqrt_max_abs_update": 0.001344736005508912,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_27000.npz",
+        "moving_median_relative_change": 0.0049736180632515715
+      },
+      {
+        "steps_completed": 27250,
+        "chunk_elbo_median": 273.95322948162027,
+        "chunk_elbo_mean": 273.95322948162027,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0005224072291934153,
+        "q_mu_max_abs_update": 0.024464708686702252,
+        "q_sqrt_max_abs_update": 0.0018939726918772437,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_27250.npz",
+        "moving_median_relative_change": 0.004932479884066757
+      },
+      {
+        "steps_completed": 27500,
+        "chunk_elbo_median": 274.0481995214446,
+        "chunk_elbo_mean": 274.0481995214446,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00034666515888139834,
+        "q_mu_max_abs_update": 0.01277380896897995,
+        "q_sqrt_max_abs_update": 0.001362677560233727,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_27500.npz",
+        "moving_median_relative_change": 0.004806377350946503
+      },
+      {
+        "steps_completed": 27750,
+        "chunk_elbo_median": 274.1786986988245,
+        "chunk_elbo_mean": 274.1786986988245,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0004761906029954407,
+        "q_mu_max_abs_update": 0.020274348459783376,
+        "q_sqrt_max_abs_update": 0.0040878638356267455,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_27750.npz",
+        "moving_median_relative_change": 0.004694244496044991
+      },
+      {
+        "steps_completed": 28000,
+        "chunk_elbo_median": 274.28025603739775,
+        "chunk_elbo_mean": 274.28025603739775,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0003704056480506776,
+        "q_mu_max_abs_update": 0.01150993458134053,
+        "q_sqrt_max_abs_update": 0.0011539918710292418,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_28000.npz",
+        "moving_median_relative_change": 0.004546999842782922
+      },
+      {
+        "steps_completed": 28250,
+        "chunk_elbo_median": 274.38949684682063,
+        "chunk_elbo_mean": 274.38949684682063,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00039828171010599826,
+        "q_mu_max_abs_update": 0.020865188624945574,
+        "q_sqrt_max_abs_update": 0.0062758897533716634,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_28250.npz",
+        "moving_median_relative_change": 0.004471485550202564
+      },
+      {
+        "steps_completed": 28500,
+        "chunk_elbo_median": 274.4940516113519,
+        "chunk_elbo_mean": 274.4940516113519,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0003810450681704714,
+        "q_mu_max_abs_update": 0.009707754102237232,
+        "q_sqrt_max_abs_update": 0.0015601801041766339,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_28500.npz",
+        "moving_median_relative_change": 0.004426225216085807
+      },
+      {
+        "steps_completed": 28750,
+        "chunk_elbo_median": 274.5903039453333,
+        "chunk_elbo_mean": 274.5903039453333,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0003506536240635111,
+        "q_mu_max_abs_update": 0.025730029576255475,
+        "q_sqrt_max_abs_update": 0.006053503662978979,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_28750.npz",
+        "moving_median_relative_change": 0.0043577238224100905
+      },
+      {
+        "steps_completed": 29000,
+        "chunk_elbo_median": 274.70154515057834,
+        "chunk_elbo_mean": 274.70154515057834,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00040511701850622263,
+        "q_mu_max_abs_update": 0.018561281310910616,
+        "q_sqrt_max_abs_update": 0.001642639389769579,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_29000.npz",
+        "moving_median_relative_change": 0.0043291055411769355
+      },
+      {
+        "steps_completed": 29250,
+        "chunk_elbo_median": 274.81761501836644,
+        "chunk_elbo_mean": 274.81761501836644,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00042253081512328116,
+        "q_mu_max_abs_update": 0.012612813806086365,
+        "q_sqrt_max_abs_update": 0.0013915740238293894,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_29250.npz",
+        "moving_median_relative_change": 0.00425166311634738
+      },
+      {
+        "steps_completed": 29500,
+        "chunk_elbo_median": 274.894607566389,
+        "chunk_elbo_mean": 274.894607566389,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00028015870823070203,
+        "q_mu_max_abs_update": 0.014643759054733252,
+        "q_sqrt_max_abs_update": 0.0012920762999483748,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_29500.npz",
+        "moving_median_relative_change": 0.004144604185941986
+      },
+      {
+        "steps_completed": 29750,
+        "chunk_elbo_median": 275.0089115374725,
+        "chunk_elbo_mean": 275.0089115374725,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0004158101611937497,
+        "q_mu_max_abs_update": 0.013596710307620441,
+        "q_sqrt_max_abs_update": 0.001116290086384475,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_29750.npz",
+        "moving_median_relative_change": 0.004077361803066058
+      },
+      {
+        "steps_completed": 30000,
+        "chunk_elbo_median": 275.08761007697603,
+        "chunk_elbo_mean": 275.08761007697603,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002861672338672961,
+        "q_mu_max_abs_update": 0.023015689799777306,
+        "q_sqrt_max_abs_update": 0.0018780917724340873,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_30000.npz",
+        "moving_median_relative_change": 0.0040290960289828
+      },
+      {
+        "steps_completed": 30250,
+        "chunk_elbo_median": 275.16931654463053,
+        "chunk_elbo_mean": 275.16931654463053,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002970198026426393,
+        "q_mu_max_abs_update": 0.011417140217151456,
+        "q_sqrt_max_abs_update": 0.001291844284183219,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_30250.npz",
+        "moving_median_relative_change": 0.004017349492816812
+      },
+      {
+        "steps_completed": 30500,
+        "chunk_elbo_median": 275.29407512435887,
+        "chunk_elbo_mean": 275.29407512435887,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00045338841297772894,
+        "q_mu_max_abs_update": 0.024429571640039782,
+        "q_sqrt_max_abs_update": 0.001792201989829989,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_30500.npz",
+        "moving_median_relative_change": 0.00400468428003956
+      },
+      {
+        "steps_completed": 30750,
+        "chunk_elbo_median": 275.3709550267238,
+        "chunk_elbo_mean": 275.3709550267238,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002792646457435708,
+        "q_mu_max_abs_update": 0.012101263271359741,
+        "q_sqrt_max_abs_update": 0.0012538551807508846,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_30750.npz",
+        "moving_median_relative_change": 0.003906979711263927
+      },
+      {
+        "steps_completed": 31000,
+        "chunk_elbo_median": 275.48421204310677,
+        "chunk_elbo_mean": 275.48421204310677,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00041128889708791925,
+        "q_mu_max_abs_update": 0.019312554406070603,
+        "q_sqrt_max_abs_update": 0.004086431409463395,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_31000.npz",
+        "moving_median_relative_change": 0.003823151730087738
+      },
+      {
+        "steps_completed": 31250,
+        "chunk_elbo_median": 275.56822040649456,
+        "chunk_elbo_mean": 275.56822040649456,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00030494801413392773,
+        "q_mu_max_abs_update": 0.012099627414016823,
+        "q_sqrt_max_abs_update": 0.0010935632753385494,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_31250.npz",
+        "moving_median_relative_change": 0.0037028982122688254
+      },
+      {
+        "steps_completed": 31500,
+        "chunk_elbo_median": 275.6607227205693,
+        "chunk_elbo_mean": 275.6607227205693,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0003356784535542538,
+        "q_mu_max_abs_update": 0.020755806578351965,
+        "q_sqrt_max_abs_update": 0.006269466727675005,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_31500.npz",
+        "moving_median_relative_change": 0.0036546708107467324
+      },
+      {
+        "steps_completed": 31750,
+        "chunk_elbo_median": 275.74961879304385,
+        "chunk_elbo_mean": 275.74961879304385,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00032248363712175296,
+        "q_mu_max_abs_update": 0.009654406352758826,
+        "q_sqrt_max_abs_update": 0.0014860897330533085,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_31750.npz",
+        "moving_median_relative_change": 0.0036365723759613044
+      },
+      {
+        "steps_completed": 32000,
+        "chunk_elbo_median": 275.83043002013045,
+        "chunk_elbo_mean": 275.83043002013045,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002930601588510251,
+        "q_mu_max_abs_update": 0.025489069143414866,
+        "q_sqrt_max_abs_update": 0.00605589819800216,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_32000.npz",
+        "moving_median_relative_change": 0.0035920526625297564
+      },
+      {
+        "steps_completed": 32250,
+        "chunk_elbo_median": 275.92675471223055,
+        "chunk_elbo_mean": 275.92675471223055,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00034921706097861433,
+        "q_mu_max_abs_update": 0.018867875665181444,
+        "q_sqrt_max_abs_update": 0.0016279335294960007,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_32250.npz",
+        "moving_median_relative_change": 0.003584288776395534
+      },
+      {
+        "steps_completed": 32500,
+        "chunk_elbo_median": 276.02771321981794,
+        "chunk_elbo_mean": 276.02771321981794,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0003658887942660164,
+        "q_mu_max_abs_update": 0.011093179085889915,
+        "q_sqrt_max_abs_update": 0.0013113996162786856,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_32500.npz",
+        "moving_median_relative_change": 0.003526529720658583
+      },
+      {
+        "steps_completed": 32750,
+        "chunk_elbo_median": 276.0898316995898,
+        "chunk_elbo_mean": 276.0898316995898,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00022504435894231956,
+        "q_mu_max_abs_update": 0.014310554453832225,
+        "q_sqrt_max_abs_update": 0.001346342212869972,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_32750.npz",
+        "moving_median_relative_change": 0.003441520299468536
+      },
+      {
+        "steps_completed": 33000,
+        "chunk_elbo_median": 276.1903070924108,
+        "chunk_elbo_mean": 276.1903070924108,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00036392282976338233,
+        "q_mu_max_abs_update": 0.012846480451310427,
+        "q_sqrt_max_abs_update": 0.0010188710942835577,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_33000.npz",
+        "moving_median_relative_change": 0.0033978255379447215
+      },
+      {
+        "steps_completed": 33250,
+        "chunk_elbo_median": 276.2553113144568,
+        "chunk_elbo_mean": 276.2553113144568,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00023536025840402487,
+        "q_mu_max_abs_update": 0.022640219552084062,
+        "q_sqrt_max_abs_update": 0.0018827668077553705,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_33250.npz",
+        "moving_median_relative_change": 0.0033708924640457965
+      },
+      {
+        "steps_completed": 33500,
+        "chunk_elbo_median": 276.3237968097626,
+        "chunk_elbo_mean": 276.3237968097626,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002479065288553535,
+        "q_mu_max_abs_update": 0.0115369208353302,
+        "q_sqrt_max_abs_update": 0.0012524136923870721,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_33500.npz",
+        "moving_median_relative_change": 0.003377491484852817
+      },
+      {
+        "steps_completed": 33750,
+        "chunk_elbo_median": 276.43582879321696,
+        "chunk_elbo_mean": 276.43582879321696,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00040543733383732885,
+        "q_mu_max_abs_update": 0.024377478627789273,
+        "q_sqrt_max_abs_update": 0.0017285000353194357,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_33750.npz",
+        "moving_median_relative_change": 0.003381362792150021
+      },
+      {
+        "steps_completed": 34000,
+        "chunk_elbo_median": 276.50003391471967,
+        "chunk_elbo_mean": 276.50003391471967,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00023226049164103488,
+        "q_mu_max_abs_update": 0.011791503255149216,
+        "q_sqrt_max_abs_update": 0.0011671342190490708,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_34000.npz",
+        "moving_median_relative_change": 0.0033003959037182164
+      },
+      {
+        "steps_completed": 34250,
+        "chunk_elbo_median": 276.6012056512999,
+        "chunk_elbo_mean": 276.6012056512999,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00036590135323972915,
+        "q_mu_max_abs_update": 0.01854055955576861,
+        "q_sqrt_max_abs_update": 0.004084960743057628,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_34250.npz",
+        "moving_median_relative_change": 0.0032335233913373365
+      },
+      {
+        "steps_completed": 34500,
+        "chunk_elbo_median": 276.6728489074638,
+        "chunk_elbo_mean": 276.6728489074638,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002590128123093329,
+        "q_mu_max_abs_update": 0.012515491168912263,
+        "q_sqrt_max_abs_update": 0.0010440617494223148,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_34500.npz",
+        "moving_median_relative_change": 0.0031295722677143344
+      },
+      {
+        "steps_completed": 34750,
+        "chunk_elbo_median": 276.7535300932546,
+        "chunk_elbo_mean": 276.7535300932546,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002916122276161382,
+        "q_mu_max_abs_update": 0.0206647076009272,
+        "q_sqrt_max_abs_update": 0.006263880213202705,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_34750.npz",
+        "moving_median_relative_change": 0.0030980593730240156
+      },
+      {
+        "steps_completed": 35000,
+        "chunk_elbo_median": 276.8313868454135,
+        "chunk_elbo_mean": 276.8313868454135,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00028132162264613296,
+        "q_mu_max_abs_update": 0.00979591350943565,
+        "q_sqrt_max_abs_update": 0.0014281740350080008,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_35000.npz",
+        "moving_median_relative_change": 0.003096571038504572
+      },
+      {
+        "steps_completed": 35250,
+        "chunk_elbo_median": 276.9012272970283,
+        "chunk_elbo_mean": 276.9012272970283,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00025228516322039335,
+        "q_mu_max_abs_update": 0.025270172282208847,
+        "q_sqrt_max_abs_update": 0.0060576214370800935,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_35250.npz",
+        "moving_median_relative_change": 0.0030664968084655546
+      },
+      {
+        "steps_completed": 35500,
+        "chunk_elbo_median": 276.98694747603577,
+        "chunk_elbo_mean": 276.98694747603577,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00030956951633701486,
+        "q_mu_max_abs_update": 0.019056596499371636,
+        "q_sqrt_max_abs_update": 0.0016540869545920989,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_35500.npz",
+        "moving_median_relative_change": 0.0030711874898928225
+      },
+      {
+        "steps_completed": 35750,
+        "chunk_elbo_median": 277.0770879318272,
+        "chunk_elbo_mean": 277.0770879318272,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00032543214260741336,
+        "q_mu_max_abs_update": 0.009921012723395961,
+        "q_sqrt_max_abs_update": 0.0012483064071647787,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_35750.npz",
+        "moving_median_relative_change": 0.0030252334080018506
+      },
+      {
+        "steps_completed": 36000,
+        "chunk_elbo_median": 277.12852740582775,
+        "chunk_elbo_mean": 277.12852740582775,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00018565040647904618,
+        "q_mu_max_abs_update": 0.014097665353741462,
+        "q_sqrt_max_abs_update": 0.0013868457064075967,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_36000.npz",
+        "moving_median_relative_change": 0.002953955627405788
+      },
+      {
+        "steps_completed": 36250,
+        "chunk_elbo_median": 277.2191032016289,
+        "chunk_elbo_mean": 277.2191032016289,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00032683678092987616,
+        "q_mu_max_abs_update": 0.012260404543047443,
+        "q_sqrt_max_abs_update": 0.0009947597143699638,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_36250.npz",
+        "moving_median_relative_change": 0.0029252271330552164
+      },
+      {
+        "steps_completed": 36500,
+        "chunk_elbo_median": 277.2741945659201,
+        "chunk_elbo_mean": 277.2741945659201,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00019872860006730096,
+        "q_mu_max_abs_update": 0.022249520008330137,
+        "q_sqrt_max_abs_update": 0.001913035421928111,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_36500.npz",
+        "moving_median_relative_change": 0.002911631014978636
+      },
+      {
+        "steps_completed": 36750,
+        "chunk_elbo_median": 277.3331808206759,
+        "chunk_elbo_mean": 277.3331808206759,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00021273618646041462,
+        "q_mu_max_abs_update": 0.011741578913333939,
+        "q_sqrt_max_abs_update": 0.00122433621284454,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_36750.npz",
+        "moving_median_relative_change": 0.002929549890652606
+      },
+      {
+        "steps_completed": 37000,
+        "chunk_elbo_median": 277.4359928400762,
+        "chunk_elbo_mean": 277.4359928400762,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0003707166199733162,
+        "q_mu_max_abs_update": 0.02431675383911802,
+        "q_sqrt_max_abs_update": 0.0017275495131888474,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_37000.npz",
+        "moving_median_relative_change": 0.002943483004554668
+      },
+      {
+        "steps_completed": 37250,
+        "chunk_elbo_median": 277.49097751145985,
+        "chunk_elbo_mean": 277.49097751145985,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00019818867343333863,
+        "q_mu_max_abs_update": 0.01148704700594294,
+        "q_sqrt_max_abs_update": 0.0011153608743348364,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_37250.npz",
+        "moving_median_relative_change": 0.002872867211936631
+      },
+      {
+        "steps_completed": 37500,
+        "chunk_elbo_median": 277.5833515038263,
+        "chunk_elbo_mean": 277.5833515038263,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00033289007518319107,
+        "q_mu_max_abs_update": 0.017922420622773494,
+        "q_sqrt_max_abs_update": 0.004083413027081095,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_37500.npz",
+        "moving_median_relative_change": 0.002816664941906583
+      },
+      {
+        "steps_completed": 37750,
+        "chunk_elbo_median": 277.6459596424969,
+        "chunk_elbo_mean": 277.6459596424969,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00022554716747754546,
+        "q_mu_max_abs_update": 0.012826415778036449,
+        "q_sqrt_max_abs_update": 0.0010050127539470988,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_37750.npz",
+        "moving_median_relative_change": 0.00272307439006683
+      },
+      {
+        "steps_completed": 38000,
+        "chunk_elbo_median": 277.7179666083962,
+        "chunk_elbo_mean": 277.7179666083962,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00025934814967952275,
+        "q_mu_max_abs_update": 0.020583999254345287,
+        "q_sqrt_max_abs_update": 0.006258908650151093,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_38000.npz",
+        "moving_median_relative_change": 0.0027023119730072136
+      },
+      {
+        "steps_completed": 38250,
+        "chunk_elbo_median": 277.7877603330352,
+        "chunk_elbo_mean": 277.7877603330352,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00025131152114984663,
+        "q_mu_max_abs_update": 0.009890882738744722,
+        "q_sqrt_max_abs_update": 0.0013840020397265507,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_38250.npz",
+        "moving_median_relative_change": 0.0027114561353710318
+      },
+      {
+        "steps_completed": 38500,
+        "chunk_elbo_median": 277.8495187773822,
+        "chunk_elbo_mean": 277.8495187773822,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00022232241000449808,
+        "q_mu_max_abs_update": 0.025069807116665288,
+        "q_sqrt_max_abs_update": 0.0060588645551353515,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_38500.npz",
+        "moving_median_relative_change": 0.0026904852914968816
+      },
+      {
+        "steps_completed": 38750,
+        "chunk_elbo_median": 277.9274214029175,
+        "chunk_elbo_mean": 277.9274214029175,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002803770396224693,
+        "q_mu_max_abs_update": 0.019171167022063784,
+        "q_sqrt_max_abs_update": 0.001682823248422477,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_38750.npz",
+        "moving_median_relative_change": 0.002702923695761242
+      },
+      {
+        "steps_completed": 39000,
+        "chunk_elbo_median": 278.0095372229966,
+        "chunk_elbo_mean": 278.0095372229966,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00029545778413867554,
+        "q_mu_max_abs_update": 0.00913210312754309,
+        "q_sqrt_max_abs_update": 0.0012615373944994956,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_39000.npz",
+        "moving_median_relative_change": 0.0026643491322660175
+      },
+      {
+        "steps_completed": 39250,
+        "chunk_elbo_median": 278.05304308855256,
+        "chunk_elbo_mean": 278.05304308855256,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00015649055061400506,
+        "q_mu_max_abs_update": 0.013960894764082354,
+        "q_sqrt_max_abs_update": 0.0014169117226239258,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_39250.npz",
+        "moving_median_relative_change": 0.0026020305261414195
+      },
+      {
+        "steps_completed": 39500,
+        "chunk_elbo_median": 278.13627955294675,
+        "chunk_elbo_mean": 278.13627955294675,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002993546248212844,
+        "q_mu_max_abs_update": 0.011796623207423806,
+        "q_sqrt_max_abs_update": 0.0010076278612740075,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_39500.npz",
+        "moving_median_relative_change": 0.002583271863620704
+      },
+      {
+        "steps_completed": 39750,
+        "chunk_elbo_median": 278.18393719844335,
+        "chunk_elbo_mean": 278.18393719844335,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00017134638305078468,
+        "q_mu_max_abs_update": 0.021844336029580802,
+        "q_sqrt_max_abs_update": 0.0019449012975995827,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_39750.npz",
+        "moving_median_relative_change": 0.0025783632759045247
+      },
+      {
+        "steps_completed": 40000,
+        "chunk_elbo_median": 278.2358773489444,
+        "chunk_elbo_mean": 278.2358773489444,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00018671153706488185,
+        "q_mu_max_abs_update": 0.012013987779919688,
+        "q_sqrt_max_abs_update": 0.0012316534177814475,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_40000.npz",
+        "moving_median_relative_change": 0.0026035677332393913
+      },
+      {
+        "steps_completed": 40250,
+        "chunk_elbo_median": 278.33176908962935,
+        "chunk_elbo_mean": 278.33176908962935,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.000344641897366308,
+        "q_mu_max_abs_update": 0.024250933242818462,
+        "q_sqrt_max_abs_update": 0.0017277515169413227,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_40250.npz",
+        "moving_median_relative_change": 0.002623847048443537
+      },
+      {
+        "steps_completed": 40500,
+        "chunk_elbo_median": 278.37982403225874,
+        "chunk_elbo_mean": 278.37982403225874,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00017265345880770476,
+        "q_mu_max_abs_update": 0.011195470380573447,
+        "q_sqrt_max_abs_update": 0.0011308804336545575,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_40500.npz",
+        "moving_median_relative_change": 0.00255989165976192
+      },
+      {
+        "steps_completed": 40750,
+        "chunk_elbo_median": 278.4655742899407,
+        "chunk_elbo_mean": 278.4655742899407,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0003080333065805911,
+        "q_mu_max_abs_update": 0.01742199419313284,
+        "q_sqrt_max_abs_update": 0.0040817744227878705,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_40750.npz",
+        "moving_median_relative_change": 0.0025106842418766975
+      },
+      {
+        "steps_completed": 41000,
+        "chunk_elbo_median": 278.52136648588703,
+        "chunk_elbo_mean": 278.52136648588703,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00020035581090615826,
+        "q_mu_max_abs_update": 0.013062980639332977,
+        "q_sqrt_max_abs_update": 0.0009746761965215844,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_41000.npz",
+        "moving_median_relative_change": 0.002423973622575114
+      },
+      {
+        "steps_completed": 41250,
+        "chunk_elbo_median": 278.586788992665,
+        "chunk_elbo_mean": 278.586788992665,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00023489223682693117,
+        "q_mu_max_abs_update": 0.020509852078731683,
+        "q_sqrt_max_abs_update": 0.006254389346360759,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_41250.npz",
+        "moving_median_relative_change": 0.0024104190203637793
+      },
+      {
+        "steps_completed": 41500,
+        "chunk_elbo_median": 278.65050954514555,
+        "chunk_elbo_mean": 278.65050954514555,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00022872783275533777,
+        "q_mu_max_abs_update": 0.009961254167464517,
+        "q_sqrt_max_abs_update": 0.0013981842341207473,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_41500.npz",
+        "moving_median_relative_change": 0.002426637394496834
+      },
+      {
+        "steps_completed": 41750,
+        "chunk_elbo_median": 278.7061198984516,
+        "chunk_elbo_mean": 278.7061198984516,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00019957025521625792,
+        "q_mu_max_abs_update": 0.024884331814877925,
+        "q_sqrt_max_abs_update": 0.006059747828027942,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_41750.npz",
+        "moving_median_relative_change": 0.0024116247876402918
+      },
+      {
+        "steps_completed": 42000,
+        "chunk_elbo_median": 278.77806997029035,
+        "chunk_elbo_mean": 278.77806997029035,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00025815748812743513,
+        "q_mu_max_abs_update": 0.019238570768465024,
+        "q_sqrt_max_abs_update": 0.0017127020301202223,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_42000.npz",
+        "moving_median_relative_change": 0.002429033681057579
+      },
+      {
+        "steps_completed": 42250,
+        "chunk_elbo_median": 278.8540422237017,
+        "chunk_elbo_mean": 278.8540422237017,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00027251875809114815,
+        "q_mu_max_abs_update": 0.009101389802521176,
+        "q_sqrt_max_abs_update": 0.0012843230965621233,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_42250.npz",
+        "moving_median_relative_change": 0.002395233054866375
+      },
+      {
+        "steps_completed": 42500,
+        "chunk_elbo_median": 278.89147455197445,
+        "chunk_elbo_mean": 278.89147455197445,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0001342362763482139,
+        "q_mu_max_abs_update": 0.013872777579942763,
+        "q_sqrt_max_abs_update": 0.0014393340058622972,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_42500.npz",
+        "moving_median_relative_change": 0.0023390060540507455
+      },
+      {
+        "steps_completed": 42750,
+        "chunk_elbo_median": 278.96909614979984,
+        "chunk_elbo_mean": 278.96909614979984,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00027832187394784936,
+        "q_mu_max_abs_update": 0.011425347544717468,
+        "q_sqrt_max_abs_update": 0.0010218182563071498,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_42750.npz",
+        "moving_median_relative_change": 0.0023271645636054206
+      },
+      {
+        "steps_completed": 43000,
+        "chunk_elbo_median": 279.01100147060464,
+        "chunk_elbo_mean": 279.01100147060464,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00015021492123378096,
+        "q_mu_max_abs_update": 0.021425145129466472,
+        "q_sqrt_max_abs_update": 0.001977059922587704,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_43000.npz",
+        "moving_median_relative_change": 0.0023281051514850624
+      },
+      {
+        "steps_completed": 43250,
+        "chunk_elbo_median": 279.0575657800259,
+        "chunk_elbo_mean": 279.0575657800259,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00016689058558929583,
+        "q_mu_max_abs_update": 0.012205008491353198,
+        "q_sqrt_max_abs_update": 0.0012384171904607222,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_43250.npz",
+        "moving_median_relative_change": 0.002358166040167963
+      },
+      {
+        "steps_completed": 43500,
+        "chunk_elbo_median": 279.1480943614737,
+        "chunk_elbo_mean": 279.1480943614737,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.000324408267501043,
+        "q_mu_max_abs_update": 0.024181654269934683,
+        "q_sqrt_max_abs_update": 0.0017280864690738529,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_43500.npz",
+        "moving_median_relative_change": 0.002382557546709139
+      },
+      {
+        "steps_completed": 43750,
+        "chunk_elbo_median": 279.1907879096894,
+        "chunk_elbo_mean": 279.1907879096894,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0001529422879040848,
+        "q_mu_max_abs_update": 0.010920139023061992,
+        "q_sqrt_max_abs_update": 0.0011472492232573739,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_43750.npz",
+        "moving_median_relative_change": 0.002323031659267083
+      },
+      {
+        "steps_completed": 44000,
+        "chunk_elbo_median": 279.2713954453234,
+        "chunk_elbo_mean": 279.2713954453234,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002887184646653235,
+        "q_mu_max_abs_update": 0.01700926096780986,
+        "q_sqrt_max_abs_update": 0.004080041036524776,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_44000.npz",
+        "moving_median_relative_change": 0.002278566701661278
+      },
+      {
+        "steps_completed": 44250,
+        "chunk_elbo_median": 279.321896017106,
+        "chunk_elbo_mean": 279.321896017106,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00018082973267662762,
+        "q_mu_max_abs_update": 0.013236787537351802,
+        "q_sqrt_max_abs_update": 0.0009926293091927219,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_44250.npz",
+        "moving_median_relative_change": 0.002196604177957882
+      },
+      {
+        "steps_completed": 44500,
+        "chunk_elbo_median": 279.3821647452723,
+        "chunk_elbo_mean": 279.3821647452723,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00021576800467735494,
+        "q_mu_max_abs_update": 0.020440180172645483,
+        "q_sqrt_max_abs_update": 0.006250201991246415,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_44500.npz",
+        "moving_median_relative_change": 0.002188057342914187
+      },
+      {
+        "steps_completed": 44750,
+        "chunk_elbo_median": 279.44118251621506,
+        "chunk_elbo_mean": 279.44118251621506,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002112438744849127,
+        "q_mu_max_abs_update": 0.010018804988185082,
+        "q_sqrt_max_abs_update": 0.0014175030661404686,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_44750.npz",
+        "moving_median_relative_change": 0.0022091344032720583
+      },
+      {
+        "steps_completed": 45000,
+        "chunk_elbo_median": 279.4919763767359,
+        "chunk_elbo_mean": 279.4919763767359,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00018176941588739413,
+        "q_mu_max_abs_update": 0.024710915273958634,
+        "q_sqrt_max_abs_update": 0.006060348114646674,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_45000.npz",
+        "moving_median_relative_change": 0.0021981386034570995
+      },
+      {
+        "steps_completed": 45250,
+        "chunk_elbo_median": 279.5592566255558,
+        "chunk_elbo_mean": 279.5592566255558,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00024072336419845878,
+        "q_mu_max_abs_update": 0.01927564852118202,
+        "q_sqrt_max_abs_update": 0.001742736425420055,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_45250.npz",
+        "moving_median_relative_change": 0.002218798438024646
+      },
+      {
+        "steps_completed": 45500,
+        "chunk_elbo_median": 279.63038701932663,
+        "chunk_elbo_mean": 279.63038701932663,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00025443762667498474,
+        "q_mu_max_abs_update": 0.009064397905052424,
+        "q_sqrt_max_abs_update": 0.001307572832627668,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_45500.npz",
+        "moving_median_relative_change": 0.0021881712805586952
+      },
+      {
+        "steps_completed": 45750,
+        "chunk_elbo_median": 279.6630411264947,
+        "chunk_elbo_mean": 279.6630411264947,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00011677596099673508,
+        "q_mu_max_abs_update": 0.013816067795449527,
+        "q_sqrt_max_abs_update": 0.0014562408729600074,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_45750.npz",
+        "moving_median_relative_change": 0.002136238285862741
+      },
+      {
+        "steps_completed": 46000,
+        "chunk_elbo_median": 279.7362395805196,
+        "chunk_elbo_mean": 279.7362395805196,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002617380320619848,
+        "q_mu_max_abs_update": 0.01112499135901679,
+        "q_sqrt_max_abs_update": 0.0010361306379037538,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_46000.npz",
+        "moving_median_relative_change": 0.002129362014670496
+      },
+      {
+        "steps_completed": 46250,
+        "chunk_elbo_median": 279.77356328324686,
+        "chunk_elbo_mean": 279.77356328324686,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0001334246245077302,
+        "q_mu_max_abs_update": 0.020992766731591672,
+        "q_sqrt_max_abs_update": 0.002008592493231487,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_46250.npz",
+        "moving_median_relative_change": 0.002134336719692434
+      },
+      {
+        "steps_completed": 46500,
+        "chunk_elbo_median": 279.8159174887385,
+        "chunk_elbo_mean": 279.8159174887385,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00015138744702886635,
+        "q_mu_max_abs_update": 0.012340600124385759,
+        "q_sqrt_max_abs_update": 0.0012440211962913839,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_46500.npz",
+        "moving_median_relative_change": 0.0021677225220689085
+      },
+      {
+        "steps_completed": 46750,
+        "chunk_elbo_median": 279.9021634772903,
+        "chunk_elbo_mean": 279.9021634772903,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00030822402573034565,
+        "q_mu_max_abs_update": 0.024109968812876303,
+        "q_sqrt_max_abs_update": 0.0017285105636792863,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_46750.npz",
+        "moving_median_relative_change": 0.002194821509523523
+      },
+      {
+        "steps_completed": 47000,
+        "chunk_elbo_median": 279.9405954684289,
+        "chunk_elbo_mean": 279.9405954684289,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00013730508782487847,
+        "q_mu_max_abs_update": 0.010661880778786603,
+        "q_sqrt_max_abs_update": 0.0011634063248027182,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_47000.npz",
+        "moving_median_relative_change": 0.0021383168440322685
+      },
+      {
+        "steps_completed": 47250,
+        "chunk_elbo_median": 280.01709163243595,
+        "chunk_elbo_mean": 280.01709163243595,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00027325856001355367,
+        "q_mu_max_abs_update": 0.01666159073641893,
+        "q_sqrt_max_abs_update": 0.004078212400882922,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_47250.npz",
+        "moving_median_relative_change": 0.0020971503683218
+      },
+      {
+        "steps_completed": 47500,
+        "chunk_elbo_median": 280.06337206608424,
+        "chunk_elbo_mean": 280.06337206608424,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00016527717425564068,
+        "q_mu_max_abs_update": 0.013351533697573359,
+        "q_sqrt_max_abs_update": 0.0010223215460541113,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_47500.npz",
+        "moving_median_relative_change": 0.002018574310977122
+      },
+      {
+        "steps_completed": 47750,
+        "chunk_elbo_median": 280.1194891617365,
+        "chunk_elbo_mean": 280.1194891617365,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0002003728486102326,
+        "q_mu_max_abs_update": 0.020373579417485743,
+        "q_sqrt_max_abs_update": 0.006246257025758192,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_47750.npz",
+        "moving_median_relative_change": 0.0020136108341986983
+      },
+      {
+        "steps_completed": 48000,
+        "chunk_elbo_median": 280.1747685379579,
+        "chunk_elbo_mean": 280.1747685379579,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00019734212848530118,
+        "q_mu_max_abs_update": 0.010069774854628122,
+        "q_sqrt_max_abs_update": 0.001442457249729412,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_48000.npz",
+        "moving_median_relative_change": 0.0020381061519171937
+      },
+      {
+        "steps_completed": 48250,
+        "chunk_elbo_median": 280.2216815872858,
+        "chunk_elbo_mean": 280.2216815872858,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0001674420918510663,
+        "q_mu_max_abs_update": 0.024547677026614423,
+        "q_sqrt_max_abs_update": 0.0060607151559046585,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_48250.npz",
+        "moving_median_relative_change": 0.00202987195316075
+      },
+      {
+        "steps_completed": 48500,
+        "chunk_elbo_median": 280.2851915867534,
+        "chunk_elbo_mean": 280.2851915867534,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00022664198968426312,
+        "q_mu_max_abs_update": 0.019292923365220815,
+        "q_sqrt_max_abs_update": 0.0017722466238720147,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_48500.npz",
+        "moving_median_relative_change": 0.0020526690666223804
+      },
+      {
+        "steps_completed": 48750,
+        "chunk_elbo_median": 280.352398918505,
+        "chunk_elbo_mean": 280.352398918505,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00023978195698149063,
+        "q_mu_max_abs_update": 0.009022745864517567,
+        "q_sqrt_max_abs_update": 0.0013305240848169864,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_48750.npz",
+        "moving_median_relative_change": 0.002024194132354828
+      },
+      {
+        "steps_completed": 49000,
+        "chunk_elbo_median": 280.38119519176837,
+        "chunk_elbo_mean": 280.38119519176837,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00010271455986983737,
+        "q_mu_max_abs_update": 0.013779911092274943,
+        "q_sqrt_max_abs_update": 0.0014691611015388573,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_49000.npz",
+        "moving_median_relative_change": 0.0019753836061984107
+      },
+      {
+        "steps_completed": 49250,
+        "chunk_elbo_median": 280.45080906019655,
+        "chunk_elbo_mean": 280.45080906019655,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00024828294344264037,
+        "q_mu_max_abs_update": 0.010965282731937975,
+        "q_sqrt_max_abs_update": 0.0010497409501722954,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_49250.npz",
+        "moving_median_relative_change": 0.0019721704635064664
+      },
+      {
+        "steps_completed": 49500,
+        "chunk_elbo_median": 280.48438156610683,
+        "chunk_elbo_mean": 280.48438156610683,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00011970907134405709,
+        "q_mu_max_abs_update": 0.02054857641534369,
+        "q_sqrt_max_abs_update": 0.0020388447996725623,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_49500.npz",
+        "moving_median_relative_change": 0.001979967628175953
+      },
+      {
+        "steps_completed": 49750,
+        "chunk_elbo_median": 280.52335338230597,
+        "chunk_elbo_mean": 280.52335338230597,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.0001389446926831882,
+        "q_mu_max_abs_update": 0.012437680798019102,
+        "q_sqrt_max_abs_update": 0.0012480776708278518,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_49750.npz",
+        "moving_median_relative_change": 0.0020156709242976022
+      },
+      {
+        "steps_completed": 50000,
+        "chunk_elbo_median": 280.60607980066163,
+        "chunk_elbo_mean": 280.60607980066163,
+        "objective_scope": "complete_training_prefix",
+        "previous_chunk_relative_change": 0.00029490029032598955,
+        "q_mu_max_abs_update": 0.024036837730040617,
+        "q_sqrt_max_abs_update": 0.001751705457905095,
+        "checkpoint": "/root/autodl-tmp/stvgp_covid_cloud_57b0b2d/baselines/covid_long_setting_b/results/convergence_repair_v1/gpu_execution_plan/prelock_lmc_gpu_s5_s7_v1/seed5/lmc_svgp/task1_checkpoints/checkpoint_50000.npz",
+        "moving_median_relative_change": 0.002044558337139595
+      }
+    ],
+    "lmc_symmetry_audit": {
+      "kernel_count": 8,
+      "initial_lengthscales": [
+        0.05,
+        0.06947477471865686,
+        0.09653488644416247,
+        0.13413478976398627,
+        0.18637968601574698,
+        0.2589737339615605,
+        0.3598428365005759,
+        0.5
+      ],
+      "lengthscale_parameter_ids_distinct": true,
+      "mixing_matrix_trainable": true,
+      "initialisation": "deterministic_log_spaced_symmetry_break"
+    }
+  },
+  "task1_seconds": 2976.1838936954737,
+  "online_seconds_total": 959.4466740079224,
+  "online_seconds_per_week": 6.709417300754702,
+  "online_update_prediction_seconds": [
+    0.23745199292898178,
+    6.8461314626038074,
+    6.792703345417976,
+    6.611302848905325,
+    6.910225387662649,
+    6.878513861447573,
+    6.827290639281273,
+    6.578003164380789,
+    6.273868627846241,
+    6.570568080991507,
+    6.559914667159319,
+    6.323161456733942,
+    6.398867331445217,
+    6.336741726845503,
+    6.582273796200752,
+    6.319236133247614,
+    6.626184303313494,
+    6.3537881039083,
+    6.135928336530924,
+    6.607853263616562,
+    6.772107470780611,
+    6.8633149564266205,
+    6.847240839153528,
+    6.864209100604057,
+    6.803121671080589,
+    6.953574370592833,
+    6.9005801901221275,
+    6.360903091728687,
+    6.75704488158226,
+    6.5749217346310616,
+    6.634773213416338,
+    6.66911543160677,
+    6.505987167358398,
+    6.5396076664328575,
+    6.655871711671352,
+    6.541563604027033,
+    6.6341774351894855,
+    6.458728116005659,
+    6.4233042895793915,
+    6.703682590276003,
+    6.6678337678313255,
+    7.162907909601927,
+    6.736488841474056,
+    6.963025785982609,
+    6.511086128652096,
+    6.940187092870474,
+    6.350956581532955,
+    6.680846586823463,
+    6.381930470466614,
+    6.622111197561026,
+    6.378455765545368,
+    6.680306352674961,
+    6.286440894007683,
+    6.557907350361347,
+    6.919914159923792,
+    6.4303074181079865,
+    6.771662272512913,
+    6.741123005747795,
+    6.878726217895746,
+    6.710781458765268,
+    7.054856602102518,
+    6.864680174738169,
+    7.292650695890188,
+    7.284949004650116,
+    7.006986599415541,
+    6.9544286616146564,
+    6.6321140229702,
+    6.917843826115131,
+    6.598785854876041,
+    6.478232581168413,
+    6.912381432950497,
+    6.5753335021436214,
+    6.863435130566359,
+    6.3193251714110374,
+    6.756760619580746,
+    6.552302252501249,
+    6.4294596910476685,
+    6.635708250105381,
+    7.093170765787363,
+    6.717835977673531,
+    6.857655897736549,
+    6.723422009497881,
+    6.964401416480541,
+    6.752181313931942,
+    6.617271911352873,
+    6.297583390027285,
+    6.642532825469971,
+    6.434480618685484,
+    6.803831290453672,
+    6.478095285594463,
+    6.691532421857119,
+    6.401099994778633,
+    6.365767870098352,
+    6.847700875252485,
+    6.4509084559977055,
+    6.7295838594436646,
+    6.53029003739357,
+    6.879910878837109,
+    6.713896173983812,
+    6.738086473196745,
+    6.785625506192446,
+    7.185386072844267,
+    6.8139433190226555,
+    7.563993666321039,
+    6.619708549231291,
+    6.459985814988613,
+    6.711138807237148,
+    6.470512643456459,
+    6.786413408815861,
+    6.533111661672592,
+    7.064681310206652,
+    6.83899849280715,
+    7.1996709778904915,
+    6.5771214962005615,
+    6.697797108441591,
+    6.561033885926008,
+    6.9343650341033936,
+    7.42876947671175,
+    6.806441925466061,
+    7.378076270222664,
+    6.916921529918909,
+    7.427977092564106,
+    6.796333085745573,
+    6.432559404522181,
+    7.071001369506121,
+    7.034664075821638,
+    7.122084781527519,
+    11.789789214730263,
+    7.157656133174896,
+    7.270351644605398,
+    6.789603382349014,
+    7.042391184717417,
+    6.371964409947395,
+    6.9961265958845615,
+    6.79932027682662,
+    6.783033337444067,
+    7.044703159481287,
+    6.577988859266043,
+    6.862561821937561,
+    6.398147337138653,
+    6.227036710828543,
+    6.438776820898056,
+    6.210595212876797
+  ],
+  "online_posterior_updates": [
+    {
+      "online_elbo_final": null,
+      "q_mu_max_abs_update": 0.0,
+      "q_sqrt_max_abs_update": 0.0,
+      "reason": "Task-1 posterior is the initial online state; no new complete week has arrived"
+    },
+    {
+      "online_elbo_final": 145.28247488040256,
+      "q_mu_max_abs_update": 0.42277219493070106,
+      "q_sqrt_max_abs_update": 0.08076520650541907
+    },
+    {
+      "online_elbo_final": 508.3041857107339,
+      "q_mu_max_abs_update": 1.3127258515726332,
+      "q_sqrt_max_abs_update": 0.14955610644444753
+    },
+    {
+      "online_elbo_final": 465.56060327827186,
+      "q_mu_max_abs_update": 1.2613777243306998,
+      "q_sqrt_max_abs_update": 0.12073415724721537
+    },
+    {
+      "online_elbo_final": 157.99378078602507,
+      "q_mu_max_abs_update": 1.2203480294040006,
+      "q_sqrt_max_abs_update": 0.13854062182200522
+    },
+    {
+      "online_elbo_final": 155.07757049966182,
+      "q_mu_max_abs_update": 1.6044425420025799,
+      "q_sqrt_max_abs_update": 0.1306544097676891
+    },
+    {
+      "online_elbo_final": -619.3560612639353,
+      "q_mu_max_abs_update": 1.5385873778199315,
+      "q_sqrt_max_abs_update": 0.16125075396649985
+    },
+    {
+      "online_elbo_final": -936.7345726142573,
+      "q_mu_max_abs_update": 0.628952128801127,
+      "q_sqrt_max_abs_update": 0.28683147307568085
+    },
+    {
+      "online_elbo_final": -405.56182990531926,
+      "q_mu_max_abs_update": 0.4497049863597269,
+      "q_sqrt_max_abs_update": 0.1284112579690773
+    },
+    {
+      "online_elbo_final": 192.28524934724663,
+      "q_mu_max_abs_update": 0.6469179341517748,
+      "q_sqrt_max_abs_update": 0.19585295635564787
+    },
+    {
+      "online_elbo_final": -709.534750228843,
+      "q_mu_max_abs_update": 0.4231089171361093,
+      "q_sqrt_max_abs_update": 0.13658788506274755
+    },
+    {
+      "online_elbo_final": -793.9552308875698,
+      "q_mu_max_abs_update": 0.6844043672331916,
+      "q_sqrt_max_abs_update": 0.1295492219819525
+    },
+    {
+      "online_elbo_final": -1355.4366514492706,
+      "q_mu_max_abs_update": 0.49951612435482673,
+      "q_sqrt_max_abs_update": 0.12565791030143036
+    },
+    {
+      "online_elbo_final": -2770.6328457951763,
+      "q_mu_max_abs_update": 0.48773006335425073,
+      "q_sqrt_max_abs_update": 0.2460251573699588
+    },
+    {
+      "online_elbo_final": -1717.40101508693,
+      "q_mu_max_abs_update": 0.5143773031567327,
+      "q_sqrt_max_abs_update": 0.20994842514099998
+    },
+    {
+      "online_elbo_final": -1563.5278366988355,
+      "q_mu_max_abs_update": 0.21674583415694482,
+      "q_sqrt_max_abs_update": 0.1610487344732131
+    },
+    {
+      "online_elbo_final": -491.202424080599,
+      "q_mu_max_abs_update": 0.1757514371521176,
+      "q_sqrt_max_abs_update": 0.1485287123028236
+    },
+    {
+      "online_elbo_final": -1374.9336670452944,
+      "q_mu_max_abs_update": 0.16583403242566142,
+      "q_sqrt_max_abs_update": 0.131770018783054
+    },
+    {
+      "online_elbo_final": -1429.0797081165838,
+      "q_mu_max_abs_update": 0.3856971690140032,
+      "q_sqrt_max_abs_update": 0.11248746049822922
+    },
+    {
+      "online_elbo_final": -2849.9552806864394,
+      "q_mu_max_abs_update": 0.6887510388785412,
+      "q_sqrt_max_abs_update": 0.2345879890831295
+    },
+    {
+      "online_elbo_final": -2029.9677668160289,
+      "q_mu_max_abs_update": 0.9461423368871853,
+      "q_sqrt_max_abs_update": 0.29169781728095423
+    },
+    {
+      "online_elbo_final": -1690.1231132818816,
+      "q_mu_max_abs_update": 0.7201764866548257,
+      "q_sqrt_max_abs_update": 0.15158022107423796
+    },
+    {
+      "online_elbo_final": -4684.608609289956,
+      "q_mu_max_abs_update": 1.388262005009362,
+      "q_sqrt_max_abs_update": 0.14487695237192877
+    },
+    {
+      "online_elbo_final": -2625.9924866850192,
+      "q_mu_max_abs_update": 0.9351433354475036,
+      "q_sqrt_max_abs_update": 0.12623377411027625
+    },
+    {
+      "online_elbo_final": -4353.971770258199,
+      "q_mu_max_abs_update": 1.008849736717341,
+      "q_sqrt_max_abs_update": 0.11602172913989184
+    },
+    {
+      "online_elbo_final": -3083.3560792135168,
+      "q_mu_max_abs_update": 1.2502290140441281,
+      "q_sqrt_max_abs_update": 0.2003845153180821
+    },
+    {
+      "online_elbo_final": -3191.0568303197942,
+      "q_mu_max_abs_update": 2.0076987346560635,
+      "q_sqrt_max_abs_update": 0.20374754158764716
+    },
+    {
+      "online_elbo_final": -5653.92601224319,
+      "q_mu_max_abs_update": 2.2672001225079033,
+      "q_sqrt_max_abs_update": 0.20101306604853336
+    },
+    {
+      "online_elbo_final": -2555.2517474096135,
+      "q_mu_max_abs_update": 1.3813609315546032,
+      "q_sqrt_max_abs_update": 0.15421925501708134
+    },
+    {
+      "online_elbo_final": -2823.923959584597,
+      "q_mu_max_abs_update": 0.9511498253279882,
+      "q_sqrt_max_abs_update": 0.12107456234843117
+    },
+    {
+      "online_elbo_final": -4321.686087591867,
+      "q_mu_max_abs_update": 1.543004996292653,
+      "q_sqrt_max_abs_update": 0.1312871796685834
+    },
+    {
+      "online_elbo_final": -4405.879713260406,
+      "q_mu_max_abs_update": 1.3789069996387031,
+      "q_sqrt_max_abs_update": 0.12298924078894874
+    },
+    {
+      "online_elbo_final": -1008.6543004400521,
+      "q_mu_max_abs_update": 0.9360480567641023,
+      "q_sqrt_max_abs_update": 0.24744927718004442
+    },
+    {
+      "online_elbo_final": -3472.9028438018513,
+      "q_mu_max_abs_update": 1.0090854207372777,
+      "q_sqrt_max_abs_update": 0.23138364761610142
+    },
+    {
+      "online_elbo_final": -2042.2578179869788,
+      "q_mu_max_abs_update": 0.8032675821131741,
+      "q_sqrt_max_abs_update": 0.1676383113593573
+    },
+    {
+      "online_elbo_final": -691.9602523930669,
+      "q_mu_max_abs_update": 0.8670802666200839,
+      "q_sqrt_max_abs_update": 0.15847060706017546
+    },
+    {
+      "online_elbo_final": -5326.864858989003,
+      "q_mu_max_abs_update": 0.8706413154124695,
+      "q_sqrt_max_abs_update": 0.11136801125833429
+    },
+    {
+      "online_elbo_final": -3430.1368501823026,
+      "q_mu_max_abs_update": 0.8504022755651737,
+      "q_sqrt_max_abs_update": 0.10911279927790268
+    },
+    {
+      "online_elbo_final": -2779.098512431889,
+      "q_mu_max_abs_update": 0.6802255955533929,
+      "q_sqrt_max_abs_update": 0.2801655751051244
+    },
+    {
+      "online_elbo_final": -2311.6991916688767,
+      "q_mu_max_abs_update": 0.34227559166369614,
+      "q_sqrt_max_abs_update": 0.18415465282467833
+    },
+    {
+      "online_elbo_final": -4109.731484979215,
+      "q_mu_max_abs_update": 0.3143571862906689,
+      "q_sqrt_max_abs_update": 0.19208926873364496
+    },
+    {
+      "online_elbo_final": -3384.25295352157,
+      "q_mu_max_abs_update": 0.2632294298601763,
+      "q_sqrt_max_abs_update": 0.11208255340595052
+    },
+    {
+      "online_elbo_final": -4214.216504764014,
+      "q_mu_max_abs_update": 0.5967455524057252,
+      "q_sqrt_max_abs_update": 0.17550948071174527
+    },
+    {
+      "online_elbo_final": -3016.6597317337155,
+      "q_mu_max_abs_update": 0.73669213594919,
+      "q_sqrt_max_abs_update": 0.22085123509405996
+    },
+    {
+      "online_elbo_final": -1864.6133500080941,
+      "q_mu_max_abs_update": 1.2543724072711009,
+      "q_sqrt_max_abs_update": 0.27387834838504943
+    },
+    {
+      "online_elbo_final": -3102.910770231637,
+      "q_mu_max_abs_update": 0.26953369848306963,
+      "q_sqrt_max_abs_update": 0.04355920103789779
+    },
+    {
+      "online_elbo_final": -6160.694461708656,
+      "q_mu_max_abs_update": 1.0727973714494077,
+      "q_sqrt_max_abs_update": 0.28140270112927235
+    },
+    {
+      "online_elbo_final": -3160.3170677218764,
+      "q_mu_max_abs_update": 0.5014274365819205,
+      "q_sqrt_max_abs_update": 0.16248346559983506
+    },
+    {
+      "online_elbo_final": -5386.965337675171,
+      "q_mu_max_abs_update": 0.4042144850766137,
+      "q_sqrt_max_abs_update": 0.10665498290585962
+    },
+    {
+      "online_elbo_final": -5246.473935180448,
+      "q_mu_max_abs_update": 0.5941888116646703,
+      "q_sqrt_max_abs_update": 0.09674781910553559
+    },
+    {
+      "online_elbo_final": -4527.277222020202,
+      "q_mu_max_abs_update": 0.5333537544710083,
+      "q_sqrt_max_abs_update": 0.15102123679957397
+    },
+    {
+      "online_elbo_final": -2297.631453372922,
+      "q_mu_max_abs_update": 0.9182745981862421,
+      "q_sqrt_max_abs_update": 0.35117409134457955
+    },
+    {
+      "online_elbo_final": -4995.766645291077,
+      "q_mu_max_abs_update": 0.6039581882174467,
+      "q_sqrt_max_abs_update": 0.15129247441326152
+    },
+    {
+      "online_elbo_final": -4599.1769626784935,
+      "q_mu_max_abs_update": 0.8153603910493037,
+      "q_sqrt_max_abs_update": 0.16642423500602754
+    },
+    {
+      "online_elbo_final": -6374.267033118509,
+      "q_mu_max_abs_update": 0.45921586397174163,
+      "q_sqrt_max_abs_update": 0.13675345510548154
+    },
+    {
+      "online_elbo_final": -2766.128885136174,
+      "q_mu_max_abs_update": 0.7662621882930611,
+      "q_sqrt_max_abs_update": 0.11035639492791938
+    },
+    {
+      "online_elbo_final": -4586.422301742214,
+      "q_mu_max_abs_update": 0.5388304709460705,
+      "q_sqrt_max_abs_update": 0.1488823320830729
+    },
+    {
+      "online_elbo_final": -5579.527266511568,
+      "q_mu_max_abs_update": 0.27527041237471006,
+      "q_sqrt_max_abs_update": 0.28378398154665796
+    },
+    {
+      "online_elbo_final": -4553.358218724104,
+      "q_mu_max_abs_update": 0.2536342688185289,
+      "q_sqrt_max_abs_update": 0.195362519708858
+    },
+    {
+      "online_elbo_final": -2703.843610329086,
+      "q_mu_max_abs_update": 0.24743599702548802,
+      "q_sqrt_max_abs_update": 0.1546821537699643
+    },
+    {
+      "online_elbo_final": -7516.345905873969,
+      "q_mu_max_abs_update": 0.5196564680271504,
+      "q_sqrt_max_abs_update": 0.15639007904180402
+    },
+    {
+      "online_elbo_final": -3389.3486398070104,
+      "q_mu_max_abs_update": 0.4052850620174062,
+      "q_sqrt_max_abs_update": 0.12375093431314166
+    },
+    {
+      "online_elbo_final": -5015.428596666524,
+      "q_mu_max_abs_update": 0.44366961372360403,
+      "q_sqrt_max_abs_update": 0.1460716192381225
+    },
+    {
+      "online_elbo_final": -6085.4882021109615,
+      "q_mu_max_abs_update": 0.4382115462011227,
+      "q_sqrt_max_abs_update": 0.24987018071577666
+    },
+    {
+      "online_elbo_final": -6229.719686156601,
+      "q_mu_max_abs_update": 0.1912733106108755,
+      "q_sqrt_max_abs_update": 0.2191689159193399
+    },
+    {
+      "online_elbo_final": -7500.517632518243,
+      "q_mu_max_abs_update": 0.4160994674031473,
+      "q_sqrt_max_abs_update": 0.14952066612941628
+    },
+    {
+      "online_elbo_final": -4806.789386626175,
+      "q_mu_max_abs_update": 0.5167422151616317,
+      "q_sqrt_max_abs_update": 0.15506432208397047
+    },
+    {
+      "online_elbo_final": -3759.3303182876434,
+      "q_mu_max_abs_update": 0.5585316609436096,
+      "q_sqrt_max_abs_update": 0.13704104931003647
+    },
+    {
+      "online_elbo_final": -4994.578292579235,
+      "q_mu_max_abs_update": 0.4946585084946271,
+      "q_sqrt_max_abs_update": 0.13830502587324545
+    },
+    {
+      "online_elbo_final": -6177.5278672146005,
+      "q_mu_max_abs_update": 0.6923161104278979,
+      "q_sqrt_max_abs_update": 0.24916286521665126
+    },
+    {
+      "online_elbo_final": -5458.221989563891,
+      "q_mu_max_abs_update": 1.0092085931910288,
+      "q_sqrt_max_abs_update": 0.2296243521973145
+    },
+    {
+      "online_elbo_final": -5319.140698957398,
+      "q_mu_max_abs_update": 0.551748690022289,
+      "q_sqrt_max_abs_update": 0.17226164458257998
+    },
+    {
+      "online_elbo_final": -7205.7255475268,
+      "q_mu_max_abs_update": 0.6066903314640397,
+      "q_sqrt_max_abs_update": 0.14893650528337365
+    },
+    {
+      "online_elbo_final": -2617.9032328574203,
+      "q_mu_max_abs_update": 0.32351479792853133,
+      "q_sqrt_max_abs_update": 0.0928925866769289
+    },
+    {
+      "online_elbo_final": -3051.0523517914667,
+      "q_mu_max_abs_update": 0.48257501981151907,
+      "q_sqrt_max_abs_update": 0.14057307859787066
+    },
+    {
+      "online_elbo_final": -5811.967088838337,
+      "q_mu_max_abs_update": 0.6611266658951467,
+      "q_sqrt_max_abs_update": 0.1707478622311533
+    },
+    {
+      "online_elbo_final": -4595.712531643557,
+      "q_mu_max_abs_update": 0.7835692251495177,
+      "q_sqrt_max_abs_update": 0.2385110357381644
+    },
+    {
+      "online_elbo_final": -3705.1424003698044,
+      "q_mu_max_abs_update": 0.5895741531496279,
+      "q_sqrt_max_abs_update": 0.17507083908048635
+    },
+    {
+      "online_elbo_final": -4654.754000055218,
+      "q_mu_max_abs_update": 0.5864274661385536,
+      "q_sqrt_max_abs_update": 0.1738648704506297
+    },
+    {
+      "online_elbo_final": -6605.812508152695,
+      "q_mu_max_abs_update": 0.3717090437579853,
+      "q_sqrt_max_abs_update": 0.1282482866175444
+    },
+    {
+      "online_elbo_final": -4469.518863620749,
+      "q_mu_max_abs_update": 0.6723052939403918,
+      "q_sqrt_max_abs_update": 0.10830107140038553
+    },
+    {
+      "online_elbo_final": -7343.21248002925,
+      "q_mu_max_abs_update": 1.0039687776047566,
+      "q_sqrt_max_abs_update": 0.1562174958480264
+    },
+    {
+      "online_elbo_final": -6671.712014579209,
+      "q_mu_max_abs_update": 0.7808337540968635,
+      "q_sqrt_max_abs_update": 0.24083970087838183
+    },
+    {
+      "online_elbo_final": -3197.140327592786,
+      "q_mu_max_abs_update": 0.43905079617684173,
+      "q_sqrt_max_abs_update": 0.19337048185079808
+    },
+    {
+      "online_elbo_final": -5367.505895860405,
+      "q_mu_max_abs_update": 0.568697358029608,
+      "q_sqrt_max_abs_update": 0.1574495937558557
+    },
+    {
+      "online_elbo_final": -7354.833133754887,
+      "q_mu_max_abs_update": 0.6549479069482707,
+      "q_sqrt_max_abs_update": 0.17244784046501627
+    },
+    {
+      "online_elbo_final": -8820.172872797808,
+      "q_mu_max_abs_update": 0.39265552367403656,
+      "q_sqrt_max_abs_update": 0.09981341643534541
+    },
+    {
+      "online_elbo_final": -4698.940151005763,
+      "q_mu_max_abs_update": 0.5435700423095164,
+      "q_sqrt_max_abs_update": 0.13547838123989214
+    },
+    {
+      "online_elbo_final": -9404.330408755051,
+      "q_mu_max_abs_update": 0.3136180757822431,
+      "q_sqrt_max_abs_update": 0.1512841241415394
+    },
+    {
+      "online_elbo_final": -4122.325979096501,
+      "q_mu_max_abs_update": 0.5462637730201102,
+      "q_sqrt_max_abs_update": 0.2684612644406115
+    },
+    {
+      "online_elbo_final": -4351.740597887165,
+      "q_mu_max_abs_update": 0.6825063392585936,
+      "q_sqrt_max_abs_update": 0.29808242599958784
+    },
+    {
+      "online_elbo_final": -5335.0649810741415,
+      "q_mu_max_abs_update": 0.40869498695727247,
+      "q_sqrt_max_abs_update": 0.192093333265896
+    },
+    {
+      "online_elbo_final": -6120.594532202155,
+      "q_mu_max_abs_update": 0.40036638829042204,
+      "q_sqrt_max_abs_update": 0.030394266731921638
+    },
+    {
+      "online_elbo_final": -3886.5782819080064,
+      "q_mu_max_abs_update": 0.29646290522599017,
+      "q_sqrt_max_abs_update": 0.083682542148661
+    },
+    {
+      "online_elbo_final": -5341.015287936711,
+      "q_mu_max_abs_update": 0.5054053432368502,
+      "q_sqrt_max_abs_update": 0.5783455087702023
+    },
+    {
+      "online_elbo_final": -3685.351418897579,
+      "q_mu_max_abs_update": 0.5832370322353819,
+      "q_sqrt_max_abs_update": 0.2485218196914583
+    },
+    {
+      "online_elbo_final": -2390.8068042160953,
+      "q_mu_max_abs_update": 0.21830720640140022,
+      "q_sqrt_max_abs_update": 0.128203362613728
+    },
+    {
+      "online_elbo_final": -5055.7273336396665,
+      "q_mu_max_abs_update": 0.19698860516833339,
+      "q_sqrt_max_abs_update": 0.10597657862132914
+    },
+    {
+      "online_elbo_final": -4975.3016312281925,
+      "q_mu_max_abs_update": 0.37632235935635494,
+      "q_sqrt_max_abs_update": 0.13397671736465622
+    },
+    {
+      "online_elbo_final": -3945.1854287995716,
+      "q_mu_max_abs_update": 0.3061978509266505,
+      "q_sqrt_max_abs_update": 0.1371176230059455
+    },
+    {
+      "online_elbo_final": -4172.779675676315,
+      "q_mu_max_abs_update": 0.17251828090780208,
+      "q_sqrt_max_abs_update": 0.16145714300539582
+    },
+    {
+      "online_elbo_final": -7082.676303060951,
+      "q_mu_max_abs_update": 0.3738445062680613,
+      "q_sqrt_max_abs_update": 0.23763945606066583
+    },
+    {
+      "online_elbo_final": -5933.536634701846,
+      "q_mu_max_abs_update": 0.8812497206093273,
+      "q_sqrt_max_abs_update": 0.22345197935460298
+    },
+    {
+      "online_elbo_final": -5300.685389027363,
+      "q_mu_max_abs_update": 0.3531816896408877,
+      "q_sqrt_max_abs_update": 0.12145807594692393
+    },
+    {
+      "online_elbo_final": -6077.191954163571,
+      "q_mu_max_abs_update": 0.1806599941149969,
+      "q_sqrt_max_abs_update": 0.10358267794904263
+    },
+    {
+      "online_elbo_final": -9314.615557297455,
+      "q_mu_max_abs_update": 0.4260594204809429,
+      "q_sqrt_max_abs_update": 0.14479509548656672
+    },
+    {
+      "online_elbo_final": -7783.531081898572,
+      "q_mu_max_abs_update": 0.7903505485305633,
+      "q_sqrt_max_abs_update": 0.22708511422892225
+    },
+    {
+      "online_elbo_final": -5828.1842546602475,
+      "q_mu_max_abs_update": 0.2305192806850629,
+      "q_sqrt_max_abs_update": 0.18321696035655544
+    },
+    {
+      "online_elbo_final": -8210.916183301573,
+      "q_mu_max_abs_update": 0.48193417726208665,
+      "q_sqrt_max_abs_update": 0.2242204401925481
+    },
+    {
+      "online_elbo_final": -2823.796843491174,
+      "q_mu_max_abs_update": 0.43318960602965007,
+      "q_sqrt_max_abs_update": 0.15407204208763337
+    },
+    {
+      "online_elbo_final": -6643.611901035723,
+      "q_mu_max_abs_update": 0.28259270194196606,
+      "q_sqrt_max_abs_update": 0.14897149600530935
+    },
+    {
+      "online_elbo_final": -5032.801328340665,
+      "q_mu_max_abs_update": 0.630314432205294,
+      "q_sqrt_max_abs_update": 0.13785938941882192
+    },
+    {
+      "online_elbo_final": -8388.011756713,
+      "q_mu_max_abs_update": 0.6588756307524677,
+      "q_sqrt_max_abs_update": 0.11136000497864479
+    },
+    {
+      "online_elbo_final": -2813.382554097321,
+      "q_mu_max_abs_update": 0.63657765343758,
+      "q_sqrt_max_abs_update": 0.226204130475936
+    },
+    {
+      "online_elbo_final": -10358.823926790512,
+      "q_mu_max_abs_update": 0.4646352075523197,
+      "q_sqrt_max_abs_update": 0.15337202805700198
+    },
+    {
+      "online_elbo_final": -7185.495310545275,
+      "q_mu_max_abs_update": 0.32999116227559355,
+      "q_sqrt_max_abs_update": 0.170088397771278
+    },
+    {
+      "online_elbo_final": -8296.731918032872,
+      "q_mu_max_abs_update": 0.19039437074185983,
+      "q_sqrt_max_abs_update": 0.1274051908970616
+    },
+    {
+      "online_elbo_final": -4533.3407791670115,
+      "q_mu_max_abs_update": 0.7652812671201437,
+      "q_sqrt_max_abs_update": 0.23071098720025734
+    },
+    {
+      "online_elbo_final": -9665.769464944126,
+      "q_mu_max_abs_update": 0.416944924488309,
+      "q_sqrt_max_abs_update": 0.10982573389600536
+    },
+    {
+      "online_elbo_final": -4687.430186328625,
+      "q_mu_max_abs_update": 0.7479353587216266,
+      "q_sqrt_max_abs_update": 0.22949617442065645
+    },
+    {
+      "online_elbo_final": -6962.856559103971,
+      "q_mu_max_abs_update": 0.2970669199408924,
+      "q_sqrt_max_abs_update": 0.26338824390960075
+    },
+    {
+      "online_elbo_final": -4732.614124811785,
+      "q_mu_max_abs_update": 0.5526589629688852,
+      "q_sqrt_max_abs_update": 0.18324523042889854
+    },
+    {
+      "online_elbo_final": -10158.543372361974,
+      "q_mu_max_abs_update": 0.3267977771340025,
+      "q_sqrt_max_abs_update": 0.1560083097335786
+    },
+    {
+      "online_elbo_final": -7263.516126853269,
+      "q_mu_max_abs_update": 0.3804173216804667,
+      "q_sqrt_max_abs_update": 0.13958531695691478
+    },
+    {
+      "online_elbo_final": -10582.153045448269,
+      "q_mu_max_abs_update": 0.47368430372409254,
+      "q_sqrt_max_abs_update": 0.1029919912277012
+    },
+    {
+      "online_elbo_final": -4527.224226405559,
+      "q_mu_max_abs_update": 0.6459519965915765,
+      "q_sqrt_max_abs_update": 0.23183778776349684
+    },
+    {
+      "online_elbo_final": -10760.40586263922,
+      "q_mu_max_abs_update": 0.6430412858159191,
+      "q_sqrt_max_abs_update": 0.24955203561124445
+    },
+    {
+      "online_elbo_final": -4301.77316354552,
+      "q_mu_max_abs_update": 0.29509719161216674,
+      "q_sqrt_max_abs_update": 0.14946419341910733
+    },
+    {
+      "online_elbo_final": -6618.5859766205995,
+      "q_mu_max_abs_update": 0.33956656631027915,
+      "q_sqrt_max_abs_update": 0.10109842376778766
+    },
+    {
+      "online_elbo_final": -5153.821393141129,
+      "q_mu_max_abs_update": 1.0608309527083808,
+      "q_sqrt_max_abs_update": 0.2027970964652528
+    },
+    {
+      "online_elbo_final": -6369.8914989258965,
+      "q_mu_max_abs_update": 0.7895194401065178,
+      "q_sqrt_max_abs_update": 0.16670428291411926
+    },
+    {
+      "online_elbo_final": -6635.623392802763,
+      "q_mu_max_abs_update": 0.6038964437863665,
+      "q_sqrt_max_abs_update": 0.19359965300448811
+    },
+    {
+      "online_elbo_final": -9577.148346935393,
+      "q_mu_max_abs_update": 0.6563426232827918,
+      "q_sqrt_max_abs_update": 0.19039423707760172
+    },
+    {
+      "online_elbo_final": -6293.720627368354,
+      "q_mu_max_abs_update": 0.6402906977354452,
+      "q_sqrt_max_abs_update": 0.10486799085405309
+    },
+    {
+      "online_elbo_final": -9658.723810220148,
+      "q_mu_max_abs_update": 0.8473937390625175,
+      "q_sqrt_max_abs_update": 0.2051888562104532
+    },
+    {
+      "online_elbo_final": -6254.587702054265,
+      "q_mu_max_abs_update": 0.2759664947053233,
+      "q_sqrt_max_abs_update": 0.19913405120490169
+    },
+    {
+      "online_elbo_final": -5672.346564570632,
+      "q_mu_max_abs_update": 0.21782481820201838,
+      "q_sqrt_max_abs_update": 0.08860531925679493
+    },
+    {
+      "online_elbo_final": -4056.4629845951395,
+      "q_mu_max_abs_update": 0.710352985293798,
+      "q_sqrt_max_abs_update": 0.12923895660621615
+    },
+    {
+      "online_elbo_final": -9275.85740796087,
+      "q_mu_max_abs_update": 0.7010006656149712,
+      "q_sqrt_max_abs_update": 0.3345925340353036
+    },
+    {
+      "online_elbo_final": -9044.580522815597,
+      "q_mu_max_abs_update": 0.539895140308307,
+      "q_sqrt_max_abs_update": 0.17577809102163888
+    },
+    {
+      "online_elbo_final": -9428.227664965525,
+      "q_mu_max_abs_update": 0.7128469799886199,
+      "q_sqrt_max_abs_update": 0.2920917370702068
+    },
+    {
+      "online_elbo_final": -5581.551354538115,
+      "q_mu_max_abs_update": 0.5657906905212462,
+      "q_sqrt_max_abs_update": 0.14361307925039835
+    },
+    {
+      "online_elbo_final": -11616.354021685725,
+      "q_mu_max_abs_update": 0.2917787217218515,
+      "q_sqrt_max_abs_update": 0.09188743261543814
+    }
+  ],
+  "audit": {
+    "online_steps_completed": 143,
+    "delayed_hidden_labels": 1420,
+    "expected_delayed_hidden_labels": 1420,
+    "current_visible_labels": 6006,
+    "expected_current_visible_labels": 6006,
+    "current_hidden_labels_read": 0,
+    "hidden_predictions": 1430,
+    "expected_hidden_predictions": 1430,
+    "passed": true
+  }
+}

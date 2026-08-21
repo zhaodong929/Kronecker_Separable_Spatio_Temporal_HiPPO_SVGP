@@ -56,6 +56,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--task1-plateau-relative-improvement", type=float, default=1e-3)
     parser.add_argument("--task1-learning-rate", type=float, default=0.01)
     parser.add_argument("--dtype", choices=("float32", "float64"), default="float64")
+    parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     parser.add_argument("--weeks", type=int, default=32)
     return parser.parse_args()
 
@@ -120,12 +121,15 @@ def main() -> None:
         raise FileExistsError(f"Refusing to overwrite memory-audit evidence: {output}")
     output.mkdir(parents=True)
     dtype = torch.float32 if args.dtype == "float32" else torch.float64
+    if args.device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("--device cuda was requested, but CUDA is unavailable")
+    device = torch.device(args.device)
     torch.set_default_dtype(dtype)
     torch.manual_seed(0)
     np.random.seed(0)
     train_x_np, train_y_np = flatten_task1(protocol)
-    train_x = torch.as_tensor(train_x_np, dtype=dtype)
-    train_y = torch.as_tensor(train_y_np, dtype=dtype)
+    train_x = torch.as_tensor(train_x_np, dtype=dtype, device=device)
+    train_y = torch.as_tensor(train_y_np, dtype=dtype, device=device)
     inducing = torch.as_tensor(
         select_inducing_points(
             protocol,
@@ -135,7 +139,8 @@ def main() -> None:
             seed=0,
         ),
         dtype=dtype,
-    )
+        device=device,
+    ).to(device)
     model = SingleTaskVariationalGP(
         init_points=inducing,
         train_inputs=train_x,
@@ -160,10 +165,10 @@ def main() -> None:
     for week in range(args.weeks):
         information = protocol.week(week)
         if information.delayed_hidden is not None:
-            delayed_x, delayed_y = observation_inputs(protocol, information.delayed_hidden, dtype)
-            model = condition(model, delayed_x, delayed_y)
-        visible_x, visible_y = observation_inputs(protocol, information.current_visible, dtype)
-        model = condition(model, visible_x, visible_y)
+            delayed_x, delayed_y = observation_inputs(protocol, information.delayed_hidden, dtype, device)
+            model = condition(model, delayed_x, delayed_y).to(device)
+        visible_x, visible_y = observation_inputs(protocol, information.current_visible, dtype, device)
+        model = condition(model, visible_x, visible_y).to(device)
         if (week + 1) % 8 == 0:
             gc.collect()
             expected = protocol.calibration_weeks * protocol.locations + 42 * (week + 1) + 10 * week
@@ -184,6 +189,7 @@ def main() -> None:
         "replicate_id": args.replicate_id,
         "protocol": str(protocol.npz_path),
         "capacity": {"temporal_inducing": args.temporal_inducing, "spatial_inducing": args.spatial_inducing, "joint_inducing": int(inducing.shape[0])},
+        "execution_device": args.device,
         "task1_convergence": convergence,
         "forced_gc_every_weeks": 8,
         "rows": rows,

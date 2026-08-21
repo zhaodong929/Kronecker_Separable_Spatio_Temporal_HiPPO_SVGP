@@ -20,7 +20,7 @@ from baselines.covid_long_setting_b.formalization import canonical_json_sha256, 
 
 CONVERGED = {"converged_elbo_plateau", "converged_objective_plateau"}
 METHOD_IDS = ("ohsvgp_rbf", "ovc_svgp", "st_svgp", "lmc_svgp", "imc_svgp", "fsde_svi")
-GPU_METHOD_IDS = {"ohsvgp_rbf", "lmc_svgp", "imc_svgp", "fsde_svi"}
+GPU_METHOD_IDS = {"ohsvgp_rbf", "ovc_svgp", "st_svgp", "lmc_svgp", "imc_svgp", "fsde_svi"}
 ENVIRONMENT_BY_METHOD = {
     "ohsvgp_rbf": "ohsvgp",
     "ovc_svgp": "ovc",
@@ -82,6 +82,18 @@ def absolute(path: Path) -> Path:
 
 def load(path: Path) -> dict[str, Any]:
     return json.loads(absolute(path).read_text(encoding="utf-8"))
+
+
+def load_capacity_or_pending(path: Path) -> dict[str, Any]:
+    """Keep methods without a completed development root out of the lock."""
+
+    if path.is_file():
+        return load(path)
+    return {
+        "status": "validation_pending_or_failed",
+        "purpose": "No completed development capacity record was available before the formal lock.",
+        "selected": {},
+    }
 
 
 def maybe_selected(record: dict[str, Any], method: str) -> dict[str, Any] | None:
@@ -167,9 +179,10 @@ def build_selected_configs(
             exclusions[method_id] = "no_common_factorial_capacity_passed_all_gates"
     else:
         excluded = set(shared.get("excluded_methods", []))
+        excluded_reasons = shared.get("excluded_reasons", {})
         for short, method_id in (("lmc", "lmc_svgp"), ("imc", "imc_svgp"), ("fsde", "fsde_svi")):
             if short in excluded:
-                exclusions[method_id] = "empirical_lmc_collapse"
+                exclusions[method_id] = str(excluded_reasons.get(short, "empirical_lmc_collapse"))
                 continue
             candidate = maybe_selected(online_steps, short)
             if candidate is None:
@@ -189,7 +202,7 @@ def main() -> None:
         raise FileExistsError(f"Refusing to replace fairness lock: {output}")
     roots = development_roots(args)
     capacities = {
-        name: load(root / "capacity" / "capacity_selection.json")
+        name: load_capacity_or_pending(root / "capacity" / "capacity_selection.json")
         for name, root in roots.items()
     }
     online_steps = load(roots["factorial"] / "online_steps" / "online_step_selection.json")
@@ -220,7 +233,7 @@ def main() -> None:
         "status": "locked_before_formal_seeds",
         "source_commit": git_commit(),
         "locked_code_sha256": locked_code_hashes(),
-        "formal_seeds": [5, 6, 7, 8, 9],
+        "formal_seeds": [5, 6, 7],
         "protocol": {
             "name": "COVID long-stream Setting B",
             "task1_weeks": 52,
@@ -248,6 +261,7 @@ def main() -> None:
                 for name in roots
             },
             "online_step_record": str((roots["factorial"] / "online_steps" / "online_step_selection.json").resolve()),
+            "expedited_development": capacities["factorial"].get("expedited_development"),
         },
         "methods": {
             method_id: {
