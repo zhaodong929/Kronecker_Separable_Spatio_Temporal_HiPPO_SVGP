@@ -79,6 +79,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--factorial-device", choices=("cpu", "gpu"), default="cpu")
     parser.add_argument("--st-online-steps", type=int, default=5)
     parser.add_argument("--ovc-dtype", choices=("float32", "float64"), default="float64")
+    parser.add_argument("--ovc-device", choices=("cpu", "cuda"), default="cpu")
     parser.add_argument("--ohsvgp-device", default="cuda")
     parser.add_argument("--ohsvgp-calibration-iterations", type=int, default=50000)
     return parser.parse_args()
@@ -174,7 +175,7 @@ def command_for(
             *common,
             "--temporal-inducing", str(candidate["temporal_inducing"]),
             "--spatial-inducing", str(candidate["spatial_inducing"]),
-            "--dtype", args.ovc_dtype,
+            "--dtype", args.ovc_dtype, "--device", args.ovc_device,
             *common_task1_args(args),
         ]
     if method == "st_svgp":

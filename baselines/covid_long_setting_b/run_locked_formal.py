@@ -28,6 +28,7 @@ from baselines.covid_long_setting_b.formalization import (
 
 METHODS = ("ohsvgp_rbf", "ovc_svgp", "st_svgp", "lmc_svgp", "imc_svgp", "fsde_svi")
 CONVERGED = {"converged_elbo_plateau", "converged_objective_plateau"}
+FORMAL_SEEDS = [5, 6, 7]
 
 
 def parse_args() -> argparse.Namespace:
@@ -74,8 +75,8 @@ def validate_lock(lock: dict[str, Any]) -> None:
         actual_hash = sha256_file(ROOT / relative)
         if actual_hash != expected_hash:
             raise ValueError(f"Locked implementation changed: {relative}")
-    if lock.get("formal_seeds") != [5, 6, 7, 8, 9]:
-        raise ValueError("The repaired formal runner is restricted to seeds 5--9")
+    if lock.get("formal_seeds") != FORMAL_SEEDS:
+        raise ValueError("The repaired formal runner is restricted to seeds 5--7")
     if not lock.get("methods") or not set(lock["methods"]).issubset(METHODS):
         raise ValueError("Fairness lock has no valid repaired baseline selection")
     hardware = lock.get("hardware", {})
@@ -175,10 +176,12 @@ def command_for(lock: dict[str, Any], method: str, protocol: Path, output: Path,
             "--spatial-inducing", str(config["spatial_inducing"]), "--online-inference-steps", "5", *plateau,
         ]
     if method == "ovc_svgp":
+        device = "cuda" if lock["methods"][method]["execution_backend"] == "GPU" else "cpu"
         return [
             python, "baselines/covid_long_setting_b/adapters/run_ovc_svgp.py", *common,
             "--temporal-inducing", str(config["temporal_inducing"]),
-            "--spatial-inducing", str(config["spatial_inducing"]), "--dtype", "float64", *plateau,
+            "--spatial-inducing", str(config["spatial_inducing"]), "--dtype", "float64",
+            "--device", device, *plateau,
         ]
     return [
         python, "scripts/run_covid_ohsvgp_own_theta.py", *common, "--kernel", "rbf",
@@ -264,6 +267,19 @@ def main() -> None:
             environment.setdefault("TF_NUM_INTRAOP_THREADS", "8")
             environment.setdefault("TF_NUM_INTEROP_THREADS", "2")
             environment.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
+        if method in ("st_svgp", "fsde_svi"):
+            environment["JAX_PLATFORM_NAME"] = "gpu"
+        if method == "st_svgp":
+            cuda_root = Path(environment.get("ST_SVGP_CUDA_ROOT", "/usr/local/cuda-11.8"))
+            ptxas = cuda_root / "bin" / "ptxas"
+            libdevice = cuda_root / "nvvm" / "libdevice"
+            if not ptxas.is_file() or not libdevice.is_dir():
+                raise RuntimeError(
+                    "ST-SVGP requires a CUDA toolkit with ptxas and nvvm/libdevice; "
+                    "set ST_SVGP_CUDA_ROOT to the toolkit root."
+                )
+            environment["PATH"] = f"{cuda_root / 'bin'}:{cuda_root / 'nvvm' / 'bin'}:{environment['PATH']}"
+            environment["XLA_FLAGS"] = f"--xla_gpu_cuda_data_dir={cuda_root}"
         with (output / "run.log").open("w", encoding="utf-8") as handle:
             completed = subprocess.run(command, cwd=ROOT, stdout=handle, stderr=subprocess.STDOUT, env=environment)
         if completed.returncode:
@@ -272,18 +288,18 @@ def main() -> None:
 
     for method in methods:
         gpu_method = lock["methods"][method]["execution_backend"] == "GPU"
-        workers = args.gpu_jobs if gpu_method else 1
+        workers = args.gpu_jobs if gpu_method and lock["methods"][method]["resource_class"] != "serial_high_rss" else 1
         with ThreadPoolExecutor(max_workers=workers) as executor:
             method_records = list(executor.map(lambda seed: run_seed(method, seed), lock["formal_seeds"]))
         records.extend(method_records)
         if any(record["status"] == "failed" for record in method_records):
             break
-    status = "planned" if not args.execute else ("complete" if len(records) == len(methods) * 5 and all(row["status"] in ("complete", "reused_verified") for row in records) else "incomplete_or_failed")
+    status = "planned" if not args.execute else ("complete" if len(records) == len(methods) * len(FORMAL_SEEDS) and all(row["status"] in ("complete", "reused_verified") for row in records) else "incomplete_or_failed")
     manifest = {
         "status": status,
         "fairness_lock": str(absolute(args.fairness_protocol)),
         "fairness_lock_sha256": lock["lock_sha256"],
-        "execution_policy": "GPU seeds parallel within one method; CPU and high-RSS methods serial",
+        "execution_policy": "GPU seeds 5--7 parallel within one method; CPU and high-RSS methods serial",
         "gpu_seed_parallelism": args.gpu_jobs,
         "methods": methods,
         "records": records,

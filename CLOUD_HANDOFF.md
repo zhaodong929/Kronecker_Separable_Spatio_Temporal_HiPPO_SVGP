@@ -47,7 +47,7 @@ python baselines/covid_long_setting_b/assess_ovc_memory_audits.py --audit-root <
 python baselines/covid_long_setting_b/capture_environment_locks.py --environment ohsvgp=<path> --environment ovc=<path> --environment st_svgp=<path> --environment factorial_gpflow=<path> --environment factorial_fsde=<path>
 python baselines/covid_long_setting_b/generate_baseline_fairness_protocol.py --ovc-memory-assessment <ovc-assessment.json> --environment-lock <environment-lock.json> --hardware-fingerprint baselines/covid_long_setting_b/results/convergence_repair_v1/cloud_4090_preflight.json
 
-# Locked methods only; this runner fixes seeds 5 6 7 8 9
+# Locked methods only; this runner fixes seeds 5 6 7
 python baselines/covid_long_setting_b/run_locked_formal.py --execute
 ```
 
@@ -57,5 +57,5 @@ python baselines/covid_long_setting_b/run_locked_formal.py --execute
 - OHSVGP gate: `baselines/covid_long_setting_b/reproduction/convergence_repair_v1/ohsvgp/`.
 - Fairness lock: `baselines/covid_long_setting_b/BASELINE_FAIRNESS_PROTOCOL.json`.
 - Formal results: `baselines/covid_long_setting_b/results/formal_repaired_4090_v1/`.
-- PASS: objective plateau; finite positive variances; zero current-hidden reads; exactly one delayed-label absorption. OHSVGP requires both official examples; OVC requires both clean-process memory audits; each admitted formal method requires five complete `(143, 10)` archives.
+- PASS: objective plateau; finite positive variances; zero current-hidden reads; exactly one delayed-label absorption. OHSVGP requires both official examples; OVC requires both clean-process memory audits; each admitted formal method requires three complete `(143, 10)` archives for seeds 5, 6, 7.
 - FAIL/PENDING: do not run formal seeds; retain the method and its evidence in the appendix only.

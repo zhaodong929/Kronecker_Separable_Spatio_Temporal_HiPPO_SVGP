@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Causal Setting B adapter for the official Online Vargp OVC-SVGP source.
 
-Run this file with ``baselines/.venvs/ovc_svgp``.  Task 1 trains the authors'
+Run this file with a compatible OVC environment.  Task 1 trains the authors'
 ``SingleTaskVariationalGP`` once.  New labels are incorporated with the
 official ``get_fantasy_model`` API in the prescribed delayed-then-visible
 order.  OVC represents the conditioned SVGP as an exact fantasy GP, so its
-state grows with the stream; it is reported as a CPU accuracy baseline and is
-not included in the fixed-state online-runtime ranking.
+state grows with the stream; it is reported separately from fixed-state online
+methods in runtime comparisons.
 """
 
 from __future__ import annotations
@@ -38,6 +38,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--protocol-json", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu")
     parser.add_argument("--max-weeks", type=int, default=0)
     parser.add_argument("--inducing-points", type=int, default=256)
     parser.add_argument("--temporal-inducing", type=int)
@@ -80,6 +81,7 @@ def observation_inputs(
     protocol: COVIDSettingBProtocol,
     observation: KnownObservation,
     dtype: torch.dtype,
+    device: torch.device,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     inputs = np.column_stack(
         [
@@ -88,8 +90,8 @@ def observation_inputs(
         ]
     )
     return (
-        torch.as_tensor(inputs, dtype=dtype),
-        torch.as_tensor(observation.targets, dtype=dtype),
+        torch.as_tensor(inputs, dtype=dtype, device=device),
+        torch.as_tensor(observation.targets, dtype=dtype, device=device),
     )
 
 
@@ -149,7 +151,11 @@ def train_task1(
 
     model.train()
     model.likelihood.train()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    optimizer_kwargs: dict[str, object] = {"lr": lr}
+    if train_x.is_cuda:
+        # The legacy GPyTorch stack is incompatible with grouped CUDA Adam here.
+        optimizer_kwargs["foreach"] = False
+    optimizer = torch.optim.Adam(model.parameters(), **optimizer_kwargs)
     objective = VariationalELBO(model.likelihood, model, num_data=train_y.numel())
     trace: list[dict[str, object]] = []
     completed = 0
@@ -228,7 +234,8 @@ def predict_locations(
     query = np.column_stack(
         [np.full(locations.size, time_value, dtype=np.float64), protocol.coordinates[locations]]
     )
-    x = torch.as_tensor(query, dtype=next(model.parameters()).dtype)
+    parameter = next(model.parameters())
+    x = torch.as_tensor(query, dtype=parameter.dtype, device=parameter.device)
     model.eval()
     model.likelihood.eval()
     with torch.no_grad():
@@ -257,14 +264,17 @@ def main() -> None:
     if not 1 <= requested_weeks <= protocol.online_weeks:
         raise ValueError("--max-weeks must be between 1 and the full online horizon")
     dtype = torch.float32 if args.dtype == "float32" else torch.float64
+    if args.device == "cuda" and not torch.cuda.is_available():
+        raise RuntimeError("--device cuda was requested, but CUDA is unavailable")
+    device = torch.device(args.device)
     torch.set_default_dtype(dtype)
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
 
     task1_locations = protocol.fit_locations if args.task1_validation_only else None
     train_x_np, train_y_np = flatten_task1(protocol, task1_locations)
-    train_x = torch.as_tensor(train_x_np, dtype=dtype)
-    train_y = torch.as_tensor(train_y_np, dtype=dtype)
+    train_x = torch.as_tensor(train_x_np, dtype=dtype, device=device)
+    train_y = torch.as_tensor(train_y_np, dtype=dtype, device=device)
     inducing = torch.as_tensor(
         select_inducing_points(
             protocol,
@@ -274,7 +284,8 @@ def main() -> None:
             seed=args.seed,
         ),
         dtype=dtype,
-    )
+        device=device,
+    ).to(device)
     covariance = ScaleKernel(RBFKernel(ard_num_dims=3))
     task1_started = time.perf_counter()
     model = SingleTaskVariationalGP(
@@ -327,6 +338,7 @@ def main() -> None:
             "seed": args.seed,
             "capacity": grid_capacity,
             "dtype": args.dtype,
+            "execution_device": args.device,
             "task1_iterations": int(args.task1_iterations),
             "task1_convergence": convergence,
             "task1_seconds": task1_seconds,
@@ -346,10 +358,10 @@ def main() -> None:
         information = protocol.week(week)
         started = time.perf_counter()
         if information.delayed_hidden is not None:
-            x_delayed, y_delayed = observation_inputs(protocol, information.delayed_hidden, dtype)
-            model = condition(model, x_delayed, y_delayed)
-        x_visible, y_visible = observation_inputs(protocol, information.current_visible, dtype)
-        model = condition(model, x_visible, y_visible)
+            x_delayed, y_delayed = observation_inputs(protocol, information.delayed_hidden, dtype, device)
+            model = condition(model, x_delayed, y_delayed).to(device)
+        x_visible, y_visible = observation_inputs(protocol, information.current_visible, dtype, device)
+        model = condition(model, x_visible, y_visible).to(device)
         mean, variance = predict_locations(
             model,
             protocol,
@@ -369,6 +381,7 @@ def main() -> None:
             "task1_iterations": int(args.task1_iterations),
             "task1_convergence": convergence,
             "dtype": args.dtype,
+            "execution_device": args.device,
             **grid_capacity,
         },
     )
@@ -381,6 +394,7 @@ def main() -> None:
         "seed": args.seed,
         "weeks": requested_weeks,
         "dtype": args.dtype,
+        "execution_device": args.device,
         "task1_seconds": task1_seconds,
         "task1_convergence": convergence,
         "conditioning_seconds_total": float(np.sum(condition_seconds)),
