@@ -1,0 +1,20 @@
+job=array-72
+argv=/root/autodl-tmp/stvgp_envs/gpflow/bin/python scripts/run_official_gpflow_svgp_era5.py --protocol-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed0/protocol.npz --output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/preflight/preflight_gpflow_feasibility_8192_mt64_ms128/seed0/result.json --predictions-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/preflight/preflight_gpflow_feasibility_8192_mt64_ms128/seed0/predictions.npz --target-mode shared_xlag_residual --mt 64 --ms 128 --iterations 10 --batch-size 2048 --learning-rate 0.01 --natgrad-gamma 0.1 --validation-every 10 --prediction-chunk-size 8192 --seed 0 --device cuda --dtype float64
+2026-08-20 02:50:36.877962: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:9261] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2026-08-20 02:50:36.878011: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:607] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2026-08-20 02:50:36.879341: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1515] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+/root/autodl-tmp/stvgp_envs/gpflow/lib/python3.10/site-packages/gpflow/versions.py:1: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+I0000 00:00:1787165471.847972   58935 device_compiler.h:186] Compiled cluster using XLA!  This line is logged at most once for the lifetime of the process.
+{"iteration": 1, "training_loss": 3711999.974350211, "iteration_seconds": 32.47479919716716, "validation_nll": 0.7358109981816764, "validation_rmse": 0.34607286664529596, "validation_prediction_seconds": 3.1897536236792803}
+Traceback (most recent call last):
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/scripts/run_official_gpflow_svgp_era5.py", line 385, in <module>
+    main()
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/scripts/run_official_gpflow_svgp_era5.py", line 273, in main
+    selection = train(
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/scripts/run_official_gpflow_svgp_era5.py", line 163, in train
+    require_finite("training_loss", loss)
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/scripts/run_official_gpflow_svgp_era5.py", line 104, in require_finite
+    raise FloatingPointError(f"non-finite {name}: {value}")
+FloatingPointError: non-finite training_loss: nan

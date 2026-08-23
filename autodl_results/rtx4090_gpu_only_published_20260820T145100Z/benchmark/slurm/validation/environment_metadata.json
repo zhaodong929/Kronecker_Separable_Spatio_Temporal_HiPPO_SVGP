@@ -1,0 +1,303 @@
+{
+  "checks": {
+    "legacy_jax": {
+      "backend": "gpu",
+      "backend_platform_version": "unknown",
+      "bayesnewton_version": "unknown",
+      "cpu_fallback": false,
+      "devices": [
+        "gpu:0"
+      ],
+      "gpu_devices": [
+        "gpu:0"
+      ],
+      "jax_version": "0.2.9",
+      "jaxlib_version": "0.1.60",
+      "objax_version": "1.3.1",
+      "python_version": "3.7.12",
+      "status": "passed",
+      "validated_gpu_devices": [
+        "gpu:0"
+      ]
+    },
+    "legacy_stsvgp_smoke": {
+      "cpu_fallback": false,
+      "data": "official runner synthetic_data(seed=0)",
+      "forward": {
+        "mean_shape": [
+          12,
+          6
+        ],
+        "variance_shape": [
+          12,
+          6
+        ]
+      },
+      "jax_backend": "gpu",
+      "jax_devices": [
+        "gpu:0"
+      ],
+      "model": "st_svgp",
+      "status": "passed",
+      "update": {
+        "iterations": 1,
+        "loss": 125.07343593499237
+      }
+    },
+    "reporting": {
+      "numpy": "1.26.4",
+      "status": "passed"
+    },
+    "tensorflow": {
+      "cpu_fallback": false,
+      "logical_gpus": [
+        "/device:GPU:0"
+      ],
+      "physical_gpus": [
+        "/physical_device:GPU:0"
+      ],
+      "probe_device": "/job:localhost/replica:0/task:0/device:GPU:0",
+      "status": "passed",
+      "tensorflow_version": "2.15.1"
+    },
+    "torch": {
+      "cpu_fallback": false,
+      "cuda_available": true,
+      "device_capability": [
+        8,
+        9
+      ],
+      "device_count": 1,
+      "device_memory_bytes": 50864390144,
+      "device_name": "NVIDIA GeForce RTX 4090",
+      "status": "passed",
+      "torch_cuda": "12.1",
+      "torch_version": "2.5.1+cu121"
+    }
+  },
+  "environment_freezes": {
+    "gpflow": [
+      "absl-py==2.5.0",
+      "astunparse==1.6.3",
+      "attrs==26.1.0",
+      "certifi==2026.7.22",
+      "cffi==2.1.1",
+      "charset-normalizer==3.5.1",
+      "check-shapes==1.1.1",
+      "cloudpickle==3.1.2",
+      "contourpy==1.3.2",
+      "cryptography==50.0.0",
+      "cycler==0.12.1",
+      "decorator==5.3.1",
+      "Deprecated==1.3.1",
+      "dm-tree==0.1.10",
+      "dropstackframe==0.1.1",
+      "flatbuffers==25.12.19",
+      "fonttools==4.63.0",
+      "gast==0.7.0",
+      "google-auth==2.56.3",
+      "google-auth-oauthlib==1.4.0",
+      "google-pasta==0.2.0",
+      "gpflow==2.9.2",
+      "grpcio==1.83.0",
+      "h5py==3.16.0",
+      "idna==3.18",
+      "keras==2.15.0",
+      "kiwisolver==1.5.0",
+      "lark==1.3.1",
+      "libclang==18.1.1",
+      "Markdown==3.10.3",
+      "MarkupSafe==3.0.3",
+      "matplotlib==3.9.2",
+      "ml-dtypes==0.3.2",
+      "multipledispatch==1.0.0",
+      "numpy==1.26.4",
+      "nvidia-cublas-cu12==12.2.5.6",
+      "nvidia-cuda-cupti-cu12==12.2.142",
+      "nvidia-cuda-nvcc-cu12==12.2.140",
+      "nvidia-cuda-nvrtc-cu12==12.2.140",
+      "nvidia-cuda-runtime-cu12==12.2.140",
+      "nvidia-cudnn-cu12==8.9.4.25",
+      "nvidia-cufft-cu12==11.0.8.103",
+      "nvidia-curand-cu12==10.3.3.141",
+      "nvidia-cusolver-cu12==11.5.2.141",
+      "nvidia-cusparse-cu12==12.1.2.141",
+      "nvidia-nccl-cu12==2.16.5",
+      "nvidia-nvjitlink-cu12==12.2.140",
+      "oauthlib==3.3.1",
+      "opt_einsum==3.4.0",
+      "packaging @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_packaging_1785888127/work",
+      "pandas==2.2.3",
+      "pillow==12.3.0",
+      "protobuf==4.25.9",
+      "psutil==6.1.1",
+      "pyasn1==0.6.4",
+      "pyasn1_modules==0.4.2",
+      "pycparser==3.0",
+      "pyparsing==3.3.2",
+      "python-dateutil==2.9.0.post0",
+      "pytz==2026.3.post1",
+      "requests==2.34.2",
+      "requests-oauthlib==2.0.0",
+      "scipy==1.12.0",
+      "six==1.17.0",
+      "-e git+ssh://git@github.com/zhaodong929/Kronecker_Separable_Spatio_Temporal_HiPPO_SVGP.git@9127a7126bfacc70c1c56f017c9aead7b624f0cc#egg=stvgp_kronecker_standalone",
+      "tabulate==0.10.0",
+      "tensorboard==2.15.2",
+      "tensorboard-data-server==0.7.2",
+      "tensorflow==2.15.1",
+      "tensorflow-estimator==2.15.0",
+      "tensorflow-io-gcs-filesystem==0.37.1",
+      "tensorflow-probability==0.23.0",
+      "termcolor==3.3.0",
+      "typing_extensions==4.16.0",
+      "tzdata==2026.3",
+      "urllib3==2.7.0",
+      "Werkzeug==3.1.8",
+      "wrapt==1.14.2"
+    ],
+    "routeb": [
+      "contourpy==1.3.3",
+      "cycler==0.12.1",
+      "filelock==3.32.3",
+      "fonttools==4.63.0",
+      "fsspec==2026.7.0",
+      "gpytorch==1.14",
+      "iniconfig==2.3.0",
+      "jaxtyping==0.3.11",
+      "Jinja2==3.1.6",
+      "joblib==1.5.3",
+      "kiwisolver==1.5.0",
+      "linear_operator==0.6.1",
+      "MarkupSafe==3.0.3",
+      "matplotlib==3.9.2",
+      "mpmath==1.3.0",
+      "networkx==3.6.1",
+      "numpy==1.26.4",
+      "nvidia-cublas-cu12==12.1.3.1",
+      "nvidia-cuda-cupti-cu12==12.1.105",
+      "nvidia-cuda-nvrtc-cu12==12.1.105",
+      "nvidia-cuda-runtime-cu12==12.1.105",
+      "nvidia-cudnn-cu12==9.1.0.70",
+      "nvidia-cufft-cu12==11.0.2.54",
+      "nvidia-curand-cu12==10.3.2.106",
+      "nvidia-cusolver-cu12==11.4.5.107",
+      "nvidia-cusparse-cu12==12.1.0.106",
+      "nvidia-nccl-cu12==2.21.5",
+      "nvidia-nvjitlink-cu12==12.9.86",
+      "nvidia-nvtx-cu12==12.1.105",
+      "packaging @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_packaging_1785888127/work",
+      "pandas==2.2.3",
+      "pillow==12.3.0",
+      "pluggy==1.6.0",
+      "psutil==6.1.1",
+      "pyparsing==3.3.2",
+      "pytest==8.3.4",
+      "python-dateutil==2.9.0.post0",
+      "pytz==2026.3.post1",
+      "PyYAML==6.0.2",
+      "scikit-learn==1.5.2",
+      "scipy==1.13.1",
+      "six==1.17.0",
+      "-e git+ssh://git@github.com/zhaodong929/Kronecker_Separable_Spatio_Temporal_HiPPO_SVGP.git@9127a7126bfacc70c1c56f017c9aead7b624f0cc#egg=stvgp_kronecker_standalone",
+      "sympy==1.13.1",
+      "threadpoolctl==3.6.0",
+      "torch==2.5.1+cu121",
+      "torchvision==0.20.1+cu121",
+      "triton==3.1.0",
+      "typing_extensions==4.16.0",
+      "tzdata==2026.3",
+      "wadler_lindig==0.1.7"
+    ],
+    "stvgp_legacy": [
+      "absl-py==2.1.0",
+      "bayesnewton==1.1",
+      "cachetools==5.5.2",
+      "certifi==2026.7.22",
+      "charset-normalizer==3.5.1",
+      "cycler==0.11.0",
+      "flatbuffers==25.12.19",
+      "google-auth==2.45.0",
+      "google-auth-oauthlib==0.4.6",
+      "grpcio==1.62.3",
+      "idna==3.10",
+      "importlib-metadata==6.7.0",
+      "jax==0.2.9",
+      "jaxlib @ file:///root/autodl-tmp/stvgp_tools/wheels/jaxlib-0.1.60%2Bcuda111-cp37-none-manylinux2010_x86_64.whl#sha256=26b09d9788f7030eb0445d299c02e4ca7560d024ccb8d680a711cd879fb3c02d",
+      "joblib==1.3.2",
+      "kiwisolver==1.4.5",
+      "llvmlite==0.37.0",
+      "Markdown==3.4.4",
+      "MarkupSafe==2.1.5",
+      "matplotlib==3.4.3",
+      "numba==0.54.1",
+      "numpy==1.19.5",
+      "oauthlib==3.2.2",
+      "objax==1.3.1",
+      "opt-einsum==3.3.0",
+      "pandas==1.3.4",
+      "parameterized==0.9.0",
+      "Pillow==9.5.0",
+      "protobuf==3.20.3",
+      "pyasn1==0.5.1",
+      "pyasn1-modules==0.3.0",
+      "pyparsing==3.1.4",
+      "python-dateutil==2.9.0.post0",
+      "pytz==2026.3.post1",
+      "requests==2.31.0",
+      "requests-oauthlib==2.0.0",
+      "rsa==4.9.1",
+      "scikit-learn==1.0.2",
+      "scipy==1.7.1",
+      "six==1.17.0",
+      "tensorboard==2.11.2",
+      "tensorboard-data-server==0.6.1",
+      "tensorboard-plugin-wit==1.8.1",
+      "threadpoolctl==3.1.0",
+      "typing_extensions==4.7.1",
+      "urllib3==2.0.7",
+      "Werkzeug==2.2.3",
+      "zipp==3.15.0"
+    ]
+  },
+  "git_commit": "9127a7126bfacc70c1c56f017c9aead7b624f0cc",
+  "gpu": {
+    "nvidia_smi": [
+      {
+        "driver_version": "580.105.08",
+        "index": "0",
+        "memory_total_mib": "49140",
+        "name": "NVIDIA GeForce RTX 4090",
+        "uuid": "GPU-52d6ddc4-1182-cbfe-55f6-4a418a74fb4d"
+      }
+    ],
+    "nvidia_smi_l": [
+      "GPU 0: NVIDIA GeForce RTX 4090 (UUID: GPU-52d6ddc4-1182-cbfe-55f6-4a418a74fb4d)"
+    ],
+    "nvidia_smi_q": "\n==============NVSMI LOG==============\n\nTimestamp                                 : Thu Aug 20 02:43:53 2026\nDriver Version                            : 580.105.08\nCUDA Version                              : 13.0\n\nAttached GPUs                             : 1\nGPU 00000000:5A:00.0\n    Product Name                          : NVIDIA GeForce RTX 4090\n    Product Brand                         : GeForce\n    Product Architecture                  : Ada Lovelace\n    Display Mode                          : Requested functionality has been deprecated\n    Display Attached                      : No\n    Display Active                        : Disabled\n    Persistence Mode                      : Enabled\n    Addressing Mode                       : None\n    MIG Mode\n        Current                           : N/A\n        Pending                           : N/A\n    Accounting Mode                       : Disabled\n    Accounting Mode Buffer Size           : 4000\n    Driver Model\n        Current                           : N/A\n        Pending                           : N/A\n    Serial Number                         : N/A\n    GPU UUID                              : GPU-52d6ddc4-1182-cbfe-55f6-4a418a74fb4d\n    GPU PDI                               : 0xcfa5f94f197deb0a\n    Minor Number                          : 3\n    VBIOS Version                         : 95.02.3C.00.02\n    MultiGPU Board                        : No\n    Board ID                              : 0x5a00\n    Board Part Number                     : N/A\n    GPU Part Number                       : 2684-301-A1\n    FRU Part Number                       : N/A\n    Platform Info\n        Chassis Serial Number             : N/A\n        Slot Number                       : N/A\n        Tray Index                        : N/A\n        Host ID                           : N/A\n        Peer Type                         : N/A\n        Module Id                         : 1\n        GPU Fabric GUID                   : N/A\n    Inforom Version\n        Image Version                     : G002.0000.00.03\n        OEM Object                        : 2.0\n        ECC Object                        : 6.16\n        Power Management Object           : N/A\n    Inforom BBX Object Flush\n        Latest Timestamp                  : N/A\n        Latest Duration                   : N/A\n    GPU Operation Mode\n        Current                           : N/A\n        Pending                           : N/A\n    GPU C2C Mode                          : N/A\n    GPU Virtualization Mode\n        Virtualization Mode               : None\n        Host VGPU Mode                    : N/A\n        vGPU Heterogeneous Mode           : N/A\n    GPU Recovery Action                   : None\n    GSP Firmware Version                  : 580.105.08\n    IBMNPU\n        Relaxed Ordering Mode             : N/A\n    PCI\n        Bus                               : 0x5A\n        Device                            : 0x00\n        Domain                            : 0x0000\n        Base Classcode                    : 0x3\n        Sub Classcode                     : 0x0\n        Device Id                         : 0x268410DE\n        Bus Id                            : 00000000:5A:00.0\n        Sub System Id                     : 0x16F310DE\n        GPU Link Info\n            PCIe Generation\n                Max                       : 4\n                Current                   : 1\n                Device Current            : 1\n                Device Max                : 4\n                Host Max                  : 5\n            Link Width\n                Max                       : 16x\n                Current                   : 8x\n        Bridge Chip\n            Type                          : N/A\n            Firmware                      : N/A\n        Replays Since Reset               : 0\n        Replay Number Rollovers           : 0\n        Tx Throughput                     : 390 KB/s\n        Rx Throughput                     : 341 KB/s\n        Atomic Caps Outbound              : N/A\n        Atomic Caps Inbound               : N/A\n    Fan Speed                             : 46 %\n    Performance State                     : P8\n    Clocks Event Reasons\n        Idle                              : Active\n        Applications Clocks Setting       : Not Active\n        SW Power Cap                      : Not Active\n        HW Slowdown                       : Not Active\n            HW Thermal Slowdown           : Not Active\n            HW Power Brake Slowdown       : Not Active\n        Sync Boost                        : Not Active\n        SW Thermal Slowdown               : Not Active\n        Display Clock Setting             : Not Active\n    Clocks Event Reasons Counters\n        SW Power Capping                  : 1586194110377 us\n        Sync Boost                        : 0 us\n        SW Thermal Slowdown               : 0 us\n        HW Thermal Slowdown               : 0 us\n        HW Power Braking                  : 0 us\n    Sparse Operation Mode                 : N/A\n    FB Memory Usage\n        Total                             : 49140 MiB\n        Reserved                          : 632 MiB\n        Used                              : 0 MiB\n        Free                              : 48509 MiB\n    BAR1 Memory Usage\n        Total                             : 256 MiB\n        Used                              : 1 MiB\n        Free                              : 255 MiB\n    Conf Compute Protected Memory Usage\n        Total                             : 0 MiB\n        Used                              : 0 MiB\n        Free                              : 0 MiB\n    Compute Mode                          : Default\n    Utilization\n        GPU                               : 0 %\n        Memory                            : 0 %\n        Encoder                           : 0 %\n        Decoder                           : 0 %\n        JPEG                              : 0 %\n        OFA                               : 0 %\n    Encoder Stats\n        Active Sessions                   : 0\n        Average FPS                       : 0\n        Average Latency                   : 0\n    FBC Stats\n        Active Sessions                   : 0\n        Average FPS                       : 0\n        Average Latency                   : 0\n    DRAM Encryption Mode\n        Current                           : N/A\n        Pending                           : N/A\n    ECC Mode\n        Current                           : Disabled\n        Pending                           : Disabled\n    ECC Errors\n        Volatile\n            SRAM Correctable              : N/A\n            SRAM Uncorrectable Parity     : N/A\n            SRAM Uncorrectable SEC-DED    : N/A\n            DRAM Correctable              : N/A\n            DRAM Uncorrectable            : N/A\n        Aggregate\n            SRAM Correctable              : N/A\n            SRAM Uncorrectable Parity     : N/A\n            SRAM Uncorrectable SEC-DED    : N/A\n            DRAM Correctable              : N/A\n            DRAM Uncorrectable            : N/A\n            SRAM Threshold Exceeded       : N/A\n        Aggregate Uncorrectable SRAM Sources\n            SRAM L2                       : N/A\n            SRAM SM                       : N/A\n            SRAM Microcontroller          : N/A\n            SRAM PCIE                     : N/A\n            SRAM Other                    : N/A\n        Channel Repair Pending            : No\n        TPC Repair Pending                : No\n    Retired Pages\n        Single Bit ECC                    : N/A\n        Double Bit ECC                    : N/A\n        Pending Page Blacklist            : N/A\n    Remapped Rows\n        Correctable Error                 : 0\n        Uncorrectable Error               : 0\n        Pending                           : No\n        Remapping Failure Occurred        : No\n        Bank Remap Availability Histogram\n            Max                           : 192 bank(s)\n            High                          : 0 bank(s)\n            Partial                       : 0 bank(s)\n            Low                           : 0 bank(s)\n            None                          : 0 bank(s)\n    Temperature\n        GPU Current Temp                  : 31 C\n        GPU T.Limit Temp                  : 53 C\n        GPU Shutdown T.Limit Temp         : -7 C\n        GPU Slowdown T.Limit Temp         : -2 C\n        GPU Max Operating T.Limit Temp    : 0 C\n        GPU Target Temperature            : 84 C\n        Memory Current Temp               : N/A\n        Memory Max Operating T.Limit Temp : N/A\n    GPU Power Readings\n        Average Power Draw                : 20.03 W\n        Instantaneous Power Draw          : 19.80 W\n        Current Power Limit               : 450.00 W\n        Requested Power Limit             : 450.00 W\n        Default Power Limit               : 450.00 W\n        Min Power Limit                   : 150.00 W\n        Max Power Limit                   : 450.00 W\n    GPU Memory Power Readings \n        Average Power Draw                : N/A\n        Instantaneous Power Draw          : N/A\n    Module Power Readings\n        Average Power Draw                : N/A\n        Instantaneous Power Draw          : N/A\n        Current Power Limit               : N/A\n        Requested Power Limit             : N/A\n        Default Power Limit               : N/A\n        Min Power Limit                   : N/A\n        Max Power Limit                   : N/A\n    Power Smoothing                       : N/A\n    Workload Power Profiles\n        Requested Profiles                : N/A\n        Enforced Profiles                 : N/A\n    Clocks\n        Graphics                          : 210 MHz\n        SM                                : 210 MHz\n        Memory                            : 405 MHz\n        Video                             : 1185 MHz\n    Applications Clocks\n        Graphics                          : N/A\n        Memory                            : N/A\n    Default Applications Clocks\n        Graphics                          : N/A\n        Memory                            : N/A\n    Deferred Clocks\n        Memory                            : N/A\n    Max Clocks\n        Graphics                          : 3105 MHz\n        SM                                : 3105 MHz\n        Memory                            : 10501 MHz\n        Video                             : 2415 MHz\n    Max Customer Boost Clocks\n        Graphics                          : N/A\n    Clock Policy\n        Auto Boost                        : N/A\n        Auto Boost Default                : N/A\n    Fabric\n        State                             : N/A\n        Status                            : N/A\n        CliqueId                          : N/A\n        ClusterUUID                       : N/A\n        Health\n            Summary                       : N/A\n            Bandwidth                     : N/A\n            Route Recovery in progress    : N/A\n            Route Unhealthy               : N/A\n            Access Timeout Recovery       : N/A\n            Incorrect Configuration       : N/A\n    Processes                             : None\n    Capabilities\n        EGM                               : disabled\n\n",
+    "requirement": "GPU matching .* with at least 24 GiB visible memory"
+  },
+  "host": "autodl-container-qkb5g0ybu5-f51eca91",
+  "micromamba": {
+    "environment_root": "/root/autodl-tmp/stvgp_envs",
+    "mamba_root_prefix": "/root/autodl-tmp/stvgp_envs/micromamba-root",
+    "routeb_python": "/root/autodl-tmp/stvgp_envs/routeb/bin/python3.11",
+    "stvgp_python": "/root/autodl-tmp/stvgp_envs/stvgp_legacy/bin/python3.7",
+    "tensorflow_python": "/root/autodl-tmp/stvgp_envs/gpflow/bin/python3.10"
+  },
+  "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+  "prerequisites": [
+    "Do not replace STVGP_PY with the plain jaxlib==0.1.60 CPU wheel.",
+    "STVGP_PY must expose the validated GPU in jax.devices()."
+  ],
+  "recorded_at": "2026-08-19T18:45:13.277929+00:00",
+  "repo": "/root/autodl-tmp/stvgp_kronecker_full_a100",
+  "schema_version": 1,
+  "slurm": {},
+  "status": "passed",
+  "timing_policy": {
+    "accuracy": "one allocated GPU, 16 CPUs, 128G, 24 hours",
+    "legacy_jax": "must be a CUDA-enabled pre-created environment; CPU fallback is forbidden",
+    "markovflow": "TF2.2 compatibility stack may remain CPU-only and is excluded from GPU timing claims"
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "argv": [
+    "/root/autodl-tmp/stvgp_envs/stvgp_legacy/bin/python",
+    "scripts/run_official_stvgp_legacy.py",
+    "--model",
+    "mf_st_svgp",
+    "--data-npz",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_2/seed0/data.npz",
+    "--num-spatial-inducing",
+    "64",
+    "--fixed-spatial-inducing",
+    "--iterations",
+    "300",
+    "--seed",
+    "0",
+    "--use-xlag-mean",
+    "--jit",
+    "--parallel",
+    "--trajectory-every",
+    "10",
+    "--predictions-output",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_mf_st_svgp_ms64/seed0/predictions.npz",
+    "--trajectory-output",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_mf_st_svgp_ms64/seed0/trajectory.json",
+    "--output",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_mf_st_svgp_ms64/seed0/result.json"
+  ],
+  "branch": "batch",
+  "compute_contract": {
+    "baseline_family": "official_mf_st_svgp",
+    "branch": "batch",
+    "comparison_group": "batch_full_fit_update",
+    "comparison_status": "pending_common_hardware_counter",
+    "data_access_unit": "full_fit_dataset",
+    "measurement_scope": "optimization_update",
+    "native_work_unit": "one_full_fit_optimization_update",
+    "required_measurement_backend": "nsight_compute_executed_gpu_flops",
+    "schema_version": 2,
+    "work_unit": "one_full_fit_optimization_update"
+  },
+  "dependencies": [
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_2/seed0/data.npz"
+  ],
+  "device_class": "a100_official_full",
+  "expected": [
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_mf_st_svgp_ms64/seed0/result.json",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_mf_st_svgp_ms64/seed0/predictions.npz"
+  ],
+  "job_id": "stage2/task1_2/official_mf_st_svgp_ms64/seed0",
+  "kind": "batch",
+  "legacy": true,
+  "manifest_id": "era5_a100_shared_online_v2",
+  "method": "official_mf_st_svgp_ms64",
+  "output_dir": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/official_mf_st_svgp_ms64/seed0",
+  "python": "/root/autodl-tmp/stvgp_envs/stvgp_legacy/bin/python",
+  "schema_version": 1,
+  "scope": "task1_2",
+  "seed": 0,
+  "stage": "stage2",
+  "timeout_seconds": 43200
+}

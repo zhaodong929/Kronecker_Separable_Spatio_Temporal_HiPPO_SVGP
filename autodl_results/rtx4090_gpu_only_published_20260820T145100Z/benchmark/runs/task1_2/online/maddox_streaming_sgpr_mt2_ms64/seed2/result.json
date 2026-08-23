@@ -1,0 +1,95 @@
+{
+  "implementation": "official Maddox online_gp StreamingSGPR",
+  "source_repository": "https://github.com/wjmaddox/online_gp",
+  "source_commit": "3bff4c3",
+  "protocol": "strict online; new-block-only labels; no history replay",
+  "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
+  "hyperparameters": "Route-B Task-1 empirical-Bayes theta, frozen",
+  "inducing_policy": "official online inducing-point resampling",
+  "inducing_resample_ratio": 0.2,
+  "numerical_jitter": 0.0001,
+  "split_seed": 2,
+  "num_stream_times": 186,
+  "num_blocks": 19,
+  "num_train_space": 800,
+  "num_test_space": 200,
+  "joint_inducing": 128,
+  "temporal_grid_count": 2,
+  "spatial_grid_count": 64,
+  "overall_current_block": {
+    "rmse": 0.27185782817965476,
+    "nll": 0.31862746030939126,
+    "coverage90": 0.9658333333333333,
+    "mean_predictive_std": 0.42986499542792095
+  },
+  "final_block": {
+    "rmse": 0.49350860348375714,
+    "nll": 1.883370767114416,
+    "coverage90": 0.8675,
+    "mean_predictive_std": 0.3833317526276959
+  },
+  "timing": {
+    "stream_update_seconds": 0.5607740357518196,
+    "stream_prediction_seconds": 0.11915347166359425,
+    "mean_block_update_seconds": 0.029514422934306294,
+    "mean_block_prediction_seconds": 0.006271235350715487,
+    "first_block_update_seconds": 0.1479434333741665,
+    "mean_steady_state_block_update_seconds": 0.022935033465425175,
+    "process_total_seconds": 0.912721361964941
+  },
+  "resources": {
+    "device": "cuda",
+    "dtype": "float64",
+    "peak_rss_mib": 765.31640625,
+    "torch": "2.0.1+cu118",
+    "torch_cuda_build": "11.8",
+    "cuda_available": true,
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "gpu_compute_capability": [
+      8,
+      9
+    ],
+    "gpu_total_memory_mib": 48508.0625,
+    "peak_cuda_allocated_mib": 56.22412109375,
+    "peak_cuda_reserved_mib": 104.0,
+    "persistent_state_bytes": 266280,
+    "persistent_state_mib": 0.25394439697265625,
+    "history_replay_buffer_bytes": 0,
+    "estimated_streaming_flops": 9751756800.0,
+    "flops_scope": "dominant O(N M^2) posterior conditioning; analytic estimate"
+  },
+  "environment": {
+    "hostname": "autodl-container-qkb5g0ybu5-f51eca91",
+    "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+    "python": "3.10.20",
+    "processor": "x86_64",
+    "pid": 294491,
+    "git": {
+      "commit": "81800a1462d35357a43151857230c6fe5bfcb852",
+      "branch": "",
+      "dirty": true
+    }
+  },
+  "versions": {
+    "python": "3.10.20",
+    "torch": "2.0.1+cu118",
+    "gpytorch": "1.9.1",
+    "numpy": "1.24.4"
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed2/protocol.npz",
+    "theta_json": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/calibration/routeb_joint_inducing_points/seed2/result.json",
+    "output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/maddox_streaming_sgpr_mt2_ms64/seed2/result.json",
+    "blockwise_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/maddox_streaming_sgpr_mt2_ms64/seed2/blocks.csv",
+    "predictions_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/online/maddox_streaming_sgpr_mt2_ms64/seed2/predictions.npz",
+    "mt": 2,
+    "ms": 64,
+    "jitter": 0.0001,
+    "resample_ratio": 0.2,
+    "prediction_chunk_size": 4096,
+    "max_blocks": 0,
+    "seed": 2,
+    "device": "cuda",
+    "dtype": "float64"
+  }
+}

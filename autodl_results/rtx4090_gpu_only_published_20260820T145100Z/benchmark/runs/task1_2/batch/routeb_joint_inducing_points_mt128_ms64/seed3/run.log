@@ -1,0 +1,188 @@
+job=array-140
+argv=/root/autodl-tmp/stvgp_envs/routeb/bin/python scripts/run_iclr_era5_routeb_batch.py --protocol-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed3/protocol.npz --protocol-json /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed3/protocol.json --output-dir /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/routeb_joint_inducing_points_mt128_ms64/seed3 --data-part stream --target-mode joint_xlag --representation inducing_points --mt 128 --ms 64 --iterations 100 --learning-rate 0.02 --validation-every 5 --include-conditional-residual-variance --beta-prior-variance 1000.0 --rff-sample-size 256 --xlag-length 10 --prediction-chunk-size 8192 --split-seed 3 --model-seed 0 --device cuda --dtype float64 --evaluation-backend torch --warmup-steps 1 --profile-flops --predictions-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/routeb_joint_inducing_points_mt128_ms64/seed3/predictions.npz
+{"iteration": 1, "train_nlml_per_observation": -0.8533235231094367, "finite_nlml_per_observation": -0.8533235231094367, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.21556697755651805, "iteration_seconds": 0.10105372406542301, "ell_t": 0.051010065734335266, "ell_s": [0.3570704677850986, 0.3570704685505986], "kernel_variance": 0.9801987034291142, "noise_std": 0.09801986747392874, "validation_nll": -0.05570458538180984, "validation_rmse": 0.10853591972122371, "validation_seconds": 0.45770583115518093, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 0.5596568621695042}
+{"iteration": 5, "train_nlml_per_observation": -0.8766236588622703, "finite_nlml_per_observation": -0.8766236588622703, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.157447152059483, "iteration_seconds": 0.03511055186390877, "ell_t": 0.05354815914067108, "ell_s": [0.38646719239851335, 0.38676779073473105], "kernel_variance": 0.9095999878722024, "noise_std": 0.09095750768365354, "validation_nll": -0.17093309121160077, "validation_rmse": 0.10689418903919248, "validation_seconds": 0.42474381625652313, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 1.129844756796956}
+{"iteration": 10, "train_nlml_per_observation": -0.8932199442580689, "finite_nlml_per_observation": -0.8932199442580689, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.13975532875210495, "iteration_seconds": 0.03627027943730354, "ell_t": 0.05091072570491268, "ell_s": [0.42398116878591263, 0.42698106739473973], "kernel_variance": 0.8510542952033998, "noise_std": 0.08684874583451639, "validation_nll": -0.29485387399120455, "validation_rmse": 0.1052160042920163, "validation_seconds": 0.4399380385875702, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 1.7557724323123693}
+{"iteration": 15, "train_nlml_per_observation": -0.9059353855072454, "finite_nlml_per_observation": -0.9059353855072454, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.09947491313722277, "iteration_seconds": 0.03679335303604603, "ell_t": 0.046934129292474105, "ell_s": [0.45797422676240934, 0.4696781124441387], "kernel_variance": 0.8046453841744698, "noise_std": 0.0878647339212986, "validation_nll": -0.3952047165572814, "validation_rmse": 0.10401111207744357, "validation_seconds": 0.4224522225558758, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 2.3645003121346235}
+{"iteration": 20, "train_nlml_per_observation": -0.9140864069940728, "finite_nlml_per_observation": -0.9140864069940728, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.07685275656230672, "iteration_seconds": 0.03804928809404373, "ell_t": 0.04363000550181635, "ell_s": [0.48446886598278854, 0.512914600499854], "kernel_variance": 0.7475082656365076, "noise_std": 0.08882841119639551, "validation_nll": -0.4831019660312554, "validation_rmse": 0.10318641809732473, "validation_seconds": 0.4364752881228924, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 2.99073676019907}
+{"iteration": 25, "train_nlml_per_observation": -0.9198009184849077, "finite_nlml_per_observation": -0.9198009184849077, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.05665279195940182, "iteration_seconds": 0.03572333604097366, "ell_t": 0.04127025571950201, "ell_s": [0.5030259033756846, 0.5548692413077708], "kernel_variance": 0.6829871143859539, "noise_std": 0.08748065534380432, "validation_nll": -0.5623755123119881, "validation_rmse": 0.10263856833598131, "validation_seconds": 0.42833150923252106, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 3.6055076494812965}
+{"iteration": 30, "train_nlml_per_observation": -0.9235523327617433, "finite_nlml_per_observation": -0.9235523327617433, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.04210470139217805, "iteration_seconds": 0.03691261447966099, "ell_t": 0.03916683692593688, "ell_s": [0.5157987620349264, 0.5941814798701679], "kernel_variance": 0.6209619304571304, "noise_std": 0.08600663787525677, "validation_nll": -0.6282422996510173, "validation_rmse": 0.1022874093749354, "validation_seconds": 0.5300008896738291, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 4.324965640902519}
+{"iteration": 35, "train_nlml_per_observation": -0.9260020214604149, "finite_nlml_per_observation": -0.9260020214604149, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.029840674168295805, "iteration_seconds": 0.037274207919836044, "ell_t": 0.036881299430535495, "ell_s": [0.5260610049578218, 0.6295371022729648], "kernel_variance": 0.5656942686043767, "noise_std": 0.08624150452648138, "validation_nll": -0.677909793208886, "validation_rmse": 0.10206252889262786, "validation_seconds": 0.4162763748317957, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 4.92972413636744}
+{"iteration": 40, "train_nlml_per_observation": -0.9276026699127532, "finite_nlml_per_observation": -0.9276026699127532, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.020311045917269975, "iteration_seconds": 0.037637628614902496, "ell_t": 0.03462358853056678, "ell_s": [0.5367208122902039, 0.659796234896282], "kernel_variance": 0.5156553185451404, "noise_std": 0.08691920777783134, "validation_nll": -0.7177359420126243, "validation_rmse": 0.10189391066809368, "validation_seconds": 0.421290734782815, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 5.540742604061961}
+{"iteration": 45, "train_nlml_per_observation": -0.9286575307820742, "finite_nlml_per_observation": -0.9286575307820742, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.014630909069212541, "iteration_seconds": 0.037356285378336906, "ell_t": 0.032639940835400644, "ell_s": [0.5488475361735261, 0.6845447932815685], "kernel_variance": 0.4692603873376943, "noise_std": 0.08659278904919343, "validation_nll": -0.754053747989741, "validation_rmse": 0.10174004907541391, "validation_seconds": 0.41289766132831573, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 6.138935601338744}
+{"iteration": 50, "train_nlml_per_observation": -0.9293797423172784, "finite_nlml_per_observation": -0.9293797423172784, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.010497524507841378, "iteration_seconds": 0.03706367127597332, "ell_t": 0.0308853819561375, "ell_s": [0.5614619751481026, 0.7041136185464171], "kernel_variance": 0.42717990806245487, "noise_std": 0.08607853800715305, "validation_nll": -0.784972516354298, "validation_rmse": 0.10160285605748598, "validation_seconds": 0.42304450646042824, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 6.752054827287793}
+{"iteration": 55, "train_nlml_per_observation": -0.9298776002478474, "finite_nlml_per_observation": -0.9298776002478474, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.006902706520629576, "iteration_seconds": 0.037102460861206055, "ell_t": 0.029279164984788712, "ell_s": [0.5725842530602169, 0.7192132442674012], "kernel_variance": 0.3900686188237375, "noise_std": 0.0862844728684055, "validation_nll": -0.8076581643173293, "validation_rmse": 0.10149655112268227, "validation_seconds": 0.4450846966356039, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 7.3871620539575815}
+{"iteration": 60, "train_nlml_per_observation": -0.9302116324018282, "finite_nlml_per_observation": -0.9302116324018282, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.005756721343496583, "iteration_seconds": 0.037349097430706024, "ell_t": 0.027873012064864436, "ell_s": [0.580647263160957, 0.7306328397794358], "kernel_variance": 0.3575150158991292, "noise_std": 0.08652233711198798, "validation_nll": -0.8247359403830642, "validation_rmse": 0.10142173844603715, "validation_seconds": 0.4235703647136688, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 8.004752377048135}
+{"iteration": 65, "train_nlml_per_observation": -0.9304452885422044, "finite_nlml_per_observation": -0.9304452885422044, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.0029008611194000335, "iteration_seconds": 0.03701884672045708, "ell_t": 0.02670262879351278, "ell_s": [0.5851855433001828, 0.7390308741969223], "kernel_variance": 0.32917451059904745, "noise_std": 0.08630667013969312, "validation_nll": -0.8387057740616459, "validation_rmse": 0.10137452661745155, "validation_seconds": 0.45219569839537144, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 8.648117097094655}
+{"iteration": 70, "train_nlml_per_observation": -0.9306022182972635, "finite_nlml_per_observation": -0.9306022182972635, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.003185650736634577, "iteration_seconds": 0.036756930872797966, "ell_t": 0.025728918350228454, "ell_s": [0.586773520387569, 0.7448490564173244], "kernel_variance": 0.30509237674997713, "noise_std": 0.08621050750224178, "validation_nll": -0.848822249174968, "validation_rmse": 0.10135329909025347, "validation_seconds": 0.44310610368847847, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 9.283886224031448}
+{"iteration": 75, "train_nlml_per_observation": -0.9307105408499415, "finite_nlml_per_observation": -0.9307105408499415, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.0017476667767771415, "iteration_seconds": 0.03730478882789612, "ell_t": 0.024933114644273568, "ell_s": [0.5866695822233825, 0.7483965077180338], "kernel_variance": 0.28506746300193125, "noise_std": 0.0863660076653912, "validation_nll": -0.8556561973397971, "validation_rmse": 0.1013487826015536, "validation_seconds": 0.42717912420630455, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 9.906093124300241}
+{"iteration": 80, "train_nlml_per_observation": -0.930777630364445, "finite_nlml_per_observation": -0.930777630364445, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.0025059098224314864, "iteration_seconds": 0.037260424345731735, "ell_t": 0.024312307708518187, "ell_s": [0.586077438413298, 0.7499773826430254], "kernel_variance": 0.2687339798342842, "noise_std": 0.0863523292093099, "validation_nll": -0.8612250747426319, "validation_rmse": 0.10134750442639331, "validation_seconds": 0.4330004006624222, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 10.528629332780838}
+{"iteration": 85, "train_nlml_per_observation": -0.9308189074386196, "finite_nlml_per_observation": -0.9308189074386196, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.002617620563585139, "iteration_seconds": 0.03742269612848759, "ell_t": 0.02382685930436559, "ell_s": [0.5855444395841017, 0.7499527395152792], "kernel_variance": 0.2558984608515022, "noise_std": 0.0862614109672063, "validation_nll": -0.8655963605348849, "validation_rmse": 0.10134452118834975, "validation_seconds": 0.45320787467062473, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 11.17278398014605}
+{"iteration": 90, "train_nlml_per_observation": -0.9308441585241154, "finite_nlml_per_observation": -0.9308441585241154, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.0024035350801448795, "iteration_seconds": 0.03717945143580437, "ell_t": 0.023444834227245206, "ell_s": [0.5850543491343638, 0.7487583669820871], "kernel_variance": 0.2462598018612325, "noise_std": 0.08631486961596709, "validation_nll": -0.8683047859258517, "validation_rmse": 0.10134143652872002, "validation_seconds": 0.4231526833027601, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 11.786348512396216}
+{"iteration": 95, "train_nlml_per_observation": -0.9308591412960431, "finite_nlml_per_observation": -0.9308591412960431, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.0022501490360888774, "iteration_seconds": 0.037040093913674355, "ell_t": 0.02317170675465503, "ell_s": [0.5844064521544207, 0.746857794529314], "kernel_variance": 0.2392502914766929, "noise_std": 0.0863377361021356, "validation_nll": -0.870120054105292, "validation_rmse": 0.10133983246835779, "validation_seconds": 0.4555255211889744, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 12.43376156501472}
+{"iteration": 100, "train_nlml_per_observation": -0.9308684419604265, "finite_nlml_per_observation": -0.9308684419604265, "vfe_trace_correction_per_observation": 0.0, "vfe_trace_residual_per_observation": 0.0, "gradient_norm_before_clip": 0.0018426571291020883, "iteration_seconds": 0.03717967867851257, "ell_t": 0.023003665768529427, "ell_s": [0.5834458313036547, 0.7446436496291432], "kernel_variance": 0.23433611452966416, "noise_std": 0.08628992751715113, "validation_nll": -0.8713792505934566, "validation_rmse": 0.10134186415411704, "validation_seconds": 0.4323273729532957, "validation_checks_without_improvement": 0, "training_elapsed_seconds": 13.056969748809934}
+{
+  "implementation": "Route B finite_dtc structured empirical Bayes",
+  "training_objective": "finite_dtc",
+  "protocol": "controlled batch/full-history with spatial held-out validation",
+  "data_part": "stream",
+  "target_mode": "joint_xlag",
+  "temporal_representation": "inducing_points",
+  "temporal_kernel": {
+    "family": "matern32",
+    "spectral_mixture": null
+  },
+  "evaluation_backend": "torch",
+  "temporal_factor_device": "cuda",
+  "split_seed": 3,
+  "mt": 128,
+  "ms": 64,
+  "num_time": 186,
+  "num_train_space": 800,
+  "num_validation_space": 80,
+  "num_test_space": 200,
+  "num_xlag_features": 133,
+  "active_joint_mean_features": 133,
+  "hyperparameters": "learned by Route B marginal likelihood; fixed inducing locations",
+  "objective_optimization": {
+    "version": "E0",
+    "cached_statistics": false,
+    "combined_basis_transforms": false,
+    "removed_redundant_final_solve": false,
+    "cross_contraction": "einsum",
+    "feature_block_size": null,
+    "feature_projection": null,
+    "feature_dimension": 133
+  },
+  "predictive_variance": "full structured-joint conditional; conditional residual included",
+  "best_iteration": 100,
+  "iterations_completed": 100,
+  "stop_reason": "max_iterations",
+  "validation_checks_without_improvement": 0,
+  "best_validation_nll": -0.8713792505934566,
+  "time_to_best_validation_seconds": 13.056357329711318,
+  "learned_theta": {
+    "ell_t": 0.023003665768529427,
+    "ell_s": [
+      0.5834458313036547,
+      0.7446436496291432
+    ],
+    "kernel_variance": 0.23433611452966416,
+    "noise_std": 0.08628992751715113
+  },
+  "final": {
+    "rmse": 0.08994204423104447,
+    "nll": -0.9150874701119067,
+    "coverage90": 0.9752150537634409,
+    "ece": 0.12827284946236558,
+    "mean_predictive_std": 0.1317976591285991,
+    "posterior_update_seconds": 0.041794003918766975,
+    "prediction_seconds": 0.09013371914625168,
+    "diagnostic_avg_sigma2": 0.007445951590915195,
+    "diagnostic_avg_nu_star": 0.010545278799178388,
+    "diagnostic_avg_nu_star_raw": 0.010545278799178388,
+    "diagnostic_avg_u_posterior_term": 0.00032546776402605284,
+    "diagnostic_avg_beta_schur_term": 3.883697107363899e-06
+  },
+  "timing": {
+    "warmup_seconds": 0.03942839987576008,
+    "flop_profile_seconds": 0.2552081849426031,
+    "training_seconds": 13.057085817679763,
+    "mean_iteration_seconds": 0.03817461153492332,
+    "median_iteration_seconds": 0.037468562833964825,
+    "mean_steady_state_iteration_seconds": 0.03753946898411019,
+    "validation_seconds": 9.201506713405252,
+    "xlag_feature_loading_seconds": 2.6606593001633883,
+    "posterior_setup_seconds": 0.041794003918766975,
+    "prediction_seconds": 0.09013371914625168,
+    "process_total_seconds": 18.9893957991153
+  },
+  "resources": {
+    "device": "cuda",
+    "dtype": "float64",
+    "peak_rss_mib": 1859.32421875,
+    "torch": "2.5.1+cu121",
+    "torch_cuda_build": "12.1",
+    "cuda_available": true,
+    "gpu_name": "NVIDIA GeForce RTX 4090",
+    "gpu_compute_capability": [
+      8,
+      9
+    ],
+    "gpu_total_memory_mib": 48508.0625,
+    "peak_cuda_allocated_mib": 1339.0693359375,
+    "peak_cuda_reserved_mib": 1674.0,
+    "persistent_model_state_bytes": 10332800,
+    "persistent_model_state_mib": 9.8541259765625,
+    "serialized_training_checkpoint_bytes": 9565,
+    "history_replay_buffer_bytes": 1190400,
+    "profiled_forward_backward_flops_per_step": 16649522790,
+    "estimated_training_flops": 1664952279000,
+    "flops_scope": "PyTorch-supported operations in one Route-B objective forward/backward; optimizer, validation, posterior recovery and prediction excluded",
+    "flop_profile_error": null,
+    "training_device": "cuda",
+    "temporal_factor_device": "cuda",
+    "spherical_bessel_device": null,
+    "posterior_update_device": "cuda",
+    "prediction_device": "cuda",
+    "posterior_solver_backend": "torch"
+  },
+  "environment": {
+    "hostname": "autodl-container-qkb5g0ybu5-f51eca91",
+    "platform": "Linux-5.15.0-78-generic-x86_64-with-glibc2.35",
+    "python": "3.11.15",
+    "processor": "x86_64",
+    "pid": 236853,
+    "git": {
+      "commit": "985f596842914946fcd6fe75ed4fd20faecd99d9",
+      "branch": "",
+      "dirty": false
+    }
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed3/protocol.npz",
+    "protocol_json": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed3/protocol.json",
+    "data_root": null,
+    "output_dir": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/routeb_joint_inducing_points_mt128_ms64/seed3",
+    "data_part": "stream",
+    "target_mode": "joint_xlag",
+    "representation": "inducing_points",
+    "mt": 128,
+    "ms": 64,
+    "iterations": 100,
+    "training_objective": "finite_dtc",
+    "include_conditional_residual_variance": true,
+    "learning_rate": 0.02,
+    "validation_every": 5,
+    "early_stopping_patience_validations": 0,
+    "early_stopping_min_delta": 0.0,
+    "max_training_seconds": 0.0,
+    "beta_prior_variance": 1000.0,
+    "rff_sample_size": 256,
+    "temporal_kernel": "matern32",
+    "spectral_mixture_json": null,
+    "xlag_length": 10,
+    "joint_phi_npy": null,
+    "initial_ell_t": 0.05,
+    "initial_ell_s": [
+      0.35,
+      0.35
+    ],
+    "initial_kernel_variance": 1.0,
+    "initial_noise": 0.1,
+    "prediction_chunk_size": 8192,
+    "split_seed": 3,
+    "model_seed": 0,
+    "save_pointwise": false,
+    "predictions_output": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/routeb_joint_inducing_points_mt128_ms64/seed3/predictions.npz",
+    "device": "cuda",
+    "dtype": "float64",
+    "evaluation_backend": "torch",
+    "warmup_steps": 1,
+    "profile_flops": true,
+    "objective_optimization_version": "E0",
+    "cross_contraction": "einsum",
+    "feature_block_size": null,
+    "feature_projection_npz": null
+  }
+}

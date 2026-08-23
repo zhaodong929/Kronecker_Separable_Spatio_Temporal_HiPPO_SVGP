@@ -1,0 +1,51 @@
+job=array-23
+argv=/root/autodl-tmp/stvgp_envs/routeb/bin/python scripts/run_iclr_era5_xlag_mean_baselines.py --protocol-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed2/protocol.npz --protocol-json /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed2/protocol.json --output-dir /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/xlag_mean_only/seed2 --mode batch_fixed --seed 2
+{
+  "implementation": "X-lag ridge mean only",
+  "protocol": "batch_fixed",
+  "parameter_source": "all Task-2(+) training locations",
+  "noise_variance": 0.13523040531473596,
+  "num_blocks": 19,
+  "overall_current_block": {
+    "rmse": 0.36407951330296723,
+    "nll": 0.4086547860872989,
+    "coverage90": 0.9137096774193548,
+    "mean_predictive_std": 0.3677368696700617
+  },
+  "final_block": {
+    "block_id": 18,
+    "block_start": 180,
+    "block_stop": 186,
+    "hours": 6,
+    "update_seconds": 0.0,
+    "prediction_seconds": 0.0,
+    "rmse": 0.2562599529161261,
+    "nll": 0.16135563623012558,
+    "coverage90": 0.9825,
+    "mean_predictive_std": 0.36773686967006164
+  },
+  "split_seed": 2,
+  "num_stream_times": 186,
+  "num_train_space": 800,
+  "num_test_space": 200,
+  "timing": {
+    "process_total_seconds": 0.024040617048740387
+  },
+  "resources": {
+    "peak_rss_mib": 420.34375,
+    "persistent_state_bytes": 1072,
+    "persistent_state_mib": 0.0010223388671875,
+    "history_replay_buffer_bytes": 0,
+    "device": "CPU",
+    "dtype": "float64"
+  },
+  "args": {
+    "protocol_npz": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed2/protocol.npz",
+    "protocol_json": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed2/protocol.json",
+    "output_dir": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/xlag_mean_only/seed2",
+    "mode": "batch_fixed",
+    "ridge": 0.001,
+    "xlag_length": 10,
+    "seed": 2
+  }
+}

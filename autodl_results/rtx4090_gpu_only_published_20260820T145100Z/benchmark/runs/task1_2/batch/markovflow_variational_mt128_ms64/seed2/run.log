@@ -1,0 +1,27 @@
+job=array-53
+argv=/root/autodl-tmp/stvgp_envs/markovflow/bin/python scripts/run_official_markovflow_stsvgp_era5.py --protocol-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/task1_2/seed2/protocol.npz --output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_variational_mt128_ms64/seed2/result.json --predictions-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_2/batch/markovflow_variational_mt128_ms64/seed2/predictions.npz --model-kind sparse_variational --target-mode shared_xlag_residual --mt 128 --ms 64 --iterations 100 --seed 2
+2026-08-20 12:13:30.546062: E tensorflow/stream_executor/cuda/cuda_driver.cc:328] failed call to cuInit: CUDA_ERROR_NO_DEVICE: no CUDA-capable device is detected
+WARNING:tensorflow:From /root/autodl-tmp/stvgp_envs/markovflow/lib/python3.7/site-packages/tensorflow/python/ops/linalg/linear_operator_block_diag.py:223: LinearOperator.graph_parents (from tensorflow.python.ops.linalg.linear_operator) is deprecated and will be removed in a future version.
+Instructions for updating:
+Do not call `graph_parents`.
+Traceback (most recent call last):
+  File "scripts/run_official_markovflow_stsvgp_era5.py", line 442, in <module>
+    main()
+  File "scripts/run_official_markovflow_stsvgp_era5.py", line 336, in main
+    False,
+  File "scripts/run_official_markovflow_stsvgp_era5.py", line 204, in train
+    loss = float(np.asarray(one_step(x_batch, y_batch)))
+  File "scripts/run_official_markovflow_stsvgp_era5.py", line 189, in one_step
+    return model.loss(data)
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/models/spatio_temporal_variational.py", line 188, in loss
+    return -self.elbo(input_data)
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/models/spatio_temporal_variational.py", line 218, in elbo
+    fx_mus, fx_covs = self.space_time_predict_f(X)
+  File "/root/autodl-tmp/stvgp_kronecker_full_a100/baselines/external/secondmind_labs_markovflow_v0.0.13/markovflow/models/spatio_temporal_variational.py", line 169, in space_time_predict_f
+    chol_cov_u = tf.linalg.cholesky(cov_u)  # Ms x Ms
+  File "/root/autodl-tmp/stvgp_envs/markovflow/lib/python3.7/site-packages/tensorflow/python/ops/gen_linalg_ops.py", line 775, in cholesky
+    _ops.raise_from_not_ok_status(e, name)
+  File "/root/autodl-tmp/stvgp_envs/markovflow/lib/python3.7/site-packages/tensorflow/python/framework/ops.py", line 6862, in raise_from_not_ok_status
+    six.raise_from(core._status_to_exception(e.code, message), None)
+  File "<string>", line 3, in raise_from
+tensorflow.python.framework.errors_impl.InvalidArgumentError: Cholesky decomposition was not successful. The input might not be valid. [Op:Cholesky]

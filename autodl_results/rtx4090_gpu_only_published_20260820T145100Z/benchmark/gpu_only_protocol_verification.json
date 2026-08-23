@@ -1,0 +1,2859 @@
+{
+  "benchmark_root": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z",
+  "created_at": "2026-08-20T14:57:36.313739+00:00",
+  "exclusions": [
+    {
+      "device_class": "cpu_protocol",
+      "index": 0,
+      "manifest": "shared_batch_short",
+      "method": "export_shared_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": null
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 1,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 2,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 3,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 4,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 5,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 6,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 7,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 8,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 9,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_protocol",
+      "index": 10,
+      "manifest": "shared_batch_short",
+      "method": "export_official_stvgp_protocol",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "a100_cpu",
+      "index": 21,
+      "manifest": "shared_batch_short",
+      "method": "xlag_mean_only",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_cpu",
+      "index": 22,
+      "manifest": "shared_batch_short",
+      "method": "xlag_mean_only",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "a100_cpu",
+      "index": 23,
+      "manifest": "shared_batch_short",
+      "method": "xlag_mean_only",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "a100_cpu",
+      "index": 24,
+      "manifest": "shared_batch_short",
+      "method": "xlag_mean_only",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "a100_cpu",
+      "index": 25,
+      "manifest": "shared_batch_short",
+      "method": "xlag_mean_only",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 26,
+      "manifest": "shared_batch_short",
+      "method": "official_st_vgp_full",
+      "reason": "documented_rtx4090_full_stvgp_oom",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 27,
+      "manifest": "shared_batch_short",
+      "method": "official_st_vgp_full",
+      "reason": "documented_rtx4090_full_stvgp_oom",
+      "seed": 1
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 28,
+      "manifest": "shared_batch_short",
+      "method": "official_st_vgp_full",
+      "reason": "documented_rtx4090_full_stvgp_oom",
+      "seed": 2
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 29,
+      "manifest": "shared_batch_short",
+      "method": "official_st_vgp_full",
+      "reason": "documented_rtx4090_full_stvgp_oom",
+      "seed": 3
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 30,
+      "manifest": "shared_batch_short",
+      "method": "official_st_vgp_full",
+      "reason": "documented_rtx4090_full_stvgp_oom",
+      "seed": 4
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 51,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 52,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 1
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 53,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 2
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 54,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 3
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 55,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 4
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 56,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 57,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 1
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 58,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 2
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 59,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 3
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 60,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_variational_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 4
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 61,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 62,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 1
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 63,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 2
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 64,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 3
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 65,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms64",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 4
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 66,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 67,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 1
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 68,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 2
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 69,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 3
+    },
+    {
+      "device_class": "a100_markovflow",
+      "index": 70,
+      "manifest": "shared_batch_short",
+      "method": "markovflow_cvi_mt128_ms128",
+      "reason": "tf24_cusolverDnCreate_failed_on_rtx4090",
+      "seed": 4
+    },
+    {
+      "device_class": "a100_gpflow_preflight",
+      "index": 71,
+      "manifest": "shared_batch_short",
+      "method": "preflight_gpflow_feasibility_8192_mt128_ms64",
+      "reason": "capacity_preflight_not_comparison_row",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_gpflow_preflight",
+      "index": 72,
+      "manifest": "shared_batch_short",
+      "method": "preflight_gpflow_feasibility_8192_mt64_ms128",
+      "reason": "capacity_preflight_not_comparison_row",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_gpflow_preflight",
+      "index": 73,
+      "manifest": "shared_batch_short",
+      "method": "preflight_gpflow_feasibility_4096_mt64_ms64",
+      "reason": "capacity_preflight_not_comparison_row",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_gpflow_preflight",
+      "index": 74,
+      "manifest": "shared_batch_short",
+      "method": "preflight_gpflow_feasibility_4096_mt32_ms128",
+      "reason": "capacity_preflight_not_comparison_row",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_gpflow_preflight",
+      "index": 75,
+      "manifest": "shared_batch_short",
+      "method": "preflight_gpflow_feasibility_2048_mt32_ms64",
+      "reason": "capacity_preflight_not_comparison_row",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_gpflow_preflight",
+      "index": 76,
+      "manifest": "shared_batch_short",
+      "method": "preflight_gpflow_feasibility_2048_mt16_ms128",
+      "reason": "capacity_preflight_not_comparison_row",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_official_preflight",
+      "index": 0,
+      "manifest": "official_long_preflight",
+      "method": "official_preflight_st_vgp_full",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_official_preflight",
+      "index": 1,
+      "manifest": "official_long_preflight",
+      "method": "official_preflight_st_svgp_ms64",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_official_preflight",
+      "index": 2,
+      "manifest": "official_long_preflight",
+      "method": "official_preflight_st_svgp_ms128",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 0,
+      "manifest": "official_long_full",
+      "method": "official_st_vgp_full",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 1,
+      "manifest": "official_long_full",
+      "method": "official_st_vgp_full",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 1
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 2,
+      "manifest": "official_long_full",
+      "method": "official_st_vgp_full",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 2
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 3,
+      "manifest": "official_long_full",
+      "method": "official_st_vgp_full",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 3
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 4,
+      "manifest": "official_long_full",
+      "method": "official_st_vgp_full",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 4
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 5,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms64",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 6,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms64",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 1
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 7,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms64",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 2
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 8,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms64",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 3
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 9,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms64",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 4
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 10,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms128",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 0
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 11,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms128",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 1
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 12,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms128",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 2
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 13,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms128",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 3
+    },
+    {
+      "device_class": "a100_official_full",
+      "index": 14,
+      "manifest": "official_long_full",
+      "method": "official_st_svgp_ms128",
+      "reason": "rtx4090_long_batch_workspace_oom_ms32_requires_52_11_gib",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu",
+      "index": 0,
+      "manifest": "online_short",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 1,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu",
+      "index": 2,
+      "manifest": "online_short",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 3,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 5,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_bui_osgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 7,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_maddox_streaming_sgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 9,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_official_ohsvgp_m32_rff128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu",
+      "index": 10,
+      "manifest": "online_short",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 11,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu",
+      "index": 12,
+      "manifest": "online_short",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 13,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 15,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_bui_osgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 17,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_maddox_streaming_sgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 19,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_official_ohsvgp_m32_rff128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu",
+      "index": 20,
+      "manifest": "online_short",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 21,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu",
+      "index": 22,
+      "manifest": "online_short",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 23,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 25,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_bui_osgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 27,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_maddox_streaming_sgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 29,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_official_ohsvgp_m32_rff128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu",
+      "index": 30,
+      "manifest": "online_short",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 31,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu",
+      "index": 32,
+      "manifest": "online_short",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 33,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 35,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_bui_osgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 37,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_maddox_streaming_sgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 39,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_official_ohsvgp_m32_rff128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu",
+      "index": 40,
+      "manifest": "online_short",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 41,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu",
+      "index": 42,
+      "manifest": "online_short",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 43,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 45,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_bui_osgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 47,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_maddox_streaming_sgpr_mt2_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 49,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_official_ohsvgp_m32_rff128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 51,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 53,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 55,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 57,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 59,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 61,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 63,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 65,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 67,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 69,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 71,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 73,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 75,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 77,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 79,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_cumulative_hippo_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 81,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 83,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 85,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 87,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 89,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms128",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 91,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 93,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 95,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 97,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 99,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt128_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 101,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 103,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 105,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 107,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu_postprocess",
+      "index": 109,
+      "manifest": "online_short",
+      "method": "postprocess_task2_online_segments_routeb_global_inducing_mt64_ms64",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu",
+      "index": 0,
+      "manifest": "online_long",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu",
+      "index": 1,
+      "manifest": "online_long",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 0
+    },
+    {
+      "device_class": "cpu",
+      "index": 5,
+      "manifest": "online_long",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu",
+      "index": 6,
+      "manifest": "online_long",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 1
+    },
+    {
+      "device_class": "cpu",
+      "index": 10,
+      "manifest": "online_long",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu",
+      "index": 11,
+      "manifest": "online_long",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 2
+    },
+    {
+      "device_class": "cpu",
+      "index": 15,
+      "manifest": "online_long",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu",
+      "index": 16,
+      "manifest": "online_long",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 3
+    },
+    {
+      "device_class": "cpu",
+      "index": 20,
+      "manifest": "online_long",
+      "method": "xlag_task1_fixed",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    },
+    {
+      "device_class": "cpu",
+      "index": 21,
+      "manifest": "online_long",
+      "method": "xlag_recursive_rls",
+      "reason": "not_selected_by_gpu_only_policy",
+      "seed": 4
+    }
+  ],
+  "policy": {
+    "common_hardware": "NVIDIA GeForce RTX 4090",
+    "cpu_rows_included": false,
+    "full_stvgp_gpu_status": "excluded_after_documented_rtx4090_oom",
+    "gpu_only": true,
+    "included_manifests": [
+      "shared_batch_short",
+      "official_long_preflight",
+      "official_long_full",
+      "online_short",
+      "online_long"
+    ],
+    "long_batch_stsvgp_gpu_status": "excluded_after_ms32_preflight_required_52_11_gib_on_48_gib_rtx4090",
+    "markovflow_gpu_status": "excluded_after_actual_cusolverDnCreate_failure"
+  },
+  "problems": [],
+  "required_complete_count": 190,
+  "required_record_count": 190,
+  "required_records": [
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 11,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 12,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 13,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 14,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 15,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 16,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 17,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 18,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 19,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 20,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 31,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 32,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 33,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 34,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 35,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 36,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 37,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 38,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 39,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 40,
+      "manifest": "shared_batch_short",
+      "method": "official_st_svgp_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 41,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 42,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 43,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 44,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 45,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 46,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 47,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 48,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 49,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_official_full",
+      "index": 50,
+      "manifest": "shared_batch_short",
+      "method": "official_mf_st_svgp_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 77,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt64_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 78,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt64_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 79,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt64_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 80,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt64_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 81,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt64_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 82,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt32_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 83,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt32_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 84,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt32_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 85,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt32_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_gpflow",
+      "index": 86,
+      "manifest": "shared_batch_short",
+      "method": "gpflow_feasibility_4096_mt32_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 87,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 88,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 89,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 90,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 91,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 92,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 93,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 94,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 95,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 96,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt128_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 97,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt64_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 98,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt64_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 99,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt64_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 100,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt64_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 101,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_analytic_hippo_rff_mt64_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 102,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 103,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 104,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 105,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 106,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 107,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 108,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 109,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 110,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 111,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt128_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 112,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt64_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 113,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt64_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 114,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt64_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 115,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt64_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 116,
+      "manifest": "shared_batch_short",
+      "method": "routeb_shared_residual_inducing_points_mt64_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 117,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 118,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 119,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 120,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 121,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 122,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 123,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 124,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 125,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 126,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt128_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 127,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt64_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 128,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt64_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 129,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt64_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 130,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt64_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 131,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_analytic_hippo_rff_mt64_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 132,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 133,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 134,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 135,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 136,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 137,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 138,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 139,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 140,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 141,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt128_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 142,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt64_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 143,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt64_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 144,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt64_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 145,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt64_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb",
+      "index": 146,
+      "manifest": "shared_batch_short",
+      "method": "routeb_joint_inducing_points_mt64_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 4,
+      "manifest": "online_short",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 6,
+      "manifest": "online_short",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 8,
+      "manifest": "online_short",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 14,
+      "manifest": "online_short",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 16,
+      "manifest": "online_short",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 18,
+      "manifest": "online_short",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 24,
+      "manifest": "online_short",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 26,
+      "manifest": "online_short",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 28,
+      "manifest": "online_short",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 34,
+      "manifest": "online_short",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 36,
+      "manifest": "online_short",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 38,
+      "manifest": "online_short",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 44,
+      "manifest": "online_short",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 46,
+      "manifest": "online_short",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 48,
+      "manifest": "online_short",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 50,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 52,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 54,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 56,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 58,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 60,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 62,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 64,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 66,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 68,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 70,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 72,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 74,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 76,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 78,
+      "manifest": "online_short",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 80,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 82,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 84,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 86,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 88,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 90,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 92,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 94,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 96,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 98,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 100,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 102,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 104,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 106,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 108,
+      "manifest": "online_short",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 2,
+      "manifest": "online_long",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 3,
+      "manifest": "online_long",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 4,
+      "manifest": "online_long",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 7,
+      "manifest": "online_long",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 8,
+      "manifest": "online_long",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 9,
+      "manifest": "online_long",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 12,
+      "manifest": "online_long",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 13,
+      "manifest": "online_long",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 14,
+      "manifest": "online_long",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 17,
+      "manifest": "online_long",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 18,
+      "manifest": "online_long",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 19,
+      "manifest": "online_long",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 22,
+      "manifest": "online_long",
+      "method": "bui_osgpr_mt2_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu_legacy_api",
+      "index": 23,
+      "manifest": "online_long",
+      "method": "maddox_streaming_sgpr_mt2_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "modern_gpu",
+      "index": 24,
+      "manifest": "online_long",
+      "method": "official_ohsvgp_m32_rff128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 25,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 26,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 27,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 28,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 29,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 30,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 31,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 32,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 33,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 34,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt128_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 35,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 36,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 37,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 38,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 39,
+      "manifest": "online_long",
+      "method": "routeb_cumulative_hippo_mt64_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 40,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 41,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 42,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 43,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 44,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms128",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 45,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 46,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 47,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 48,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 49,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt128_ms64",
+      "seed": 4,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 50,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 0,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 51,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 1,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 52,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 2,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 53,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 3,
+      "status": "complete"
+    },
+    {
+      "artifacts_complete": true,
+      "device_class": "a100_routeb_online",
+      "index": 54,
+      "manifest": "online_long",
+      "method": "routeb_global_inducing_mt64_ms64",
+      "seed": 4,
+      "status": "complete"
+    }
+  ],
+  "schema_version": 2,
+  "scope": "complete GPU-only RTX 4090 ERA5 matrix",
+  "verification_status": "VERIFIED_GPU_ONLY_RTX4090"
+}

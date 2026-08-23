@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "job": "prepare/all/export_shared_protocol",
+  "stage": "prepare",
+  "scope": "all",
+  "method": "export_shared_protocol",
+  "seed": null,
+  "status": "complete",
+  "legacy": false,
+  "device_class": "cpu_protocol",
+  "command": [
+    "/root/autodl-tmp/stvgp_envs/routeb/bin/python",
+    "scripts/export_iclr_era5_full_benchmark_protocol.py",
+    "--outdir",
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol",
+    "--split-seeds",
+    "0",
+    "1",
+    "2",
+    "3",
+    "4"
+  ],
+  "started_at": "2026-08-19T18:45:13.539413+00:00",
+  "finished_at": "2026-08-19T18:49:15.950205+00:00",
+  "wall_seconds": 242.41083301045,
+  "timeout_seconds": 14400,
+  "returncode": 0,
+  "expected_artifacts": [
+    "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/manifest.json"
+  ],
+  "missing_artifacts": [],
+  "log": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/run.log",
+  "nvidia_smi": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/nvidia_smi.csv",
+  "resource_usage": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/resource_usage.txt",
+  "status_path": "/root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/protocol/status.json"
+}

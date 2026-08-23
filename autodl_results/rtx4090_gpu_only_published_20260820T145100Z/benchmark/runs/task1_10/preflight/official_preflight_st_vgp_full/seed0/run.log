@@ -1,0 +1,39 @@
+job=array-0
+argv=/root/autodl-tmp/stvgp_envs/stvgp_legacy/bin/python scripts/run_official_stvgp_legacy.py --model st_vgp --data-npz /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/official_protocol/task1_10/seed0/data.npz --iterations 2 --seed 0 --use-xlag-mean --jit --parallel --trajectory-every 10 --predictions-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_10/preflight/official_preflight_st_vgp_full/seed0/predictions.npz --trajectory-output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_10/preflight/official_preflight_st_vgp_full/seed0/trajectory.json --output /root/autodl-tmp/iclr_era5_a100_protocol_autodl_4090_capacity_ladder_20260820T023000Z/runs/task1_10/preflight/official_preflight_st_vgp_full/seed0/result.json
+2026-08-20 21:43:41.715326: W external/org_tensorflow/tensorflow/compiler/xla/service/gpu/nvptx_compiler.cc:71] Can't find libdevice directory ${CUDA_DIR}/nvvm/libdevice. This may result in compilation or runtime failures, if the program we try to run uses routines from libdevice.
+2026-08-20 21:43:41.717025: W external/org_tensorflow/tensorflow/compiler/xla/service/gpu/nvptx_compiler.cc:72] Searched for CUDA in the following directories:
+2026-08-20 21:43:41.717048: W external/org_tensorflow/tensorflow/compiler/xla/service/gpu/nvptx_compiler.cc:75]   ./cuda_sdk_lib
+2026-08-20 21:43:41.717056: W external/org_tensorflow/tensorflow/compiler/xla/service/gpu/nvptx_compiler.cc:75]   /usr/local/cuda-11.1
+2026-08-20 21:43:41.717063: W external/org_tensorflow/tensorflow/compiler/xla/service/gpu/nvptx_compiler.cc:75]   .
+2026-08-20 21:43:41.717072: W external/org_tensorflow/tensorflow/compiler/xla/service/gpu/nvptx_compiler.cc:77] You can choose the search directory by setting xla_gpu_cuda_data_dir in HloModule's DebugOptions.  For most apps, setting the environment variable XLA_FLAGS=--xla_gpu_cuda_data_dir=/path/to/cuda will work.
+2026-08-20 21:43:41.719500: W external/org_tensorflow/tensorflow/compiler/xla/service/gpu/llvm_gpu_backend/gpu_backend_lib.cc:328] libdevice is required by this HLO module but was not found at ./libdevice.10.bc
+Traceback (most recent call last):
+  File "scripts/run_official_stvgp_legacy.py", line 852, in <module>
+    main()
+  File "scripts/run_official_stvgp_legacy.py", line 637, in main
+    selection_built = _build_phase(args, times, selection_phase, auxiliary)
+  File "scripts/run_official_stvgp_legacy.py", line 322, in _build_phase
+    variance=1.0, lengthscale=args.temporal_lengthscale
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/bayesnewton/kernels.py", line 60, in __init__
+    self.transformed_lengthscale = objax.TrainVar(softplus_inv(np.array(lengthscale)))
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/bayesnewton/utils.py", line 78, in softplus_inv
+    return np.log(np.exp(x_) - 1)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/_src/numpy/lax_numpy.py", line 363, in <lambda>
+    fn = lambda x: lax_fn(*_promote_args_inexact(numpy_fn.__name__, x))
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/_src/lax/lax.py", line 189, in exp
+    return exp_p.bind(x)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/core.py", line 282, in bind
+    out = top_trace.process_primitive(self, tracers, params)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/core.py", line 628, in process_primitive
+    return primitive.impl(*tracers, **params)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/interpreters/xla.py", line 238, in apply_primitive
+    compiled_fun = xla_primitive_callable(prim, *unsafe_map(arg_spec, args), **params)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/_src/util.py", line 198, in wrapper
+    return cached(bool(FLAGS.jax_enable_x64), *args, **kwargs)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/_src/util.py", line 191, in cached
+    return f(*args, **kwargs)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/interpreters/xla.py", line 288, in xla_primitive_callable
+    compiled = backend_compile(backend, built_c, options)
+  File "/root/autodl-tmp/stvgp_envs/stvgp_legacy/lib/python3.7/site-packages/jax/interpreters/xla.py", line 352, in backend_compile
+    return backend.compile(built_c, compile_options=options)
+RuntimeError: Internal: libdevice not found at ./libdevice.10.bc
