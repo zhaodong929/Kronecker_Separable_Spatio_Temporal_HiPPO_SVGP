@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from copy import deepcopy
 import csv
+import importlib.util
 import json
 from pathlib import Path
 import platform
@@ -19,15 +20,53 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 OFFICIAL = ROOT / "baselines/external/wjmaddox_online_gp"
 sys.path.insert(0, str(ROOT))
-sys.path.insert(0, str(OFFICIAL))
 
-from online_gp.models.streaming_sgpr import StreamingSGPR
+# The archived official module imports through ``online_gp.models`` and its
+# package initializer pulls in unrelated old BoTorch modules.  Load the
+# official StreamingSGPR source directly and provide only the two lazy-API
+# names removed by modern GPyTorch.  The model implementation itself remains
+# unchanged.
+from linear_operator import operators as _linear_operators
+
+
+class _CompatCholLinearOperator(_linear_operators.CholLinearOperator):
+    """Expose the removed GPyTorch 1.x spelling used by Maddox's code."""
+
+    def evaluate(self):
+        return self.to_dense()
+
+
+gpytorch.lazy.TriangularLazyTensor = _linear_operators.TriangularLinearOperator
+gpytorch.lazy.CholLazyTensor = _CompatCholLinearOperator
+_streaming_spec = importlib.util.spec_from_file_location(
+    "maddox_official_streaming_sgpr",
+    OFFICIAL / "online_gp/models/streaming_sgpr.py",
+)
+if _streaming_spec is None or _streaming_spec.loader is None:
+    raise ImportError("Cannot load the pinned Maddox StreamingSGPR source")
+_streaming_module = importlib.util.module_from_spec(_streaming_spec)
+_streaming_spec.loader.exec_module(_streaming_module)
+StreamingSGPR = _streaming_module.StreamingSGPR
 from stvgp_kronecker.benchmark_runtime import (  # noqa: E402
     SynchronizedTimer,
     host_snapshot,
     resolve_torch_runtime,
 )
 from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
+
+
+def _install_linear_operator_compatibility():
+    """Restore the removed GPyTorch 1.x inv_matmul spelling."""
+    if hasattr(_linear_operators.LinearOperator, "inv_matmul"):
+        return
+
+    def inv_matmul(self, right_tensor, left_tensor=None):
+        return self.solve(right_tensor, left_tensor=left_tensor)
+
+    _linear_operators.LinearOperator.inv_matmul = inv_matmul
+
+
+_install_linear_operator_compatibility()
 
 
 def flatten_inputs(times, coordinates, spatial_indices, block):
@@ -130,7 +169,25 @@ def fixed_inducing_fantasy_model(model, x_new, y_new):
     )
     with torch.no_grad():
         fantasy_model.update_variational_distribution(x_new, y_new)
-    return fantasy_model
+    return fantasy_model.to(device=x_new.device, dtype=x_new.dtype)
+
+
+def assimilate(model, x_new, y_new, *, resample_ratio, device, dtype):
+    """Apply one official StreamingSGPR update and keep frozen hyperparameters."""
+
+    if model.num_data == 0:
+        model.update_variational_distribution(x_new, y_new)
+        model.num_data = x_new.shape[0]
+    elif resample_ratio == 0.0:
+        model = fixed_inducing_fantasy_model(model, x_new, y_new)
+    else:
+        model = model.get_fantasy_model(x_new, y_new, resample_ratio=resample_ratio)
+        model = model.to(device=device, dtype=dtype)
+    for parameter in model.covar_module.parameters():
+        parameter.requires_grad_(False)
+    for parameter in model.likelihood.parameters():
+        parameter.requires_grad_(False)
+    return model
 
 
 def write_csv(rows, path):
@@ -154,6 +211,9 @@ def main():
     parser.add_argument("--jitter", type=float, default=1e-4)
     parser.add_argument("--resample-ratio", type=float, default=0.2)
     parser.add_argument("--prediction-chunk-size", type=int, default=4096)
+    parser.add_argument("--task1-warm-start", action="store_true")
+    parser.add_argument("--task1-block-steps", type=int, default=12)
+    parser.add_argument("--delayed-observations", action="store_true")
     parser.add_argument("--max-blocks", type=int, default=0)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--device", default="auto")
@@ -169,6 +229,10 @@ def main():
         torch.cuda.manual_seed_all(args.seed)
     arrays = np.load(args.protocol_npz)
     theta = json.loads(args.theta_json.read_text(encoding="utf-8"))["learned_theta"]
+    calibration_times = np.asarray(arrays["calibration_times"], dtype=np.float64)
+    calibration_y = np.asarray(arrays["calibration_y"], dtype=np.float64)
+    calibration_offset = np.asarray(arrays["task1_calibration_mean"], dtype=np.float64)
+    calibration_residual = calibration_y - calibration_offset
     times = np.asarray(arrays["stream_times"], dtype=np.float64)
     coordinates = np.asarray(arrays["coordinates"], dtype=np.float64)
     stream_y = np.asarray(arrays["stream_y"], dtype=np.float64)
@@ -184,7 +248,7 @@ def main():
         blocks = blocks[: args.max_blocks]
     spatial_inducing = np.asarray(arrays[f"inducing_coords_ms{args.ms}"], dtype=np.float64)
     z = torch.as_tensor(
-        product_inducing(times, spatial_inducing, args.mt),
+        product_inducing(np.concatenate([calibration_times, times]), spatial_inducing, args.mt),
         dtype=runtime.dtype,
         device=runtime.device,
     )
@@ -204,6 +268,33 @@ def main():
         parameter.requires_grad_(False)
     runtime.reset_peak_memory()
 
+    task1_seconds = 0.0
+    if args.task1_warm_start:
+        task1_started = time.perf_counter()
+        for start in range(0, calibration_times.size, args.task1_block_steps):
+            block = slice(start, min(calibration_times.size, start + args.task1_block_steps))
+            x_task1 = torch.as_tensor(
+                flatten_inputs(calibration_times, coordinates, train_indices, block),
+                dtype=runtime.dtype,
+                device=runtime.device,
+            )
+            y_task1 = torch.as_tensor(
+                flatten_targets(calibration_residual, train_indices, block),
+                dtype=runtime.dtype,
+                device=runtime.device,
+            )
+            with torch.no_grad():
+                model = assimilate(
+                    model,
+                    x_task1,
+                    y_task1,
+                    resample_ratio=args.resample_ratio,
+                    device=runtime.device,
+                    dtype=runtime.dtype,
+                )
+        runtime.synchronize()
+        task1_seconds = time.perf_counter() - task1_started
+
     rows = []
     all_true = []
     all_mean = []
@@ -212,35 +303,36 @@ def main():
     variance_grid = np.empty_like(mean_grid)
     total_update = 0.0
     total_prediction = 0.0
+    delayed_rows = 0
     for block_id, block in enumerate(blocks):
         profile_range = profile_this_index(block_id, len(blocks))
         profile_open = push_range("era5_online_block", profile_range)
-        x_train = torch.as_tensor(
-            flatten_inputs(times, coordinates, train_indices, block),
-            dtype=runtime.dtype,
-            device=runtime.device,
-        )
-        y_train = torch.as_tensor(
-            flatten_targets(residual, train_indices, block),
-            dtype=runtime.dtype,
-            device=runtime.device,
-        )
         with SynchronizedTimer(runtime.synchronize) as update_timer:
             with torch.no_grad():
-                if block_id == 0:
-                    model.update_variational_distribution(x_train, y_train)
-                    model.num_data = x_train.shape[0]
-                elif args.resample_ratio == 0.0:
-                    model = fixed_inducing_fantasy_model(model, x_train, y_train)
-                else:
-                    model = model.get_fantasy_model(
-                        x_train, y_train, resample_ratio=args.resample_ratio
+                updates = [(block, train_indices, "current_visible")]
+                if args.delayed_observations and block_id > 0:
+                    updates.insert(0, (blocks[block_id - 1], test_indices, "delayed_hidden"))
+                for observation_block, indices, update_kind in updates:
+                    x_train = torch.as_tensor(
+                        flatten_inputs(times, coordinates, indices, observation_block),
+                        dtype=runtime.dtype,
+                        device=runtime.device,
                     )
-                    model = model.to(device=runtime.device, dtype=runtime.dtype)
-                    for parameter in model.covar_module.parameters():
-                        parameter.requires_grad_(False)
-                    for parameter in model.likelihood.parameters():
-                        parameter.requires_grad_(False)
+                    y_train = torch.as_tensor(
+                        flatten_targets(residual, indices, observation_block),
+                        dtype=runtime.dtype,
+                        device=runtime.device,
+                    )
+                    model = assimilate(
+                        model,
+                        x_train,
+                        y_train,
+                        resample_ratio=args.resample_ratio,
+                        device=runtime.device,
+                        dtype=runtime.dtype,
+                    )
+                    if update_kind == "delayed_hidden":
+                        delayed_rows += int(x_train.shape[0])
         update_seconds = update_timer.elapsed
 
         x_test = flatten_inputs(times, coordinates, test_indices, block)
@@ -295,8 +387,8 @@ def main():
         "implementation": "official Maddox online_gp StreamingSGPR",
         "source_repository": "https://github.com/wjmaddox/online_gp",
         "source_commit": "3bff4c3",
-        "protocol": "strict online; new-block-only labels; no history replay",
-        "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
+        "protocol": "strict Protocol N; delayed hidden then current visible; no history replay",
+        "target_mode": "Task-1 visible-fit ridge residual, evaluated on original y",
         "hyperparameters": "Route-B Task-1 empirical-Bayes theta, frozen",
         "inducing_policy": (
             "fixed global Cartesian coordinates with the official fantasy equations"
@@ -306,6 +398,13 @@ def main():
         "inducing_resample_ratio": args.resample_ratio,
         "numerical_jitter": args.jitter,
         "split_seed": args.seed,
+        "task1_warm_start": bool(args.task1_warm_start),
+        "task1_seconds": task1_seconds,
+        "delayed_observations": bool(args.delayed_observations),
+        "delayed_observation_rows": delayed_rows,
+        "current_hidden_labels_read": 0,
+        "current_visible_observation_rows": int(len(blocks) * train_indices.size),
+        "hidden_prediction_rows": int(len(blocks) * test_indices.size),
         "num_stream_times": int(times.size),
         "num_blocks": len(blocks),
         "num_train_space": int(train_indices.size),

@@ -179,6 +179,14 @@ def main():
     parser.add_argument("--max-calibration-blocks", type=int, default=0)
     parser.add_argument("--max-stream-blocks", type=int, default=0)
     parser.add_argument(
+        "--task1-validation-only",
+        action="store_true",
+        help=(
+            "Fit only Task-1 fit jurisdictions and score the predeclared Task-1 validation "
+            "jurisdictions. This is used only for capacity selection."
+        ),
+    )
+    parser.add_argument(
         "--task1-posterior-warm-start",
         action="store_true",
         help=(
@@ -241,6 +249,8 @@ def main():
     calibration_times = calibration_before_stream(calibration_times, stream_times)
     coordinates = np.asarray(arrays["coordinates"], dtype=NP_DTYPE)
     train_indices = np.asarray(arrays["train_indices"], dtype=int)
+    fit_indices = np.asarray(arrays["fit_indices"], dtype=int)
+    validation_indices = np.asarray(arrays["validation_indices"], dtype=int)
     test_indices = np.asarray(arrays["test_indices"], dtype=int)
     stream_blocks = blocks_from_arrays(arrays["block_start"], arrays["block_stop"])
     calibration_blocks = tuple(
@@ -251,6 +261,19 @@ def main():
         calibration_blocks = calibration_blocks[: args.max_calibration_blocks]
     if args.max_stream_blocks > 0:
         stream_blocks = stream_blocks[: args.max_stream_blocks]
+
+    calibration_train_indices = train_indices
+    if args.task1_validation_only:
+        calibration_phi = np.asarray(arrays["calibration_phi"], dtype=NP_DTYPE)
+        design = calibration_phi[:, fit_indices, :].reshape(-1, calibration_phi.shape[-1])
+        targets = calibration[:, fit_indices].reshape(-1)
+        ridge_beta = np.linalg.solve(
+            design.T @ design + NP_DTYPE(1e-3) * np.eye(design.shape[1], dtype=NP_DTYPE),
+            design.T @ targets,
+        )
+        calibration_offset = np.einsum("tsp,p->ts", calibration_phi, ridge_beta)
+        calibration_residual = calibration - calibration_offset
+        calibration_train_indices = fit_indices
     theta_payload = None if args.theta_json is None else json.loads(args.theta_json.read_text(encoding="utf-8"))
     theta = (
         {
@@ -273,11 +296,13 @@ def main():
     old_kernel_covariance = None
     old_z = z
     calibration_seconds = 0.0
-    task1_warm_start = bool(args.task1_posterior_warm_start or args.adaptive)
+    task1_warm_start = bool(
+        args.task1_posterior_warm_start or args.adaptive or args.task1_validation_only
+    )
     if task1_warm_start:
         for block_id, block in enumerate(calibration_blocks):
-            x_new = flatten_inputs(calibration_times, coordinates, train_indices, block)
-            y_new = flatten_targets(calibration_residual, train_indices, block)
+            x_new = flatten_inputs(calibration_times, coordinates, calibration_train_indices, block)
+            y_new = flatten_targets(calibration_residual, calibration_train_indices, block)
             started = time.perf_counter()
             kernel = make_kernel(theta, frozen=not args.adaptive)
             if old_mean is None:
@@ -316,6 +341,50 @@ def main():
             old_z = z
             calibration_seconds += time.perf_counter() - started
             print(json.dumps({"phase": "calibration", "block": block_id}), flush=True)
+
+    if args.task1_validation_only:
+        if old_mean is None:
+            raise RuntimeError("Task-1 validation requires a posterior initialized from Task-1 fit data")
+        x_validation = flatten_inputs(
+            calibration_times, coordinates, validation_indices, slice(0, calibration_times.size)
+        )
+        y_validation = flatten_targets(
+            calibration, validation_indices, slice(0, calibration_times.size)
+        )
+        validation_offset = flatten_targets(
+            calibration_offset, validation_indices, slice(0, calibration_times.size)
+        )
+        mean, variance = predict_current(
+            model, x_validation, noise_variance, args.prediction_chunk_size
+        )
+        mean += validation_offset
+        metrics = metric_row(y_validation, mean, variance)
+        payload = {
+            "status": "task1_validation_complete",
+            "method": "Bui OSGPR (adaptive)" if args.adaptive else "Bui OSGPR (controlled)",
+            "source_repository": "https://github.com/thangbui/streaming_sparse_gp",
+            "source_commit": "d95081b",
+            "protocol": "Task-1-only 38-fit/4-validation spatial split",
+            "split_seed": args.seed,
+            "capacity": {
+                "temporal_inducing": int(args.mt),
+                "spatial_inducing": int(args.ms),
+                "joint_inducing": int(z.shape[0]),
+            },
+            "task1_calibration_seconds": calibration_seconds,
+            "metrics": {
+                "rmse": metrics["rmse"],
+                "gaussian_nlpd": metrics["nll"],
+                "coverage90": metrics["coverage90"],
+            },
+            "validation_labels_used_only_for_scoring": int(
+                calibration_times.size * validation_indices.size
+            ),
+        }
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(payload, indent=2), flush=True)
+        return
 
     block_rows = []
     all_true = []
@@ -439,6 +508,9 @@ def main():
         ),
         "delayed_observations": bool(args.delayed_observations),
         "delayed_observation_rows": delayed_rows,
+        "current_hidden_labels_read": 0,
+        "current_visible_observation_rows": int(len(stream_blocks) * train_indices.size),
+        "hidden_prediction_rows": int(len(stream_blocks) * test_indices.size),
         "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
         "split_seed": args.seed,
         "num_stream_times": int(stream_times.size),

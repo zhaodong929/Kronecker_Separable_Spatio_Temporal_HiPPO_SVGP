@@ -43,7 +43,11 @@ class PredictionArchive:
     ) -> Dict[str, Union[int, bool]]:
         audit = self.audit.summary(require_complete=require_complete)
         completed = int(audit["online_steps_completed"])
-        metadata = {"method": self.method, "seed": self.seed, "protocol": "covid_long_setting_b"}
+        metadata = {
+            "method": self.method,
+            "seed": self.seed,
+            "protocol": getattr(self.protocol, "protocol_id", "covid_long_setting_b"),
+        }
         if extra_metadata:
             metadata.update(extra_metadata)
         path = Path(path)

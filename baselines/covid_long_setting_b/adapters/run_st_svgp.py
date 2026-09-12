@@ -32,12 +32,14 @@ sys.path.insert(0, str(ROOT))
 
 from baselines.covid_long_setting_b.archive import PredictionArchive
 from baselines.covid_long_setting_b.protocol import COVIDSettingBProtocol, KnownObservation
+from baselines.traffic_protocol_n import load_protocol
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--protocol-npz", type=Path, required=True)
     parser.add_argument("--protocol-json", type=Path)
+    parser.add_argument("--protocol-kind", choices=("covid", "traffic"), default="covid")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--max-weeks", type=int, default=0)
@@ -48,6 +50,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--task1-plateau-checks", type=int, default=10)
     parser.add_argument("--task1-plateau-relative-improvement", type=float, default=1e-3)
     parser.add_argument("--online-inference-steps", type=int, default=5)
+    parser.add_argument(
+        "--history-window",
+        type=int,
+        default=0,
+        help="Keep only this many latest time points for a documented causal-refit adaptation; 0 keeps all history.",
+    )
     parser.add_argument("--task1-adam-learning-rate", type=float, default=0.01)
     parser.add_argument("--task1-newton-learning-rate", type=float, default=1.0)
     parser.add_argument(
@@ -78,8 +86,15 @@ def parse_args() -> argparse.Namespace:
 class ArrivedObservations:
     """A chronological sparse observation list constructed solely from protocol batches."""
 
-    def __init__(self, protocol: COVIDSettingBProtocol, locations: np.ndarray | None = None) -> None:
+    def __init__(
+        self,
+        protocol: COVIDSettingBProtocol,
+        locations: np.ndarray | None = None,
+        *,
+        history_window: int = 0,
+    ) -> None:
         self.protocol = protocol
+        self.history_window = int(history_window)
         self._times: List[np.ndarray] = []
         self._locations: List[np.ndarray] = []
         self._targets: List[np.ndarray] = []
@@ -94,6 +109,17 @@ class ArrivedObservations:
         self._times.append(np.full(observation.locations.size, observation.time, dtype=np.float64))
         self._locations.append(observation.locations.astype(np.int64, copy=True))
         self._targets.append(observation.targets.astype(np.float64, copy=True))
+        self._prune()
+
+    def _prune(self) -> None:
+        if self.history_window <= 0 or not self._times:
+            return
+        step = float(np.median(np.diff(self.protocol.calibration_times)))
+        cutoff = float(self._times[-1][0]) - step * (self.history_window - 1) - 1e-10
+        keep = [index for index, values in enumerate(self._times) if float(values[0]) >= cutoff]
+        self._times = [self._times[index] for index in keep]
+        self._locations = [self._locations[index] for index in keep]
+        self._targets = [self._targets[index] for index in keep]
 
     def as_grid(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         times = np.concatenate(self._times)
@@ -367,12 +393,18 @@ def run_causal_segment(
 
 def main() -> None:
     args = parse_args()
-    protocol = COVIDSettingBProtocol(args.protocol_npz, args.protocol_json)
+    protocol = load_protocol(
+        args.protocol_npz,
+        args.protocol_json,
+        protocol_kind=args.protocol_kind,
+    )
     requested_weeks = protocol.online_weeks if args.max_weeks <= 0 else int(args.max_weeks)
     if not 1 <= requested_weeks <= protocol.online_weeks:
         raise ValueError("--max-weeks must be between 1 and the full online horizon")
     if not 1 <= args.spatial_inducing <= protocol.locations:
-        raise ValueError("--spatial-inducing must be between 1 and 52")
+        raise ValueError(f"--spatial-inducing must be between 1 and {protocol.locations}")
+    if args.history_window < 0:
+        raise ValueError("--history-window must be non-negative")
     segment_mode = args.segment_output is not None or args.segment_start != 0 or args.segment_end is not None
     segment_start = int(args.segment_start)
     segment_end = requested_weeks if args.segment_end is None else int(args.segment_end)
@@ -394,7 +426,11 @@ def main() -> None:
         minit="points",
     )[0]
     task1_locations = protocol.fit_locations if args.task1_validation_only else None
-    arrived = ArrivedObservations(protocol, task1_locations)
+    arrived = ArrivedObservations(
+        protocol,
+        task1_locations,
+        history_window=args.history_window,
+    )
     task1_model = None
     if args.frozen_task1_state is not None:
         frozen_inducing, frozen_kernel_values, frozen_likelihood_values = read_frozen_task1_state(
@@ -527,10 +563,10 @@ def main() -> None:
             "online_seconds_per_week": float(np.mean(online_seconds)),
             "audit": {
                 "online_steps_completed": segment_end - segment_start,
-                "delayed_hidden_labels": max(0, segment_end - max(1, segment_start)) * 10,
-                "current_visible_labels": (segment_end - segment_start) * 42,
+                "delayed_hidden_labels": max(0, segment_end - max(1, segment_start)) * protocol.hidden_locations.size,
+                "current_visible_labels": (segment_end - segment_start) * protocol.visible_locations.size,
                 "current_hidden_labels_read": 0,
-                "hidden_predictions": (segment_end - segment_start) * 10,
+                "hidden_predictions": (segment_end - segment_start) * protocol.hidden_locations.size,
             },
         }
         (args.segment_output.parent / "segment_status.json").write_text(
@@ -555,6 +591,7 @@ def main() -> None:
             "spatial_inducing": int(args.spatial_inducing),
             "task1_state_source": task1_state_source,
             "task1_convergence": convergence,
+            "history_window": int(args.history_window),
         },
     )
     status = {
@@ -562,12 +599,13 @@ def main() -> None:
         "method": "ST-SVGP causal refit",
         "source": "AaltoML/spatio-temporal-GPs",
         "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
-        "protocol": "covid_long_setting_b",
+        "protocol": getattr(protocol, "protocol_id", "covid_long_setting_b"),
         "seed": args.seed,
         "weeks": segment_end,
         "task1_seconds": task1_seconds,
         "task1_state_source": task1_state_source,
         "task1_convergence": convergence,
+        "history_window": int(args.history_window),
         "online_seconds_total": float(np.sum(online_seconds)),
         "online_seconds_per_week": float(np.mean(online_seconds)),
         "online_update_prediction_seconds": [float(value) for value in online_seconds],
@@ -575,7 +613,8 @@ def main() -> None:
         "note": (
             "The official API has no posterior extension method for a growing irregular grid. "
             "Each online posterior is therefore reconstructed from legal arrived observations with "
-            "Task-1 kernel, likelihood and inducing locations frozen."
+            "Task-1 kernel, likelihood and inducing locations frozen. A non-zero history_window is "
+            "a predeclared bounded causal-refit adaptation, not posterior transfer."
         ),
     }
     (args.output_dir / "status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
