@@ -18,17 +18,16 @@ done
 mkdir -p "${OUTPUT_ROOT}/slurm"
 
 export REPO_ROOT ENV_ROOT PROTOCOL_ROOT OUTPUT_ROOT
-SMOKE_JOB=$(sbatch --parsable --array=0-11%4 --export=ALL,MODE=smoke "${SCRIPT_DIR}/external_gp_worker.sbatch")
-FORMAL_JOB=$(sbatch --parsable --array=0-11%4 --dependency="aftercorr:${SMOKE_JOB}" --export=ALL,MODE=formal "${SCRIPT_DIR}/external_gp_worker.sbatch")
-SUMMARY_JOB=$(sbatch --parsable --dependency="afterok:${FORMAL_JOB}" --export=ALL "${SCRIPT_DIR}/summarize.sbatch")
+METHOD_JOB=$(sbatch --parsable --array=0-3%4 --export=ALL "${SCRIPT_DIR}/external_gp_worker.sbatch")
+SUMMARY_JOB=$(sbatch --parsable --dependency="afterok:${METHOD_JOB}" --export=ALL "${SCRIPT_DIR}/summarize.sbatch")
 
 cat >"${OUTPUT_ROOT}/SUBMISSION.json" <<EOF
 {
-  "smoke_array_job": "${SMOKE_JOB}",
-  "formal_array_job": "${FORMAL_JOB}",
+  "method_array_job": "${METHOD_JOB}",
   "summary_job": "${SUMMARY_JOB}",
-  "array_mapping": "task=floor(id/3) in [OHSVGP,Maddox,Bui,ST-SVGP]; seed=id%3+1",
-  "dependency": "each formal task starts after its corresponding smoke task passes"
+  "array_mapping": "task id 0..3 maps to [OHSVGP,Maddox,Bui,ST-SVGP]",
+  "execution": "each A100 task smoke-tests seeds 1,2,3 and then runs the same three formal seeds sequentially",
+  "dependency": "summary starts only after all four method tasks pass"
 }
 EOF
-printf 'smoke=%s formal=%s summary=%s\n' "${SMOKE_JOB}" "${FORMAL_JOB}" "${SUMMARY_JOB}"
+printf 'methods=%s summary=%s\n' "${METHOD_JOB}" "${SUMMARY_JOB}"

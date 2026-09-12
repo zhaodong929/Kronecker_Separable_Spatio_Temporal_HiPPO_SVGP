@@ -18,8 +18,7 @@ OUTPUT_ROOT="${OUTPUT_ROOT:-${REPO_ROOT}/results/traffic/formal_external_gp_a100
 MODE="${MODE:-formal}"
 TASK_ID="${SLURM_ARRAY_TASK_ID:?SLURM_ARRAY_TASK_ID is required}"
 METHODS=(ohsvgp maddox_streaming_sgpr bui_osgpr st_svgp)
-METHOD="${METHODS[$((TASK_ID / 3))]}"
-SEED="$((TASK_ID % 3 + 1))"
+METHOD="${METHODS[${TASK_ID}]}"
 
 cd "${REPO_ROOT}"
 mkdir -p "${OUTPUT_ROOT}/slurm"
@@ -30,23 +29,17 @@ if ! nvidia-smi --query-gpu=name --format=csv,noheader | grep -qi a100; then
 fi
 
 PYTHON="${ENV_ROOT}/routeb/bin/python"
-args=(
+common_args=(
   scripts/run_traffic_external_gp_three_seed.py
   --methods "${METHOD}"
-  --seeds "${SEED}"
+  --seeds 1 2 3
   --env-root "${ENV_ROOT}"
   --protocol-root "${PROTOCOL_ROOT}"
 )
-if [[ "${MODE}" == "smoke" ]]; then
-  args+=(--output "${OUTPUT_ROOT}/smoke" --smoke --max-stream-steps 8)
-elif [[ "${MODE}" == "formal" ]]; then
-  args+=(--output "${OUTPUT_ROOT}")
-else
-  echo "Unknown MODE=${MODE}" >&2
-  exit 2
-fi
 
 git rev-parse HEAD >"${OUTPUT_ROOT}/source_commit.txt"
-echo "method=${METHOD} seed=${SEED} mode=${MODE} host=$(hostname)" \
+echo "method=${METHOD} seeds=1,2,3 mode=smoke_then_formal host=$(hostname)" \
   >"${OUTPUT_ROOT}/slurm/task_${SLURM_ARRAY_JOB_ID}_${TASK_ID}.txt"
-exec "${PYTHON}" "${args[@]}"
+"${PYTHON}" "${common_args[@]}" \
+  --output "${OUTPUT_ROOT}/smoke" --smoke --max-stream-steps 8
+exec "${PYTHON}" "${common_args[@]}" --output "${OUTPUT_ROOT}"
