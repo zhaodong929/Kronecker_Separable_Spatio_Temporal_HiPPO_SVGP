@@ -25,7 +25,6 @@ from baselines.traffic_protocol_n import TrafficProtocolN
 from hipposvgp.hippo import transition, variable_unroll_matrix, variable_unroll_matrix_sequential
 from hipposvgp.likelihood import GaussianLikelihood
 from hipposvgp.multidim import SE_kernel
-from scripts.run_epidemiology_pilot import predictive_metrics
 from scripts.run_official_ohsvgp_era5 import (
     configure_kernel,
     export_state,
@@ -35,6 +34,26 @@ from scripts.run_official_ohsvgp_era5 import (
     predict,
 )
 from stvgp_kronecker.benchmark_runtime import host_snapshot, resolve_torch_runtime
+
+
+def predictive_metrics(y: np.ndarray, mean: np.ndarray, variance: np.ndarray) -> dict[str, float]:
+    """Gaussian diagnostics used for progress logging only."""
+
+    y = np.asarray(y, dtype=np.float64)
+    mean = np.asarray(mean, dtype=np.float64)
+    variance = np.maximum(np.asarray(variance, dtype=np.float64), 1e-10)
+    error = y - mean
+    std = np.sqrt(variance)
+    return {
+        "rmse": float(np.sqrt(np.mean(error**2))),
+        "nll": float(np.mean(0.5 * (np.log(2.0 * np.pi * variance) + error**2 / variance))),
+        "mean_predictive_std": float(np.mean(std)),
+        "coverage50": float(np.mean(np.abs(error) <= 0.67448975 * std)),
+        "coverage80": float(np.mean(np.abs(error) <= 1.28155157 * std)),
+        "coverage90": float(np.mean(np.abs(error) <= 1.64485363 * std)),
+        "coverage95": float(np.mean(np.abs(error) <= 1.95996398 * std)),
+        "mean_interval_width90": float(np.mean(2.0 * 1.64485363 * std)),
+    }
 
 
 class LazyHiPPOLegS(nn.Module):

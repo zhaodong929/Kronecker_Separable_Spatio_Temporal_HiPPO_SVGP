@@ -76,12 +76,13 @@ def command(
             "--predictions-output", str(output / "predictions.npz"),
             "--mt", "4", "--ms", "32",
             "--resample-ratio", "0.2",
+            "--jitter", "0.001",
             "--task1-warm-start",
             "--task1-block-steps", "12",
             "--delayed-observations",
             "--seed", str(seed),
             "--device", "cuda",
-            "--dtype", "float32",
+            "--dtype", "float64",
             *max_steps,
         ]
     if method == "bui_osgpr":
