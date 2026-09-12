@@ -77,6 +77,7 @@ def command(
             "--mt", "4", "--ms", "32",
             "--resample-ratio", "0.2",
             "--jitter", "0.001",
+            "--max-jitter", "0.01",
             "--task1-warm-start",
             "--task1-block-steps", "12",
             "--delayed-observations",
@@ -106,7 +107,7 @@ def command(
         ]
     iterations = 10 if smoke else 2500
     return [
-        str(env_root / "stvgp_legacy/bin/python"),
+        str(env_root / "stvgp_legacy_cuda111/bin/python"),
         "scripts/run_traffic_st_svgp.py",
         "--protocol-npz", str(protocol),
         "--protocol-json", str(metadata),

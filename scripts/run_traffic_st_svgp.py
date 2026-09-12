@@ -5,12 +5,6 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-import typing
-
-if not hasattr(typing, "Protocol"):
-    from typing_extensions import Protocol
-
-    typing.Protocol = Protocol
 
 
 ROOT = Path(__file__).resolve().parents[1]

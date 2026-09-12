@@ -15,7 +15,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import time
-from typing import Any, Protocol
+from typing import Any
+
+try:
+    from typing import Protocol
+except ImportError:  # Python 3.7 used by the pinned ST-SVGP environment.
+    from typing_extensions import Protocol
 
 import numpy as np
 

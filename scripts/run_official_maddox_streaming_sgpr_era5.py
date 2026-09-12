@@ -209,6 +209,7 @@ def main():
     parser.add_argument("--mt", type=int, default=2)
     parser.add_argument("--ms", type=int, default=64)
     parser.add_argument("--jitter", type=float, default=1e-4)
+    parser.add_argument("--max-jitter", type=float, default=None)
     parser.add_argument("--resample-ratio", type=float, default=0.2)
     parser.add_argument("--prediction-chunk-size", type=int, default=4096)
     parser.add_argument("--task1-warm-start", action="store_true")
@@ -304,9 +305,14 @@ def main():
     total_update = 0.0
     total_prediction = 0.0
     delayed_rows = 0
+    jitter_retries = 0
+    max_jitter = args.jitter if args.max_jitter is None else args.max_jitter
     for block_id, block in enumerate(blocks):
         profile_range = profile_this_index(block_id, len(blocks))
         profile_open = push_range("era5_online_block", profile_range)
+        model_before_block = model
+        cpu_rng_before_block = torch.get_rng_state()
+        cuda_rng_before_block = torch.cuda.get_rng_state_all() if runtime.uses_cuda else None
         with SynchronizedTimer(runtime.synchronize) as update_timer:
             with torch.no_grad():
                 updates = [(block, train_indices, "current_visible")]
@@ -349,12 +355,54 @@ def main():
             )
             mean += offset_test
         prediction_seconds = prediction_timer.elapsed
+        finite_prediction = np.all(np.isfinite(mean)) and np.all(np.isfinite(variance))
+        if not finite_prediction and max_jitter > model._jitter:
+            model = model_before_block
+            model._jitter = max_jitter
+            torch.set_rng_state(cpu_rng_before_block)
+            if cuda_rng_before_block is not None:
+                torch.cuda.set_rng_state_all(cuda_rng_before_block)
+            with SynchronizedTimer(runtime.synchronize) as retry_update_timer:
+                with torch.no_grad():
+                    for observation_block, indices, _ in updates:
+                        x_train = torch.as_tensor(
+                            flatten_inputs(times, coordinates, indices, observation_block),
+                            dtype=runtime.dtype,
+                            device=runtime.device,
+                        )
+                        y_train = torch.as_tensor(
+                            flatten_targets(residual, indices, observation_block),
+                            dtype=runtime.dtype,
+                            device=runtime.device,
+                        )
+                        model = assimilate(
+                            model,
+                            x_train,
+                            y_train,
+                            resample_ratio=args.resample_ratio,
+                            device=runtime.device,
+                            dtype=runtime.dtype,
+                        )
+            with SynchronizedTimer(runtime.synchronize) as retry_prediction_timer:
+                mean, variance = predict(
+                    model,
+                    x_test,
+                    args.prediction_chunk_size,
+                    device=runtime.device,
+                    dtype=runtime.dtype,
+                    synchronize=runtime.synchronize,
+                )
+                mean += offset_test
+            update_seconds += retry_update_timer.elapsed
+            prediction_seconds += retry_prediction_timer.elapsed
+            jitter_retries += 1
+            finite_prediction = np.all(np.isfinite(mean)) and np.all(np.isfinite(variance))
         pop_range(profile_open)
-        if not np.all(np.isfinite(mean)) or not np.all(np.isfinite(variance)):
+        if not finite_prediction:
             raise FloatingPointError(
                 "Maddox StreamingSGPR produced non-finite predictions at "
                 f"block {block_id} ({block.start}:{block.stop}) with "
-                f"jitter={args.jitter:g}"
+                f"jitter={model._jitter:g}"
             )
         block_metrics = metric_row(y_test, mean, variance)
         block_length = block.stop - block.start
@@ -372,6 +420,7 @@ def main():
             "hours": block_length,
             "update_seconds": update_seconds,
             "prediction_seconds": prediction_seconds,
+            "effective_jitter": float(model._jitter),
             **block_metrics,
         }
         rows.append(row)
@@ -397,6 +446,8 @@ def main():
         ),
         "inducing_resample_ratio": args.resample_ratio,
         "numerical_jitter": args.jitter,
+        "maximum_jitter": max_jitter,
+        "numerical_jitter_retries": jitter_retries,
         "split_seed": args.seed,
         "task1_warm_start": bool(args.task1_warm_start),
         "task1_seconds": task1_seconds,

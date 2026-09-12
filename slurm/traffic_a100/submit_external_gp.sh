@@ -12,7 +12,7 @@ for seed in 1 2 3; do
   test -s "${PROTOCOL_ROOT}/seed${seed}/protocol.json"
   test -s "${REPO_ROOT}/results/traffic/formal_locked_sm_q2_road_context_v1/task1_theta/seed${seed}/theta.json"
 done
-for env_name in routeb gpflow maddox stvgp_legacy; do
+for env_name in routeb gpflow maddox stvgp_legacy_cuda111; do
   test -x "${ENV_ROOT}/${env_name}/bin/python"
 done
 mkdir -p "${OUTPUT_ROOT}/slurm"
