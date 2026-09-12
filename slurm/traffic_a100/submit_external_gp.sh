@@ -18,16 +18,19 @@ done
 mkdir -p "${OUTPUT_ROOT}/slurm"
 
 export REPO_ROOT ENV_ROOT PROTOCOL_ROOT OUTPUT_ROOT
-METHOD_JOB=$(sbatch --parsable --array=0-3%4 --export=ALL "${SCRIPT_DIR}/external_gp_worker.sbatch")
-SUMMARY_JOB=$(sbatch --parsable --dependency="afterok:${METHOD_JOB}" --export=ALL "${SCRIPT_DIR}/summarize.sbatch")
+FAST_JOB=$(sbatch --parsable --array=0-2%3 --time=1-00:00:00 --mem=64G --export=ALL "${SCRIPT_DIR}/external_gp_worker.sbatch")
+ST_JOB=$(sbatch --parsable --array=3 --time=3-00:00:00 --mem=128G --export=ALL "${SCRIPT_DIR}/external_gp_worker.sbatch")
+SUMMARY_JOB=$(sbatch --parsable --dependency="afterok:${FAST_JOB}:${ST_JOB}" --export=ALL "${SCRIPT_DIR}/summarize.sbatch")
 
 cat >"${OUTPUT_ROOT}/SUBMISSION.json" <<EOF
 {
-  "method_array_job": "${METHOD_JOB}",
+  "fast_method_array_job": "${FAST_JOB}",
+  "st_svgp_job": "${ST_JOB}",
   "summary_job": "${SUMMARY_JOB}",
   "array_mapping": "task id 0..3 maps to [OHSVGP,Maddox,Bui,ST-SVGP]",
   "execution": "each A100 task smoke-tests seeds 1,2,3 and then runs the same three formal seeds sequentially",
-  "dependency": "summary starts only after all four method tasks pass"
+  "resources": "OHSVGP/Maddox/Bui request 24h and 64GB; ST-SVGP requests 72h and 128GB",
+  "dependency": "summary starts only after the three fast methods and ST-SVGP pass"
 }
 EOF
-printf 'methods=%s summary=%s\n' "${METHOD_JOB}" "${SUMMARY_JOB}"
+printf 'fast=%s st_svgp=%s summary=%s\n' "${FAST_JOB}" "${ST_JOB}" "${SUMMARY_JOB}"

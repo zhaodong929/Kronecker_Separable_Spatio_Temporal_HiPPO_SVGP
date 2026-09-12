@@ -11,8 +11,9 @@ ST-SVGP API instead performs a causal refit; the traffic adapter predeclares a
 5-minute stream. It must be reported as `ST-SVGP (causal refit)`, not as online
 posterior transfer.
 
-`submit_external_gp.sh` launches four A100 tasks, one per method, to remain
-within the cluster's array/QOS submission limit. Each task smoke-tests all
-three seeds and then runs those seeds formally in sequence. The four methods
-therefore run in parallel, and a CPU summary job starts only after all four
-method tasks succeed.
+`submit_external_gp.sh` launches a three-task, 24-hour A100 array for OHSVGP,
+Maddox and Bui, plus a separate 72-hour ST-SVGP task. This keeps the fast jobs
+from inheriting ST-SVGP's larger queue request while remaining within the
+cluster QOS limit. Each task smoke-tests all three seeds and then runs those
+seeds formally in sequence. A CPU summary job starts only after all four
+methods succeed.
