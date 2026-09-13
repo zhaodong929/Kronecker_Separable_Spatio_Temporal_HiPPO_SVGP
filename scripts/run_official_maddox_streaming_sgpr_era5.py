@@ -316,7 +316,9 @@ def main():
     for block_id, block in enumerate(blocks):
         profile_range = profile_this_index(block_id, len(blocks))
         profile_open = push_range("era5_online_block", profile_range)
-        model_before_block = model
+        # Preserve the last valid posterior so a numerical retry can restart
+        # the block instead of reusing a partially updated fantasy model.
+        model_before_block = deepcopy(model)
         with SynchronizedTimer(runtime.synchronize) as update_timer:
             with torch.no_grad():
                 updates = [(block, train_indices, "current_visible")]
