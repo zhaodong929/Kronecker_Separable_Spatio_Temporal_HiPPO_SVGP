@@ -13,13 +13,13 @@ export REPO_ROOT ENV_ROOT PROTOCOL_ROOT OUTPUT_ROOT
 METRICS_JOB=$(sbatch --parsable --partition=long --cpus-per-task=4 --mem=32G \
   --time=02:00:00 --output="${OUTPUT_ROOT}/slurm/partial_metrics_%j.out" \
   --error="${OUTPUT_ROOT}/slurm/partial_metrics_%j.err" \
-  --wrap="cd '${REPO_ROOT}' && '${ENV_ROOT}/routeb/bin/python' scripts/summarize_traffic_external_gp_a100.py --input '${OUTPUT_ROOT}' --output '${OUTPUT_ROOT}/paper_ready/complete_subset' --methods ohsvgp bui_osgpr --seeds 1 2 3")
+  --wrap="cd '${REPO_ROOT}' && '${ENV_ROOT}/routeb/bin/python' scripts/summarize_traffic_external_gp_a100.py --input '${OUTPUT_ROOT}' --output '${OUTPUT_ROOT}/paper_ready/complete_subset' --methods ohsvgp bui_osgpr --seeds 1 2 3" | tail -n 1)
 MADDOX_JOB=$(sbatch --parsable --array=1 --time=1-00:00:00 --mem=64G \
-  --export=ALL "${SCRIPT_DIR}/external_gp_repair_worker.sbatch")
+  --export=ALL "${SCRIPT_DIR}/external_gp_repair_worker.sbatch" | tail -n 1)
 ST_JOB=$(sbatch --parsable --array=3 --time=3-00:00:00 --mem=128G \
-  --export=ALL "${SCRIPT_DIR}/external_gp_repair_worker.sbatch")
+  --export=ALL "${SCRIPT_DIR}/external_gp_repair_worker.sbatch" | tail -n 1)
 SUMMARY_JOB=$(sbatch --parsable --dependency="afterok:${MADDOX_JOB}:${ST_JOB}" \
-  --export=ALL "${SCRIPT_DIR}/summarize.sbatch")
+  --export=ALL "${SCRIPT_DIR}/summarize.sbatch" | tail -n 1)
 
 cat >"${OUTPUT_ROOT}/REPAIR_SUBMISSION.json" <<EOF
 {
