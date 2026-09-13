@@ -211,6 +211,7 @@ def main():
     parser.add_argument("--jitter", type=float, default=1e-4)
     parser.add_argument("--max-jitter", type=float, default=None)
     parser.add_argument("--max-numerical-retries", type=int, default=0)
+    parser.add_argument("--fixed-inducing-fallback", action="store_true")
     parser.add_argument("--resample-ratio", type=float, default=0.2)
     parser.add_argument("--prediction-chunk-size", type=int, default=4096)
     parser.add_argument("--task1-warm-start", action="store_true")
@@ -360,6 +361,7 @@ def main():
         prediction_seconds = prediction_timer.elapsed
         finite_prediction = np.all(np.isfinite(mean)) and np.all(np.isfinite(variance))
         block_retries = 0
+        fallback_used = "none"
         while not finite_prediction and block_retries < args.max_numerical_retries:
             model = model_before_block
             model._jitter = max_jitter
@@ -380,7 +382,9 @@ def main():
                             model,
                             x_train,
                             y_train,
-                            resample_ratio=args.resample_ratio,
+                            resample_ratio=(
+                                0.0 if args.fixed_inducing_fallback else args.resample_ratio
+                            ),
                             device=runtime.device,
                             dtype=runtime.dtype,
                         )
@@ -398,6 +402,7 @@ def main():
             prediction_seconds += retry_prediction_timer.elapsed
             block_retries += 1
             jitter_retries += 1
+            fallback_used = "fixed_inducing" if args.fixed_inducing_fallback else "none"
             finite_prediction = np.all(np.isfinite(mean)) and np.all(np.isfinite(variance))
         pop_range(profile_open)
         if not finite_prediction:
@@ -424,6 +429,7 @@ def main():
             "prediction_seconds": prediction_seconds,
             "effective_jitter": float(model._jitter),
             "numerical_retries": block_retries,
+            "numerical_fallback": fallback_used,
             **block_metrics,
         }
         rows.append(row)
@@ -451,6 +457,7 @@ def main():
         "numerical_jitter": args.jitter,
         "maximum_jitter": max_jitter,
         "maximum_numerical_retries_per_block": args.max_numerical_retries,
+        "fixed_inducing_fallback": bool(args.fixed_inducing_fallback),
         "numerical_jitter_retries": jitter_retries,
         "split_seed": args.seed,
         "task1_warm_start": bool(args.task1_warm_start),

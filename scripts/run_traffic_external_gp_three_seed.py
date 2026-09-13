@@ -79,6 +79,7 @@ def command(
             "--jitter", "0.001",
             "--max-jitter", "0.01",
             "--max-numerical-retries", "4",
+            "--fixed-inducing-fallback",
             "--task1-warm-start",
             "--task1-block-steps", "12",
             "--delayed-observations",

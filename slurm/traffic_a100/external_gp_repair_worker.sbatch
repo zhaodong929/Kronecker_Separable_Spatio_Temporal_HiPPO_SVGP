@@ -30,7 +30,7 @@ common=(
 
 if [[ "${TASK_ID}" == "1" ]]; then
   "${PYTHON}" "${common[@]}" --methods maddox_streaming_sgpr --seeds 2 \
-    --output "${OUTPUT_ROOT}/repair_canary" --max-stream-steps 3800
+    --output "${OUTPUT_ROOT}/repair_canary" --max-stream-steps 5000
   exec "${PYTHON}" "${common[@]}" --methods maddox_streaming_sgpr \
     --seeds 1 2 3 --output "${OUTPUT_ROOT}"
 elif [[ "${TASK_ID}" == "3" ]]; then
