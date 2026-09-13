@@ -91,9 +91,11 @@ def write_csv(rows: list[dict[str, object]], path: Path) -> None:
         writer.writerows(rows)
 
 
-def aggregate(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+def aggregate(
+    rows: list[dict[str, object]], methods: tuple[str, ...] = METHODS
+) -> list[dict[str, object]]:
     output = []
-    for method in METHODS:
+    for method in methods:
         subset = [row for row in rows if row["method"] == method]
         item: dict[str, object] = {"method": method, "n": len(subset)}
         for metric in ("rmse", "rmse_mph", "crps", "gaussian_nlpd", "ece", "coverage90"):
@@ -108,12 +110,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=ROOT / "results/traffic/formal_external_gp_a100_v1")
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(METHODS))
+    parser.add_argument("--seeds", nargs="+", type=int, default=[1, 2, 3])
     args = parser.parse_args()
+    if any(seed not in (1, 2, 3) for seed in args.seeds):
+        raise ValueError("External-GP evaluation is restricted to seeds 1, 2 and 3")
+    selected_methods = tuple(dict.fromkeys(args.methods))
     output = args.output or args.input / "paper_ready"
     rows: list[dict[str, object]] = []
     audit_rows: list[dict[str, object]] = []
-    for method in METHODS:
-        for seed in (1, 2, 3):
+    for method in selected_methods:
+        for seed in args.seeds:
             directory = args.input / "pems_bay" / "nowcast" / method / f"seed{seed}"
             y, mean, variance = archive_arrays(directory / "predictions.npz")
             expected_truth, speed_scale = reference(seed)
@@ -140,13 +147,48 @@ def main() -> None:
             })
     if any(row["status"] != "passed" for row in audit_rows):
         raise SystemExit("At least one external-GP archive failed the common Protocol-N audit")
-    summary = aggregate(rows)
+    summary = aggregate(rows, selected_methods)
     write_csv(rows, output / "external_gp_per_seed.csv")
     write_csv(summary, output / "external_gp_aggregate.csv")
     (output / "EXTERNAL_GP_AUDIT.json").write_text(
-        json.dumps({"status": "passed", "rows": audit_rows}, indent=2) + "\n",
+        json.dumps(
+            {
+                "status": "passed",
+                "methods": list(selected_methods),
+                "seeds": args.seeds,
+                "rows": audit_rows,
+            },
+            indent=2,
+        )
+        + "\n",
         encoding="utf-8",
     )
+
+    metric_lines = [
+        "# PEMS-BAY Existing-GP Metrics",
+        "",
+        "Common Protocol-N evaluator. Mean +/- sample standard deviation; lower is better except Coverage90, whose nominal target is 0.90.",
+        "",
+        "| Method | RMSE | RMSE (mph) | CRPS | Gaussian NLPD | ECE | Coverage90 |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for row in summary:
+        def metric_cell(metric: str) -> str:
+            return f"{float(row[f'{metric}_mean']):.4f} +/- {float(row[f'{metric}_sd']):.4f}"
+
+        metric_lines.append(
+            f"| {LABELS[str(row['method'])]} | {metric_cell('rmse')} | "
+            f"{metric_cell('rmse_mph')} | {metric_cell('crps')} | "
+            f"{metric_cell('gaussian_nlpd')} | {metric_cell('ece')} | "
+            f"{metric_cell('coverage90')} |"
+        )
+    (output / "external_gp_metrics.md").write_text(
+        "\n".join(metric_lines) + "\n", encoding="utf-8"
+    )
+
+    if selected_methods != METHODS or args.seeds != [1, 2, 3]:
+        print(json.dumps({"status": "passed", "output": str(output), "external": summary}, indent=2))
+        return
 
     existing_path = ROOT / "results/traffic/formal_locked_sm_q2_road_context_v1/aggregate_results_1_2_3.csv"
     with existing_path.open(newline="", encoding="utf-8") as handle:

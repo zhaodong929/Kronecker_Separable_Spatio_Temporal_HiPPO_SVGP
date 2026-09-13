@@ -210,6 +210,7 @@ def main():
     parser.add_argument("--ms", type=int, default=64)
     parser.add_argument("--jitter", type=float, default=1e-4)
     parser.add_argument("--max-jitter", type=float, default=None)
+    parser.add_argument("--max-numerical-retries", type=int, default=0)
     parser.add_argument("--resample-ratio", type=float, default=0.2)
     parser.add_argument("--prediction-chunk-size", type=int, default=4096)
     parser.add_argument("--task1-warm-start", action="store_true")
@@ -220,6 +221,10 @@ def main():
     parser.add_argument("--device", default="auto")
     parser.add_argument("--dtype", choices=["float32", "float64"], default="float64")
     args = parser.parse_args()
+    if args.max_numerical_retries < 0:
+        raise ValueError("--max-numerical-retries must be non-negative")
+    if args.max_jitter is not None and args.max_jitter < args.jitter:
+        raise ValueError("--max-jitter must be at least --jitter")
 
     runtime = resolve_torch_runtime(args.device, args.dtype)
     process_started = time.perf_counter()
@@ -311,8 +316,6 @@ def main():
         profile_range = profile_this_index(block_id, len(blocks))
         profile_open = push_range("era5_online_block", profile_range)
         model_before_block = model
-        cpu_rng_before_block = torch.get_rng_state()
-        cuda_rng_before_block = torch.cuda.get_rng_state_all() if runtime.uses_cuda else None
         with SynchronizedTimer(runtime.synchronize) as update_timer:
             with torch.no_grad():
                 updates = [(block, train_indices, "current_visible")]
@@ -356,12 +359,10 @@ def main():
             mean += offset_test
         prediction_seconds = prediction_timer.elapsed
         finite_prediction = np.all(np.isfinite(mean)) and np.all(np.isfinite(variance))
-        if not finite_prediction and max_jitter > model._jitter:
+        block_retries = 0
+        while not finite_prediction and block_retries < args.max_numerical_retries:
             model = model_before_block
             model._jitter = max_jitter
-            torch.set_rng_state(cpu_rng_before_block)
-            if cuda_rng_before_block is not None:
-                torch.cuda.set_rng_state_all(cuda_rng_before_block)
             with SynchronizedTimer(runtime.synchronize) as retry_update_timer:
                 with torch.no_grad():
                     for observation_block, indices, _ in updates:
@@ -395,6 +396,7 @@ def main():
                 mean += offset_test
             update_seconds += retry_update_timer.elapsed
             prediction_seconds += retry_prediction_timer.elapsed
+            block_retries += 1
             jitter_retries += 1
             finite_prediction = np.all(np.isfinite(mean)) and np.all(np.isfinite(variance))
         pop_range(profile_open)
@@ -402,7 +404,7 @@ def main():
             raise FloatingPointError(
                 "Maddox StreamingSGPR produced non-finite predictions at "
                 f"block {block_id} ({block.start}:{block.stop}) with "
-                f"jitter={model._jitter:g}"
+                f"jitter={model._jitter:g} after {block_retries} retries"
             )
         block_metrics = metric_row(y_test, mean, variance)
         block_length = block.stop - block.start
@@ -421,6 +423,7 @@ def main():
             "update_seconds": update_seconds,
             "prediction_seconds": prediction_seconds,
             "effective_jitter": float(model._jitter),
+            "numerical_retries": block_retries,
             **block_metrics,
         }
         rows.append(row)
@@ -447,6 +450,7 @@ def main():
         "inducing_resample_ratio": args.resample_ratio,
         "numerical_jitter": args.jitter,
         "maximum_jitter": max_jitter,
+        "maximum_numerical_retries_per_block": args.max_numerical_retries,
         "numerical_jitter_retries": jitter_retries,
         "split_seed": args.seed,
         "task1_warm_start": bool(args.task1_warm_start),

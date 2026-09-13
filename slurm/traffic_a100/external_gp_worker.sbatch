@@ -20,6 +20,14 @@ TASK_ID="${SLURM_ARRAY_TASK_ID:?SLURM_ARRAY_TASK_ID is required}"
 METHODS=(ohsvgp maddox_streaming_sgpr bui_osgpr st_svgp)
 METHOD="${METHODS[${TASK_ID}]}"
 
+if [[ "${METHOD}" == "st_svgp" ]]; then
+  CUDA_ROOT="${ENV_ROOT}/stvgp_legacy_cuda111"
+  export CUDA_HOME="${CUDA_ROOT}"
+  export PATH="${CUDA_ROOT}/bin:${PATH}"
+  export LD_LIBRARY_PATH="${CUDA_ROOT}/lib:${LD_LIBRARY_PATH:-}"
+  export XLA_FLAGS="--xla_gpu_cuda_data_dir=${CUDA_ROOT} ${XLA_FLAGS:-}"
+fi
+
 cd "${REPO_ROOT}"
 mkdir -p "${OUTPUT_ROOT}/slurm"
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv,noheader
