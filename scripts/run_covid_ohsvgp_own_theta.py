@@ -33,7 +33,7 @@ from hipposvgp.likelihood import GaussianLikelihood  # noqa: E402
 from hipposvgp.multidim import HIPPOOSVGP, SE_kernel  # noqa: E402
 from baselines.covid_long_setting_b.archive import PredictionArchive  # noqa: E402
 from baselines.covid_long_setting_b.protocol import COVIDSettingBProtocol  # noqa: E402
-from scripts.run_epidemiology_pilot import predictive_metrics  # noqa: E402
+from scripts.run_traffic_ohsvgp import predictive_metrics  # noqa: E402
 from stvgp_kronecker.benchmark_runtime import host_snapshot, resolve_torch_runtime  # noqa: E402
 from stvgp_kronecker.temporal_kernel_config import load_spectral_mixture_config  # noqa: E402
 
@@ -317,8 +317,13 @@ def main() -> None:
     optimizer = torch.optim.Adam(calibration_model.parameters(), lr=args.learning_rate)
     trace: list[dict[str, object]] = []
     num_batches = int(math.ceil(x_fit.shape[0] / args.calibration_batch_size))
-    fixed_calibration_frequencies = calibration_model.kernel.sample_from_spectral(args.rff_sample_size).detach()
-    validation_frequencies = fixed_calibration_frequencies
+    # Fix base randomness, not the lengthscale-dependent frequencies: detaching
+    # the latter prevents the official RFF ELBO from learning lengthscales.
+    spectral_base = (calibration_model.kernel.sample_from_spectral(args.rff_sample_size)
+                     * torch.exp(calibration_model.kernel.log_ls)[None, :]).detach()
+    best_validation_nll = float("inf")
+    best_validation_state = None
+    best_validation_iteration = None
     completed_iterations = 0
     convergence_status = "max_budget_not_converged"
     losses_in_check: list[float] = []
@@ -332,7 +337,7 @@ def main() -> None:
         elbo, _, _ = calibration_model.ELBO(
             x_batch,
             y_batch,
-            fixed_calibration_frequencies,
+            spectral_base / torch.exp(calibration_model.kernel.log_ls)[None, :],
             recompute_k=True,
             cache_k=False,
         )
@@ -352,9 +357,14 @@ def main() -> None:
                 "chunk_elbo_mean": float(-np.mean(losses_in_check)),
                 **kernel_summary(calibration_model, args.kernel, mixture),
             }
+            validation_frequencies = (spectral_base / torch.exp(calibration_model.kernel.log_ls)[None, :]).detach()
             mean, variance = predict(calibration_model, validation_frequencies, x_validation, device=runtime.device, dtype=runtime.dtype)
             validation = predictive_metrics(y_validation + validation_offset, mean + validation_offset, variance)
             row.update({f"validation_{key}": value for key, value in validation.items()})
+            if validation["nll"] < best_validation_nll:
+                best_validation_nll = validation["nll"]
+                best_validation_state = deepcopy(calibration_model.state_dict())
+                best_validation_iteration = iteration
             args.output_dir.mkdir(parents=True, exist_ok=True)
             checkpoint = args.output_dir / "task1_checkpoints" / f"checkpoint_{iteration:05d}.pt"
             checkpoint.parent.mkdir(parents=True, exist_ok=True)
@@ -374,11 +384,16 @@ def main() -> None:
             trace.append(row)
             losses_in_check.clear()
 
-    full_calibration_mean, full_beta = ridge_mean(calibration_phi, calibration_y, train_indices)
+    if best_validation_state is None:
+        raise RuntimeError("No finite validation checkpoint was selected")
+    calibration_model.load_state_dict(best_validation_state)
+    # COVID Task 1 exposes all jurisdictions, including future hidden sites.
+    initial_indices = np.arange(protocol.locations)
+    full_calibration_mean, full_beta = ridge_mean(calibration_phi, calibration_y, initial_indices)
     stream_mean = np.einsum("tsp,p->ts", stream_phi, full_beta)
     x_calibration, y_calibration = sorted_xy(
-        flatten_inputs(calibration_times, coordinates, train_indices, slice(None)),
-        flatten_values(calibration_y - full_calibration_mean, train_indices, slice(None)),
+        flatten_inputs(calibration_times, coordinates, initial_indices, slice(None)),
+        flatten_values(calibration_y - full_calibration_mean, initial_indices, slice(None)),
     )
     all_online_observations = sum((block.stop - block.start) * train_indices.size for block in blocks)
     if args.delayed_observations:
@@ -404,7 +419,7 @@ def main() -> None:
         device=runtime.device,
         dtype=runtime.dtype,
     )
-    fixed_frequencies = refit_model.kernel.sample_from_spectral(args.rff_sample_size).detach()
+    fixed_frequencies = (spectral_base / torch.exp(refit_model.kernel.log_ls)[None, :]).detach()
     refit_optimizer = torch.optim.Adam([refit_model.mv, refit_model.Lv], lr=args.learning_rate)
     for iteration in range(completed_iterations):
         batch_index = iteration % int(math.ceil(x_calibration.shape[0] / args.calibration_batch_size))
@@ -521,6 +536,9 @@ def main() -> None:
         "num_fit_space": int(fit_indices.size),
         "num_validation_space": int(validation_indices.size),
         "num_train_space": int(train_indices.size),
+        "num_initial_observed_space": int(initial_indices.size),
+        "best_validation_iteration": best_validation_iteration,
+        "best_validation_nll": best_validation_nll,
         "num_test_space": int(test_indices.size),
         "timing": {"process_total_seconds": time.perf_counter() - started, "mean_block_update_seconds": float(np.mean([row["update_seconds"] for row in rows])), "mean_block_prediction_seconds": float(np.mean([row["prediction_seconds"] for row in rows]) )},
         "resources": runtime.resources(),
