@@ -39,10 +39,19 @@ def main():
             if jobs:
                 job = int(jobs.pop())
             else:
-                r = ssh(['sbatch', '--parsable', '--job-name='+name, '--chdir='+c,
+                submission = ['sbatch', '--parsable', '--job-name='+name, '--chdir='+c,
                     '--output='+c+'/logs/baseline-validation-%j.log',
                     c+'/releases/'+a.release+'/source/slurm/fair_three_domain/baseline_validation.sbatch',
-                    a.release])
+                    a.release]
+                receipt = c+'/submissions/'+name+'.jobid'
+                script = ('if test -s '+shlex.quote(receipt)+'; then cat '+shlex.quote(receipt)+
+                    '; else '+shlex.join(submission)+' > '+shlex.quote(receipt+'.tmp')+
+                    ' && mv '+shlex.quote(receipt+'.tmp')+' '+shlex.quote(receipt)+
+                    ' && cat '+shlex.quote(receipt)+'; fi')
+                # A remote, locked receipt survives loss of the SSH reply,
+                # including a job that finishes before the next queue poll.
+                r = ssh(['bash','-c','mkdir -p '+shlex.quote(c+'/submissions')+' && '+
+                    shlex.join(['flock','-x','-w','10',receipt+'.lock','bash','-c',script])])
                 ids = re.findall(r'^(\d+)(?:;[^\n]+)?$', r.stdout, flags=re.M)
                 if r.returncode == 0 and len(ids) == 1:
                     job = int(ids[0])

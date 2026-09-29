@@ -496,6 +496,16 @@ def main():
         old_kernel_covariance = np.asarray(model.kernel(z))
         old_z = z
         print(json.dumps(row), flush=True)
+        if (block_id+1) % 100 == 0 or block_id+1 == len(stream_blocks):
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(args.output.parent/'posterior-checkpoint.npz',
+                completed_blocks=block_id+1, inducing=z, old_inducing=old_z,
+                posterior_mean=old_mean, posterior_covariance=old_covariance,
+                old_kernel_covariance=old_kernel_covariance,
+                theta_json=np.asarray(json.dumps(theta_from_model(model))),
+                noise_variance=noise_variance, delayed_rows=delayed_rows,
+                time_origin=time_origin, time_scale=time_scale)
+            write_csv(block_rows, args.blockwise_output)
 
     y_true = np.concatenate(all_true)
     prediction_mean = np.concatenate(all_mean)

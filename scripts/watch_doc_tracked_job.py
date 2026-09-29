@@ -5,6 +5,7 @@ import datetime
 import json
 from pathlib import Path
 import shlex
+import re
 import subprocess
 import time
 
@@ -32,7 +33,7 @@ for name in PATHS:
    if (d/f).exists():item[f]=json.loads((d/f).read_text())
   attempts.append(item)
  row['attempts']=attempts
- for method in ('ohsvgp','osgpr','st_svgp'):
+ for method in ('ohsvgp','osgpr','st_svgp','mgpvae'):
   marker=p/method/'completed.json'
   if marker.exists():row.setdefault('validation_completed',[]).append(method)
  if row.get('exit',{}).get('exit_code')==0:
@@ -58,10 +59,28 @@ print(json.dumps(rows))
             else:
                 rows = json.loads(r.stdout)
                 record['results'] = rows
+                if any('exit' not in row for row in rows):
+                    ids = [str(a.job)] if a.kind == 'baseline-validation' else [f'{a.job}_{seed}' for seed in a.seeds]
+                    query = ' ; '.join('scontrol show job '+shlex.quote(job)+' -o' for job in ids)
+                    scheduler = subprocess.run(['ssh','-o','BatchMode=yes','-o','ConnectTimeout=15',
+                        'gpucluster2',query],capture_output=True,text=True,timeout=90)
+                    states = {}
+                    for line in scheduler.stdout.splitlines():
+                        fields = dict(re.findall(r'(\w+)=([^ ]+)',line))
+                        if 'JobState' in fields:
+                            key = fields.get('ArrayTaskId','0')
+                            states[key] = {k:fields.get(k) for k in ('JobState','ExitCode','Reason')}
+                    record['scheduler'] = states
+                    terminal_states = {'COMPLETED','FAILED','CANCELLED','TIMEOUT','NODE_FAIL','OUT_OF_MEMORY','BOOT_FAIL','DEADLINE','PREEMPTED'}
+                    for seed, row in zip(a.seeds,rows):
+                        state = states.get(str(seed),{})
+                        if 'exit' not in row and state.get('JobState') in terminal_states:
+                            row['exit'] = dict(exit_code=1, inferred_failure=True,
+                                reason='Scheduler terminated without the required exit/verification artifacts',scheduler=state)
                 if all('exit' in row for row in rows):
                     if a.kind == 'baseline-validation':
                         success = all(row['exit']['exit_code'] == 0 and
-                            set(row.get('validation_completed',[])) == {'ohsvgp','osgpr','st_svgp'} for row in rows)
+                            set(row.get('validation_completed',[])) == {'ohsvgp','osgpr','st_svgp','mgpvae'} for row in rows)
                     else:
                         success = all(row['exit']['exit_code'] == 0 and row.get('sha256',{}).keys() >= {'result.json','predictions.npz'} and
                             any(x.get('terminal.json',{}).get('status') == 'completed_and_verified' for x in row['attempts']) for row in rows)

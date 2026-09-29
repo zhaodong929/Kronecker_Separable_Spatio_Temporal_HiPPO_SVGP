@@ -50,6 +50,8 @@ def main():
     if min(a.iterations, a.check_every, a.training_samples, a.prediction_samples) < 1 or a.latent < 2:
         p.error('Positive budgets and at least two latent dimensions required by upstream shapes')
     a.output_dir.mkdir(parents=True, exist_ok=True)
+    (a.output_dir/'run-config.json').write_text(json.dumps(
+        {key: str(value) if isinstance(value, Path) else value for key, value in vars(a).items()}, indent=2))
     protocol = load_protocol(a.protocol_npz, a.protocol_json, protocol_kind=a.protocol_kind)
     mean_function = get_mean(protocol)
     initial = protocol.task1()
@@ -80,14 +82,20 @@ def main():
         lm, lv = jnp.reshape(lm, shape), jnp.reshape(lv, shape)
         if not np.isfinite(lv).all() or np.any(np.asarray(lv) <= 0):
             raise FloatingPointError('Nonpositive validation latent variance')
+        validation_samples = max(512, a.prediction_samples)
         z = lm[None] + jnp.sqrt(lv)[None]*jax.random.normal(jax.random.PRNGKey(a.seed+100000),
-            (a.prediction_samples, *shape))
+            (validation_samples, *shape))
         components = np.asarray(model.likelihood.decoder(z)[..., 0]).transpose(0, 2, 1)
         offsets = np.stack([mean_function.at(time_value, protocol.validation_locations) for time_value in times])
         components = components + offsets[None]
         truth = protocol.calibration_targets(protocol.validation_locations)
-        return gaussian_mixture_metrics(truth.ravel(), components.reshape(a.prediction_samples, -1),
-            float(model.likelihood.variance))
+        components = components.reshape(validation_samples, -1)
+        metrics = gaussian_mixture_metrics(truth.ravel(), components, float(model.likelihood.variance))
+        metrics['monte_carlo_samples'] = validation_samples
+        metrics['monte_carlo_checks'] = {str(n): gaussian_mixture_metrics(truth.ravel(),
+            components[:n], float(model.likelihood.variance)) for n in sorted({128,256,a.prediction_samples})
+            if n < validation_samples}
+        return metrics
 
     def fit(model, locations, iterations, phase, tune):
         training = jnp.asarray(residuals(locations).T[..., None])
@@ -109,7 +117,11 @@ def main():
                 raise FloatingPointError('Nonfinite MGPVAE objective')
             row = dict(phase=phase, step=i, negative_elbo=float(values[0]),
                 negative_expected_log_likelihood=float(values[1]), kl=float(values[2]),
-                seconds=time.perf_counter()-started)
+                seconds=time.perf_counter()-started,
+                kernel_lengthscale_time=np.asarray(model.kernel.lengthscale_time).tolist(),
+                kernel_variance_time=np.asarray(model.kernel.variance_time).tolist(),
+                kernel_lengthscale_space=np.asarray(model.kernel.lengthscale).tolist(),
+                decoder_noise_variance=float(model.likelihood.variance))
             emit(phase, i, row)
             if i % a.check_every == 0 or i == iterations:
                 if tune:

@@ -21,7 +21,7 @@ cd "$CODE"
 trap 'code=$?; printf "{\"exit_code\":%s,\"stage\":\"validation\",\"main_table_admitted\":false}\n" "$code" > "$O/exit.json"' EXIT
 sha256sum --quiet -c "$C/releases/$RELEASE/source.sha256"
 OVERALL=0
-for METHOD in ohsvgp osgpr st_svgp; do
+for METHOD in ohsvgp osgpr st_svgp mgpvae; do
     if "$C/env-tracking/bin/python" scripts/run_baseline_validation_campaign.py \
         --method "$METHOD" --output "$O/$METHOD" --release "$RELEASE" --compute-root "$C"; then
         printf '{"exit_code":0}\n' > "$O/$METHOD/exit.json"
