@@ -26,6 +26,10 @@ def main():
     name = 'hippo-val-'+a.release[:8]
     c = '/vol/bitbucket/nk523/hipposvgp-fair-20260929'
     job = None
+    def record_failure(record):
+        (a.output/'terminal.json').write_text(json.dumps(record, indent=2))
+        with a.vault_note.open('a') as note:
+            note.write(f'\n## 自動投入の未完了 {record["time"]}\n\n{record["status"]}。記録: `{a.output}/terminal.json`。投入完了とは扱わない。\n')
     for _ in range(144):
         record = dict(time=datetime.datetime.now(datetime.timezone.utc).isoformat())
         try:
@@ -60,9 +64,9 @@ def main():
                 else:
                     record['status'] = 'submission_failed_requires_review'
                     record['error'] = r.stderr[-2500:]
-                    (a.output/'terminal.json').write_text(json.dumps(record, indent=2))
+                    record_failure(record)
                     return 1
-        except (OSError, subprocess.TimeoutExpired) as error:
+        except (OSError, subprocess.TimeoutExpired, RuntimeError) as error:
             record['error'] = str(error)
         if job is not None:
             record.update(status='submitted', job=job, source_commit=a.release)
@@ -72,12 +76,14 @@ def main():
         if job is not None:
             (a.output/'submission.json').write_text(json.dumps(record, indent=2))
             with a.vault_note.open('a') as note:
-                note.write(f'\n## ベースラインvalidation自動投入 {record["time"]}\n\nDoC job **{job}**、release `{a.release}`。OHSVGP/OSGPR/ST-SVGPのTask-1 capacity/budget validation。最終比較65本には数えない。\n')
+                note.write(f'\n## ベースラインvalidation自動投入 {record["time"]}\n\nDoC job **{job}**、release `{a.release}`。OHSVGP/OSGPR/ST-SVGP/MGPVAEのTask-1 capacity/budget validation。最終比較65本には数えない。\n')
             return subprocess.call([sys.executable, str(Path(__file__).with_name('watch_doc_tracked_job.py')),
                 '--job', str(job), '--result-template', c+f'/results/fair-three-domain-wandb-20260929/baseline-validation/job-{job}',
                 '--seeds', '0', '--output', str(a.output/'monitor'), '--vault-note', str(a.vault_note),
                 '--kind', 'baseline-validation', '--max-polls', '145'])
         time.sleep(600)
+    record['status'] = 'submission_timeout_unverified'
+    record_failure(record)
     return 1
 
 
