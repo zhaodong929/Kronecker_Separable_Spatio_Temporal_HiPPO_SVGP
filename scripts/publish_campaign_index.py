@@ -19,7 +19,9 @@ def main():
         run.log({'campaign/submission_ledger':wandb.Table(columns=list(keys),data=[[r[k] for k in keys] for r in rows])})
         run.summary.update(dict(planned_comparisons=65,
             submitted_comparisons=sum(r['job_id'] is not None for r in rows),
-            unsubmitted_comparisons=sum(r['job_id'] is None for r in rows),as_of=data['as_of'],
+            unsubmitted_comparisons=sum(r['job_id'] is None for r in rows),
+            verified_completed_comparisons=sum(r['submission_status']=='completed_and_verified' for r in rows),
+            as_of=data['as_of'],
             status_scope='Submission snapshot; use individual runs for live execution status',
             ablations=False,compute='DoC only; at most three allocated GPUs'))
         artifact=wandb.Artifact('comparison-submission-ledger',type='campaign-manifest')

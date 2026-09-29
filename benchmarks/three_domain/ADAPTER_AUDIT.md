@@ -204,3 +204,17 @@ its own validation. Online blocks remain one real time step. PEMS jobs request
 24h (the A30 partition allows 72h) and lower scheduling priority. Dispatch waits
 until both shorter COVID baseline arrays have actual submission receipts so
 long PEMS jobs cannot fill the submission quota ahead of them.
+
+## Common post-run evaluation
+
+`evaluate_three_domain_run.py` independently matches truth, site order and
+original timestamps to the complete source protocol before scoring. Gaussian
+CRPS and central coverage are analytic; all methods use ten coverage levels
+0.05, 0.15, ..., 0.95. For MGPVAE it pools the saved actual decoder-mixture
+scores and coverage, never computes a Gaussian density from moment variances.
+Scores are restored from per-split standardized units: RMSE/CRPS multiply by
+target scale, NLPD adds log(scale), coverage is invariant. This prevents split
+normalization differences from distorting cross-split summaries. Independent
+Gaussian/one-component-mixture and affine-restoration tests pass. Source and
+prediction hashes and evaluator hashes are saved; successful scoring does not
+approve the implementation or manuscript claim.
