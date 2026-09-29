@@ -88,7 +88,7 @@ def adapt_model(model, *, steps: int, learning_rate: float) -> int:
     global _OPTIMIZER_STEP
     if steps <= 0:
         return 0
-    optimizer = tf.optimizers.Adam(float(learning_rate))
+    optimizer = tf.optimizers.Adam(float(learning_rate), jit_compile=False)
     completed = 0
     for _ in range(int(steps)):
         with tf.GradientTape() as tape:

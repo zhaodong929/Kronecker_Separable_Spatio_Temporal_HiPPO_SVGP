@@ -19,6 +19,7 @@ def main():
     p.add_argument('--vault-note', type=Path, required=True)
     p.add_argument('--max-polls', type=int, default=73)
     p.add_argument('--kind', choices=['final', 'baseline-validation'], default='final')
+    p.add_argument('--methods', nargs='+', default=['ohsvgp','osgpr','st_svgp','mgpvae'])
     a = p.parse_args()
     a.output.mkdir(parents=True, exist_ok=True)
     script = '''import pathlib,json,hashlib
@@ -80,7 +81,7 @@ print(json.dumps(rows))
                 if all('exit' in row for row in rows):
                     if a.kind == 'baseline-validation':
                         success = all(row['exit']['exit_code'] == 0 and
-                            set(row.get('validation_completed',[])) == {'ohsvgp','osgpr','st_svgp','mgpvae'} for row in rows)
+                            set(row.get('validation_completed',[])) >= set(a.methods) for row in rows)
                     else:
                         success = all(row['exit']['exit_code'] == 0 and row.get('sha256',{}).keys() >= {'result.json','predictions.npz'} and
                             any(x.get('terminal.json',{}).get('status') == 'completed_and_verified' for x in row['attempts']) for row in rows)

@@ -4,6 +4,8 @@ import pytest
 
 
 def test_spatial_pushforward_matches_independent_dense_product():
+    import jax
+    jax.config.update('jax_enable_x64', True)
     from baselines.mgpvae.spatial_moments import mix_spatial_moments
     mixing = np.array([[1., 0.], [.8, .6]])
     mean = np.array([[[[1.], [2.]]]])
