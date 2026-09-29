@@ -98,10 +98,10 @@ def main():
         components = components + offsets[None]
         truth = protocol.calibration_targets(protocol.validation_locations)
         components = components.reshape(validation_samples, -1)
-        metrics = gaussian_mixture_metrics(truth.ravel(), components, float(model.likelihood.variance))
+        metrics = gaussian_mixture_metrics(truth.ravel(), components, float(model.likelihood.variance), compute_crps=False)
         metrics['monte_carlo_samples'] = validation_samples
         metrics['monte_carlo_checks'] = {str(n): gaussian_mixture_metrics(truth.ravel(),
-            components[:n], float(model.likelihood.variance)) for n in sorted({128,256,a.prediction_samples})
+            components[:n], float(model.likelihood.variance), compute_crps=False) for n in sorted({128,256,a.prediction_samples})
             if n < validation_samples}
         return metrics
 

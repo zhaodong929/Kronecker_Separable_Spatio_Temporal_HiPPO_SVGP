@@ -27,3 +27,11 @@ def test_mixture_calibration_uses_mixture_cdf_not_moment_match():
     assert mixture['ece'] == pytest.approx(.9)
     with pytest.raises(ValueError):
         gaussian_mixture_calibration([], np.empty((1,0)), 1.)
+
+
+def test_nlpd_only_selection_matches_full_score_without_quadratic_crps():
+    rng=np.random.default_rng(17)
+    y=rng.normal(size=7);mu=rng.normal(size=(13,7))
+    full=gaussian_mixture_metrics(y,mu,.7)
+    selection=gaussian_mixture_metrics(y,mu,.7,compute_crps=False)
+    assert selection == {key:full[key] for key in ['rmse','nlpd']}

@@ -171,3 +171,11 @@ claim that PEMS GPU qualification or convergence has already succeeded.
 Continuation writes atomic state/prediction checkpoints every 500 steps,
 including the state before the preceding update needed for delayed labels.
 Automatic resume from those checkpoints is not yet implemented.
+
+MGPVAE's repeated checkpoint selection now computes only the RMSE/NLPD used
+for model choice and Monte Carlo sensitivity. It avoids the quadratic-in-sample
+CRPS calculation at every validation checkpoint; the selection NLPD is exactly
+unchanged (tested). Final evaluation still computes full mixture CRPS and CDF
+coverage. The PEMS pipeline first exercises the entire 2016-step initial window,
+refit, and three legal online updates on its allocated GPU before candidate
+training. GPU memory/runtime feasibility is an empirical gate, not assumed.
