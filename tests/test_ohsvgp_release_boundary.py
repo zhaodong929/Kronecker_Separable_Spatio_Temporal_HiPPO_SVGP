@@ -32,6 +32,8 @@ def test_ohsvgp_current_hidden_is_used_only_after_its_release(tmp_path):
                        env={**os.environ,'OMP_NUM_THREADS':'2','OPENBLAS_NUM_THREADS':'2'})
         result = json.loads((path/'run/result.json').read_text())
         assert result['num_initial_observed_space'] == 52
+        expected_beta=data['calibration_y'][:,:38].sum()/(52*38+1e-3)
+        np.testing.assert_allclose(result['calibration_beta'],[expected_beta],rtol=1e-12)
         assert result['delayed_observation_rows'] == 20
         with np.load(path/'run/predictions.npz') as a:
             return a['pred_mean'].copy(),a['pred_var'].copy()

@@ -258,7 +258,10 @@ class COVIDSettingBProtocol:
             if development
             else "Task-1 visible locations only"
         )
-        if fit_scope != expected_scope and not (not development and fit_scope == "Task-1 calibration-fit locations only"):
+        if fit_scope != expected_scope and not (
+            (not development and fit_scope == "Task-1 calibration-fit locations only")
+            or (development and fit_scope == "development training prefix calibration-fit locations only")
+        ):
             raise ValueError(f"Protocol normalisation must be fit on {expected_scope}")
 
 

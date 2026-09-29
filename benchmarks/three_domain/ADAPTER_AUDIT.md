@@ -123,3 +123,22 @@ end-to-end comparison of the stated models/adaptations; accuracy differences
 cannot be attributed solely to the GP inference algorithm or solver. This
 limitation must appear in the manuscript. No additional ablation is scheduled
 and no running configuration is silently changed to remove the distinction.
+
+
+## OHSVGP final qualification pipeline
+
+The external adapters retain the same ridge mean fitted on Task-1 fit sites;
+OHSVGP no longer refits that mean on all initial sites while the other external
+methods freeze it. All legally initial sites still enter its GP residual refit.
+The first optimization iteration is included in validation checkpoints.
+
+Each COVID split selects M=32/64 using its own spatial validation, checking
+500 iterations and extending to 1000 when the best checkpoint is at the endpoint.
+A separate chronological 40/12 split of the formal initial 52 weeks selects
+online steps from 1/5/20, extending to 80 if 20 is best. Material improvement
+at that final endpoint raises a qualification failure requiring review.
+This internal fold rebuilds normalization and lag features from its training
+prefix and never reads the formal 143-week stream. Tests independently perturb
+the complete formal stream and future internal labels to check this boundary.
+The formal test remains separate; none of these gates establish main-table
+admission. GPU tests run again before candidate training and final execution.

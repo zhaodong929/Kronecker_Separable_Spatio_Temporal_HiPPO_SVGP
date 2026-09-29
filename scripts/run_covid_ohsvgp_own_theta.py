@@ -393,7 +393,7 @@ def main() -> None:
         losses_in_check.append(float(loss.detach()))
         emit("train", iteration, {"negative_elbo": float(loss.detach()), **kernel_summary(calibration_model, args.kernel, mixture)})
         completed_iterations = iteration
-        if iteration % args.task1_check_interval == 0 or iteration == args.calibration_iterations:
+        if iteration == 1 or iteration % args.task1_check_interval == 0 or iteration == args.calibration_iterations:
             row: dict[str, object] = {
                 "iteration": iteration,
                 "chunk_elbo_median": float(-np.median(losses_in_check)),
@@ -447,7 +447,9 @@ def main() -> None:
         return
     # COVID Task 1 exposes all jurisdictions, including future hidden sites.
     initial_indices = protocol.task1().locations
-    full_calibration_mean, full_beta = ridge_mean(calibration_phi, calibration_y, initial_indices)
+    # Keep the same fit-site Task-1 mean used by OSGPR/ST-SVGP/MGPVAE.
+    # All legal initial sites still enter the GP residual refit below.
+    full_calibration_mean, full_beta = fit_mean, fit_beta
     stream_mean = np.einsum("tsp,p->ts", stream_phi, full_beta)
     x_calibration, y_calibration = sorted_xy(
         flatten_inputs(calibration_times, coordinates, initial_indices, slice(None)),
@@ -578,7 +580,8 @@ def main() -> None:
         "kernel_strategy": "own Task-1 hyperparameter learning; frozen before strict online updates",
         "capacity": {"hippo_inducing_size": args.inducing_size, "rff_sample_size": args.rff_sample_size, "spatial_inducing_size": None},
         "capacity_note": "Official multidimensional OHSVGP has one M-dimensional HiPPO state, not Route B's separate Mt and Ms Kronecker state.",
-        "target_mode": "two-stage causal X-lag ridge residual; fixed mean after Task-1 refit",
+        "target_mode": "shared calibration-fit-site ridge mean; all legal initial sites refit GP residual",
+        "mean_fit_indices": fit_indices.tolist(),
         "delayed_observations": bool(args.delayed_observations),
         "delayed_observation_rows": delayed_rows,
         "split_seed": args.seed,
