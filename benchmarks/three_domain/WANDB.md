@@ -1,6 +1,6 @@
 # Reproducible comparison tracking
 
-Project: https://wandb.ai/nkiyohara_personal/hipposvgp-fair-comparison
+Project: https://wandb.ai/harrisonzhu/KronHiPPO-STGP
 
 `run_tracked_experiment.py` is a framework-independent supervisor. A separate
 DoC `env-tracking` pins wandb 0.25.1, leaving official model environments intact.

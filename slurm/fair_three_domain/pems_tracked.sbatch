@@ -30,7 +30,7 @@ qualification=dict(status='passed',method='kronhippo_svgp',dataset='pems_bay',
  source_commit=release,tests='tests.txt', numerical_scope='multi-geometry adaptation; not single-Sylvester complexity',
  main_table_admitted=False)
 (o/'qualification.json').write_text(json.dumps(qualification,indent=2))
-spec=dict(entity=entity,project='hipposvgp-fair-comparison',campaign=campaign,
+spec=dict(entity=entity,project='KronHiPPO-STGP',campaign=campaign,
  dataset='pems_bay',method='kronhippo_svgp',split_seed=seed,training_seed=seed,stage='final',
  source_commit=release,worker_python=c+'/env-routeb/bin/python',
  qualification_record=str(o/'qualification.json'),expected_steps=50100,expected_sites=65,
