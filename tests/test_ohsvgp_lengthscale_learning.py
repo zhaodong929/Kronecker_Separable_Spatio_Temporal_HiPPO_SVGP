@@ -55,3 +55,27 @@ def test_official_rff_lengthscale_gradient_matches_finite_difference():
             model.kernel.log_ls[j] += eps
             expected.append((plus-minus)/(2*eps))
     np.testing.assert_allclose(gradient,expected,rtol=2e-3,atol=1e-4)
+
+
+@pytest.mark.parametrize('variance', [.5, 1., 2.])
+def test_frozen_old_covariance_is_unchanged_by_amplitude(variance):
+    from scripts.run_covid_ohsvgp_own_theta import make_model, export_state
+    from scripts.run_traffic_ohsvgp import LazyHiPPOLegS
+    from hipposvgp.multidim import SE_kernel
+    from hipposvgp.likelihood import GaussianLikelihood
+    torch.manual_seed(14)
+    x = np.random.default_rng(17).normal(size=(8,3))
+    kernel = SE_kernel(3).to(dtype=torch.float64)
+    with torch.no_grad():
+        kernel.log_sf.fill_(np.log(variance))
+    common = dict(kernel=kernel, likelihood=GaussianLikelihood(.2), rff_sample_size=16,
+        hippo=LazyHiPPOLegS(4,torch.device('cpu'),torch.float64), inducing_size=4,
+        device=torch.device('cpu'),dtype=torch.float64)
+    first = make_model(**common,z_interpolate=x,previous_steps=0,old_state=None)
+    w = first.kernel.sample_from_spectral(16).detach()
+    state = export_state(first,w)
+    second = make_model(**common,z_interpolate=x,previous_steps=8,old_state=state)
+    covariance = second.KuuKfuKff_rff_se(w,torch.tensor(x))[5]
+    torch.testing.assert_close(covariance*torch.exp(second.kernel.log_sf),state['Kaa'])
+    objective = second.ELBO(torch.tensor(x),torch.zeros((8,1)),w)[0]
+    assert torch.isfinite(objective)

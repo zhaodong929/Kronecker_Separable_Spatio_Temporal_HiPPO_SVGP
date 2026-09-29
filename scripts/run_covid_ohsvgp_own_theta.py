@@ -40,6 +40,20 @@ from stvgp_kronecker.benchmark_runtime import host_snapshot, resolve_torch_runti
 from stvgp_kronecker.temporal_kernel_config import load_spectral_mixture_config  # noqa: E402
 
 
+class FrozenKernelHIPPOOSVGP(HIPPOOSVGP):
+    """Correct upstream's log-amplitude divisor in the frozen-kernel branch.
+
+    ELBO multiplies the returned old/new covariance by exp(log_sf). Hence the
+    unscaled old covariance must be Kaa_old / exp(log_sf), not / log_sf.
+    The official source is kept unchanged; this numerical fix is explicit.
+    """
+    def KuuKfuKff_rff_se(self, w, X):
+        values = list(super().KuuKfuKff_rff_se(w, X))
+        if not self.flag_update_kernel and self.Z_old is not None:
+            values[-1] = self.Kaa_old / torch.exp(self.kernel.log_sf)
+        return tuple(values)
+
+
 class TemporalQ2SpectralMixtureKernel(nn.Module):
     """OHSVGP-compatible RFF kernel: Q=2 in time and RBF in space.
 
@@ -162,7 +176,7 @@ def make_model(
             "Kaa_old": old_state["Kaa"],
             "Z_old": old_state["Z"],
         }
-    model = HIPPOOSVGP(
+    model = FrozenKernelHIPPOOSVGP(
         kernel=deepcopy(kernel),
         likelihood=deepcopy(likelihood),
         Z_interpolate=torch.as_tensor(z_interpolate, dtype=dtype, device=device),
@@ -193,6 +207,12 @@ def export_state(model: HIPPOOSVGP, frequencies: torch.Tensor) -> dict[str, torc
 
 
 def predict(model: HIPPOOSVGP, frequencies: torch.Tensor, x: np.ndarray, *, device: torch.device, dtype: torch.dtype) -> tuple[np.ndarray, np.ndarray]:
+    # The official diagonal-prediction API still materializes an N x N Kff.
+    # Independent query chunks preserve its predictions and bound that memory.
+    if len(x) > 512:
+        chunks = [predict(model, frequencies, x[i:i+512], device=device, dtype=dtype)
+                  for i in range(0, len(x), 512)]
+        return tuple(np.concatenate([c[j] for c in chunks]) for j in (0, 1))
     with torch.no_grad():
         x_tensor = torch.as_tensor(x, dtype=dtype, device=device)
         mean, latent_variance = model.pred_f(x_tensor, frequencies, full_cov=False)
@@ -295,6 +315,13 @@ def main() -> None:
     stream_phi = np.asarray(arrays["stream_phi"], dtype=np.float64)
     calibration_times = np.asarray(arrays["calibration_times"], dtype=np.float64)
     stream_times = np.asarray(arrays["stream_times"], dtype=np.float64)
+    # Input reparameterization only; fit the time scale on Task 1, never stream.
+    time_origin = float(calibration_times[0])
+    time_scale = float(calibration_times[-1]-calibration_times[0])
+    if time_scale <= 0:
+        raise ValueError("Task-1 time span must be positive")
+    calibration_times = (calibration_times-time_origin)/time_scale
+    stream_times = (stream_times-time_origin)/time_scale
     coordinates = np.asarray(arrays["coordinates"], dtype=np.float64)
     fit_indices = np.asarray(arrays["fit_indices"], dtype=int)
     validation_indices = np.asarray(arrays["validation_indices"], dtype=int)
@@ -344,20 +371,19 @@ def main() -> None:
     convergence_status = "max_budget_not_converged"
     losses_in_check: list[float] = []
     for iteration in range(1, args.calibration_iterations + 1):
-        batch_index = (iteration - 1) % num_batches
-        start = batch_index * args.calibration_batch_size
-        stop = min(x_fit.shape[0], start + args.calibration_batch_size)
-        x_batch = torch.as_tensor(x_fit[start:stop], dtype=runtime.dtype, device=runtime.device)
-        y_batch = torch.as_tensor(y_fit[start:stop], dtype=runtime.dtype, device=runtime.device)
+        batch_indices = np.random.choice(len(x_fit), min(len(x_fit), args.calibration_batch_size), replace=False)
+        x_batch = torch.as_tensor(x_fit[batch_indices], dtype=runtime.dtype, device=runtime.device)
+        y_batch = torch.as_tensor(y_fit[batch_indices], dtype=runtime.dtype, device=runtime.device)
         optimizer.zero_grad(set_to_none=True)
         elbo, _, _ = calibration_model.ELBO(
             x_batch,
             y_batch,
             spectral_base / torch.exp(calibration_model.kernel.log_ls)[None, :],
+            beta=len(batch_indices)/len(x_fit),
             recompute_k=True,
             cache_k=False,
         )
-        loss = -elbo
+        loss = -elbo * (len(x_fit)/len(batch_indices))
         if not torch.isfinite(loss):
             raise FloatingPointError(f"Non-finite Task-1 OHSVGP loss at iteration {iteration}")
         loss.backward()
@@ -452,14 +478,13 @@ def main() -> None:
     fixed_frequencies = (spectral_base / torch.exp(refit_model.kernel.log_ls)[None, :]).detach()
     refit_optimizer = torch.optim.Adam([refit_model.mv, refit_model.Lv], lr=args.learning_rate)
     for iteration in range(best_validation_iteration):
-        batch_index = iteration % int(math.ceil(x_calibration.shape[0] / args.calibration_batch_size))
-        start = batch_index * args.calibration_batch_size
-        stop = min(x_calibration.shape[0], start + args.calibration_batch_size)
-        x_batch = torch.as_tensor(x_calibration[start:stop], dtype=runtime.dtype, device=runtime.device)
-        y_batch = torch.as_tensor(y_calibration[start:stop], dtype=runtime.dtype, device=runtime.device)
+        batch_indices = np.random.choice(len(x_calibration), min(len(x_calibration), args.calibration_batch_size), replace=False)
+        x_batch = torch.as_tensor(x_calibration[batch_indices], dtype=runtime.dtype, device=runtime.device)
+        y_batch = torch.as_tensor(y_calibration[batch_indices], dtype=runtime.dtype, device=runtime.device)
         refit_optimizer.zero_grad(set_to_none=True)
-        elbo, _, _ = refit_model.ELBO(x_batch, y_batch, fixed_frequencies, recompute_k=True, cache_k=False)
-        loss = -elbo
+        elbo, _, _ = refit_model.ELBO(x_batch, y_batch, fixed_frequencies,
+            beta=len(batch_indices)/len(x_calibration), recompute_k=True, cache_k=False)
+        loss = -elbo * (len(x_calibration)/len(batch_indices))
         if not torch.isfinite(loss):
             raise FloatingPointError(f"Non-finite Task-1 refit loss at iteration {iteration + 1}")
         loss.backward()
@@ -542,11 +567,14 @@ def main() -> None:
     payload = {
         "status": "complete" if requested == len(blocks) else "pilot_complete",
         "main_table_admitted": False,
+        "adapter_corrections": ["frozen covariance divided by amplitude, not log amplitude",
+            "unbiased Task-1 minibatch likelihood scaling", "bounded exact query chunking"],
         "num_completed_blocks": requested,
         "implementation": "official OHSVGP core adapted to multidimensional COVID Setting B",
         "source_repository": "https://github.com/harrisonzhu508/HIPPOSVGP",
         "source_commit": "a1bff1b",
         "kernel": args.kernel,
+        "time_transform": {"origin": time_origin, "scale": time_scale, "fit_scope": "Task 1 times"},
         "kernel_strategy": "own Task-1 hyperparameter learning; frozen before strict online updates",
         "capacity": {"hippo_inducing_size": args.inducing_size, "rff_sample_size": args.rff_sample_size, "spatial_inducing_size": None},
         "capacity_note": "Official multidimensional OHSVGP has one M-dimensional HiPPO state, not Route B's separate Mt and Ms Kronecker state.",
