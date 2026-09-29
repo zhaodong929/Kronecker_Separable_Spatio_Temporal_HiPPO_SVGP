@@ -152,3 +152,10 @@ fold; an improving endpoint also blocks final evaluation. These thresholds
 are declared before viewing the final stream, and are validation-budget gates,
 not a proof of global optimization convergence. Previous 25/5 settings are
 not automatically treated as sufficient.
+
+For long MGPVAE streams, cache the official stationary spatial projection for
+one query grid while parameters remain frozen. This avoids repeated inducing
+covariance factorizations without caching the evolving posterior prediction.
+Tests compare the cached prediction after a later state update to a fresh
+official spatial conditional, in addition to the official-prefix checks.
+Already submitted COVID jobs retain their immutable earlier release.

@@ -18,6 +18,8 @@ class OfficialVisibleFilter:
         self.mean = jnp.zeros((*self.Pinf.shape[:-1], 1))
         self.covariance = self.Pinf
         self.time = None
+        self._spatial_query = None
+        self._spatial_projection = None
         H = kernel.measurement_model()
 
         def step(mean, covariance, dt, y):
@@ -47,7 +49,15 @@ class OfficialVisibleFilter:
         import jax.numpy as jnp
         if self.time is None:
             raise ValueError('Observe a time slice before prediction')
-        B, C = self.model.kernel.spatial_conditional(jnp.array([self.time]), jnp.asarray(coordinates))
+        coordinates = np.asarray(coordinates, dtype=float)
+        # For this pinned stationary kernel, K_time(t,t) does not depend on t.
+        # Parameters remain frozen throughout the causal adapter lifetime.
+        # Keep one query only, so arbitrary query requests cannot grow memory.
+        if (self._spatial_query is None or not np.array_equal(coordinates,self._spatial_query)):
+            self._spatial_projection = self.model.kernel.spatial_conditional(
+                jnp.array([self.time]), jnp.asarray(coordinates))
+            self._spatial_query = coordinates.copy()
+        B, C = self._spatial_projection
         mean = jnp.einsum('rs,ls->rl', B, self.mean[..., 0, 0])
         variance = jnp.einsum('rs,ls->rl', B**2, self.covariance[..., 0, 0])
         variance = variance + jnp.diagonal(C[0], axis1=-2, axis2=-1).T

@@ -28,6 +28,15 @@ def test_stateful_filter_matches_official_prefix_at_every_time():
         jnp.asarray(times), jnp.asarray(times[-1:]), jnp.asarray(data), jnp.asarray(query))
     np.testing.assert_allclose(actual_mean, expected_mean, rtol=1e-6, atol=1e-7)
     np.testing.assert_allclose(actual_var, expected_var, rtol=1e-6, atol=1e-7)
+    # Cached stationary projection must also agree at a later time after the
+    # latent state has changed; this catches accidentally caching predictions.
+    adapter.observe(6., data[:, -1])
+    later_mean,later_var=adapter.latent_at(query)
+    B,C=model.kernel.spatial_conditional(jnp.array([6.]),jnp.asarray(query))
+    direct_mean=jnp.einsum('rs,ls->rl',B,adapter.mean[...,0,0])
+    direct_var=jnp.einsum('rs,ls->rl',B**2,adapter.covariance[...,0,0])+jnp.diagonal(C[0],axis1=-2,axis2=-1).T
+    np.testing.assert_allclose(later_mean,direct_mean,rtol=1e-12,atol=1e-12)
+    np.testing.assert_allclose(later_var,direct_var,rtol=1e-12,atol=1e-12)
     components, noise = adapter.gaussian_components(np.array([[0.5, 0.5], [0.2, 0.1]]), seed=2)
     assert components.shape == (128, 2)
     assert np.isfinite(components).all() and noise > 0
