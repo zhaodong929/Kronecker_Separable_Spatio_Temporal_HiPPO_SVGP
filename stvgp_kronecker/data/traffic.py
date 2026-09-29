@@ -366,8 +366,13 @@ def load_traffic_dataset(
     dataset: str,
     *,
     task1_steps: int = 2016,
+    scaler_fit_indices: Iterable[int],
 ) -> TrafficDataset:
-    """Load a canonical traffic HDF and align its columns with sensor locations."""
+    """Load traffic and fit scaling only on explicitly available Task-1 sensors.
+
+    Select the spatial split before calling this function. Requiring indices
+    prevents accidentally fitting preprocessing on the held-out targets.
+    """
 
     dataset = str(dataset).lower().replace("-", "_")
     if dataset not in DATASET_SPECS:
@@ -397,7 +402,12 @@ def load_traffic_dataset(
         raise ValueError(f"Coordinates missing for {len(missing_coords)} HDF sensors; first={missing_coords[:3]}")
     coordinates = np.asarray([coordinate_lookup[sensor] for sensor in data_ids], dtype=np.float64)
     values, missing_count = _causal_fill_missing(frame.to_numpy(dtype=np.float64))
-    task1_values = values[:task1_steps]
+    fit = np.asarray(tuple(scaler_fit_indices))
+    if (fit.ndim != 1 or fit.size == 0 or not np.issubdtype(fit.dtype, np.integer)
+            or np.any(fit < 0) or np.any(fit >= values.shape[1])
+            or np.unique(fit).size != fit.size):
+        raise ValueError("scaler_fit_indices must be unique valid integer sensor indices")
+    task1_values = values[:task1_steps, fit]
     target_mean = float(task1_values.mean())
     target_scale = float(max(task1_values.std(), 1e-8))
     values_standardised = (values - target_mean) / target_scale

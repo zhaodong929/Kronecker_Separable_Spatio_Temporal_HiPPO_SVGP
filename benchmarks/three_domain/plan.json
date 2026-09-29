@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "campaign": "fair-three-domain-20260929",
+  "status": "qualification",
+  "ablations": false,
+  "datasets": {
+    "era5": {"seeds": [0,1,2,3,4], "methods": ["osgpr","streaming_sgpr","ohsvgp","kron_stgp","kronhippo_stgp","mgpvae"]},
+    "covid": {"seeds": [5,6,7,8,9], "methods": ["persistence","adaptive_osgpr","st_svgp","lmc_svgp","icm_svgp","fsde_svi","kron_stgp","kronhippo_stgp","mgpvae"]},
+    "pems_bay": {"seeds": [1,2,3], "methods": ["ignnk","ohsvgp","osgpr","kron_stgp","kronhippo_stgp","mgpvae"]}
+  },
+  "execution": {"preferred": "imperial_doc", "max_allocated_gpus": 3, "max_allocated_cpus": 32, "max_allocated_ram_gb": 200, "concurrency_per_gpu": 1},
+  "admission": ["pinned official source", "training-only preprocessing", "no future or current-hidden label access", "paired split/time/target hashes", "validation-only configuration selection", "explicit convergence or budget-limited label", "finite distributions and valid variance", "same observed information boundary", "full required stream completed"],
+  "mgpvae": {"source": "https://github.com/harrisonzhu508/MGPVAE", "commit": "c9a80a05fca66b2911c8e7cb0deccb39d261a5b8", "status": "visible_filter_qualification_only", "main_table_admitted": false, "pending": ["delayed hidden-label assimilation", "common mean/covariate adaptation", "training and predictive distribution qualification", "validation tuning"]}
+}

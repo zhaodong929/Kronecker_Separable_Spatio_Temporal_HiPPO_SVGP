@@ -19,7 +19,7 @@ if str(ROOT) not in sys.path:
 from scripts.compute_covid_long_target_likelihood_crps import normal_crps
 from scripts.compute_covid_long_target_likelihood_ece import (
     ECE_COVERAGE_LEVELS,
-    empirical_normal_intervals,
+    exact_normal_intervals,
     interval_calibration,
 )
 
@@ -39,7 +39,8 @@ def gaussian_metrics_on_common_scale(
     truth = np.asarray(arrays["y_true"], dtype=np.float64) * scale + offset
     mean = np.asarray(arrays["pred_mean"], dtype=np.float64) * scale + offset
     variance = np.asarray(arrays["pred_var"], dtype=np.float64) * scale**2
-    lower, upper = empirical_normal_intervals(mean, variance, samples=100, seed=ece_seed)
+    # ece_seed remains accepted for historical callers; Gaussian quantiles are exact.
+    lower, upper = exact_normal_intervals(mean, variance)
     ece, _, _ = interval_calibration(truth, lower, upper, ECE_COVERAGE_LEVELS)
     error = truth - mean
     return {
@@ -84,7 +85,7 @@ def write_latex(rows: list[dict[str, object]], path: Path) -> None:
             "\\bottomrule",
             "\\end{tabular}",
             "% All entries use the Gaussian predictive family on restored log1p admissions per 100,000.",
-            "% Mean +/- sample SD over the formal spatial splits. ECE uses K=10 and S=100.",
+            "% Mean +/- sample SD over formal spatial splits. Gaussian ECE uses K=10 exact central intervals.",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")

@@ -24,6 +24,22 @@ def sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
+def exact_normal_intervals(
+    mean: np.ndarray, variance: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Central Gaussian intervals without Monte Carlo evaluation noise."""
+    from scipy.special import ndtri
+
+    mean = np.asarray(mean, dtype=np.float64)
+    variance = np.asarray(variance, dtype=np.float64)
+    if (mean.shape != variance.shape or not np.isfinite(mean).all()
+            or not np.isfinite(variance).all() or np.any(variance <= 0)):
+        raise ValueError("Gaussian means/variances must match, be finite, and have positive variance")
+    z = ndtri((1.0 + ECE_COVERAGE_LEVELS) / 2.0)
+    delta = z.reshape((-1,) + (1,) * mean.ndim) * np.sqrt(variance)[None]
+    return mean[None] - delta, mean[None] + delta
+
+
 def empirical_normal_intervals(
     mean: np.ndarray,
     variance: np.ndarray,

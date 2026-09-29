@@ -55,10 +55,15 @@ def main() -> None:
     )
     parser.add_argument("--xlag-length", type=int, default=10)
     parser.add_argument("--graph-diffusion", type=float, default=7.448975327393576)
+    parser.add_argument("--include-features", action="store_true",
+                        help="Include the same causal features for joint-mean Route B runs")
     args = parser.parse_args()
 
-    dataset = load_traffic_dataset(args.data_root, "pems_bay", task1_steps=args.task1_steps)
     split = load_spatial_split(args.split_manifest)
+    dataset = load_traffic_dataset(
+        args.data_root, "pems_bay", task1_steps=args.task1_steps,
+        scaler_fit_indices=split.visible_calibration_indices,
+    )
     if split.dataset != dataset.name or split.seed not in (1, 2, 3):
         raise ValueError("Only locked PEMS-BAY seeds 1, 2 and 3 may be exported")
     visible = np.asarray(split.visible_indices, dtype=np.int64)
@@ -97,6 +102,9 @@ def main() -> None:
         "block_stop": np.arange(1, stream.shape[0] + 1, dtype=np.int64),
         "task1_mean_beta": np.asarray(beta, dtype=np.float64),
     }
+    if args.include_features:
+        payload["calibration_phi"] = dataset.phi[:args.task1_steps].astype(np.float32)
+        payload["stream_phi"] = dataset.phi[args.task1_steps:].astype(np.float32)
     for count in sorted(set(int(value) for value in args.spatial_inducing)):
         if not 1 <= count <= visible.size:
             raise ValueError("Spatial inducing count must not exceed visible sensor count")
@@ -123,11 +131,13 @@ def main() -> None:
         "visible_calibration_sensors": int(fit.size),
         "visible_validation_sensors": int(validation.size),
         "delayed_target_steps": 1,
-        "target_scale": "Task-1-prefix standardised speed",
+        "target_scale": "Task-1 visible-calibration standardised speed",
         "target_standardisation": {
             "mean": float(dataset.target_mean),
             "scale": float(dataset.target_scale),
             "fit_prefix": "Task-1 only",
+            "fit_indices": fit.tolist(),
+            "fit_locations": "visible_calibration_only",
         },
         "task1_mean": "locked Road-context L10 ridge; fit on visible-calibration sensors only",
         "task1_mean_metadata": mean_metadata,
