@@ -46,6 +46,7 @@ def main():
     p.add_argument('--training-samples', type=int, default=4)
     p.add_argument('--prediction-samples', type=int, default=128)
     p.add_argument('--max-blocks', type=int, default=0)
+    p.add_argument('--metric-backend', choices=['numpy','jax'], default='numpy')
     p.add_argument('--validation-only', action='store_true')
     p.add_argument('--selection-json', type=Path)
     a = p.parse_args()
@@ -206,11 +207,16 @@ def main():
         online_seconds += seconds
         # Test truth enters scores only after the prediction is fixed.
         truth = truth_for_scoring[step]
-        score = gaussian_mixture_metrics(truth, components, noise)
-        calibration_score = gaussian_mixture_calibration(truth, components, noise)
-        coverage90 = gaussian_mixture_calibration(truth, components, noise, [.9])['coverage'][0]
-        row = dict(step=step+1, update_and_prediction_seconds=seconds, coverage90=coverage90,
-            **score, **calibration_score)
+        scoring_started=time.perf_counter()
+        if a.metric_backend=='jax':
+            from baselines.mgpvae.gpu_metrics import gaussian_mixture_scores
+            score=gaussian_mixture_scores(truth,components,noise)
+        else:
+            score={**gaussian_mixture_metrics(truth, components, noise),
+                **gaussian_mixture_calibration(truth, components, noise),
+                'coverage90':gaussian_mixture_calibration(truth, components, noise, [.9])['coverage'][0]}
+        row = dict(step=step+1, update_and_prediction_seconds=seconds,
+            scoring_seconds=time.perf_counter()-scoring_started,metric_backend=a.metric_backend,**score)
         emit('online', step+1, row)
         rows.append(row)
         latent_means.append(lm); latent_vars.append(lv); seeds.append(seed)

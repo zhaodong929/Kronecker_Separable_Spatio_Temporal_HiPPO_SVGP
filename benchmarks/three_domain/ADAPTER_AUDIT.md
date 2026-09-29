@@ -239,3 +239,13 @@ the tests were made device-selectable and their Slurm launchers now explicitly
 set `HIPPO_TEST_DEVICE=cuda`. Local CPU tests retain the CPU default. The
 qualification record states the actual requested test device. ST-SVGP/MGPVAE
 JAX tests already selected the allocated GPU backend.
+
+PEMS MGPVAE now uses an optional JAX implementation of the same exact
+finite-mixture CRPS/NLPD/PIT formulas, keeping all 512 decoder samples. CPU
+SciPy remains the independent reference. Tests with 1/17/64 components pass;
+a real-sized 512-component/65-query check also agrees to 1e-10 tolerance.
+On the local two-thread CPU qualification, SciPy scored that batch in 5.107s
+and warmed JAX in 0.0775s; this is not an A30 benchmark. GPU checks repeat before
+PEMS execution. Coverage means explicitly reduce in float64 (JAX's boolean
+mean otherwise defaults to float32). Scoring time is logged separately from
+model update/prediction, and the score call synchronizes before the next step.

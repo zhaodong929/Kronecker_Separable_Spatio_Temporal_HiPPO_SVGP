@@ -23,9 +23,11 @@ def main():
     inputs=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')]
     common=['--protocol-npz',inputs[0],'--protocol-json',inputs[1],'--seed',str(a.seed),
         '--official-source',os.environ['MGPVAE_SOURCE'],'--prediction-samples','512',
-        '--protocol-kind','covid' if a.dataset=='covid' else 'traffic']
+        '--protocol-kind','covid' if a.dataset=='covid' else 'traffic',
+        '--metric-backend','numpy' if a.dataset=='covid' else 'jax']
     tests=['tests/test_mgpvae_spatial_moments.py','tests/test_mgpvae_selected.py',
-        'tests/test_mgpvae_partial.py','tests/test_mgpvae_official_filter.py','tests/test_mgpvae_mixture_metrics.py']
+        'tests/test_mgpvae_partial.py','tests/test_mgpvae_official_filter.py','tests/test_mgpvae_mixture_metrics.py',
+        'tests/test_mgpvae_gpu_metrics.py']
     with (a.output/'tests.txt').open('w') as log:
         subprocess.run([worker,'-m','pytest','-q',*tests],stdout=log,stderr=subprocess.STDOUT,check=True)
     subprocess.run([worker,'-c',"import jax; assert jax.default_backend() == 'gpu'"],check=True)
@@ -34,7 +36,7 @@ def main():
         spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',
             dataset=a.dataset,method='mgpvae',split_seed=a.seed,training_seed=a.seed,stage=stage,
             worker_python=worker,source_commit=a.release,input_files=inputs,latent=capacity,width=16,
-            max_iterations=budget,decoder_samples=512,predictive_family='Gaussian decoder mixture',
+            max_iterations=budget,decoder_samples=512,metric_backend='numpy' if a.dataset=='covid' else 'jax',predictive_family='Gaussian decoder mixture',
             covariance_pushforward_corrected=True,main_table_admitted=False)
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
