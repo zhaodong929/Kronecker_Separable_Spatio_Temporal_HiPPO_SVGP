@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.parametrize("backend", ["replay", "stateful"])
-def test_causal_refit_uses_hidden_targets_only_after_release(backend):
+def test_causal_refit_uses_hidden_targets_only_after_release(backend, tmp_path):
     from baselines.covid_long_setting_b.adapters.run_st_svgp import (
         ArrivedObservations, make_model, frozen_hyperparameters, run_causal_segment, run_stateful_segment)
     class Protocol:
@@ -29,7 +29,12 @@ def test_causal_refit_uses_hidden_targets_only_after_release(backend):
         model = make_model(times, grid, targets, protocol.coordinates, trainable_inducing=False)
         kernel, likelihood = frozen_hyperparameters(model)
         if backend == "stateful":
-            result = run_stateful_segment(protocol, protocol.coordinates, kernel, likelihood, 0, 3)
+            result = run_stateful_segment(protocol, protocol.coordinates, kernel, likelihood, 0, 3,
+                checkpoint_directory=tmp_path)
+            with np.load(tmp_path/'online-state.npz') as checkpoint:
+                assert int(checkpoint['completed_steps']) == 3
+                np.testing.assert_array_equal(checkpoint['pred_mean'],result[1])
+                np.testing.assert_array_equal(checkpoint['pred_var'],result[2])
         else:
             result = run_causal_segment(protocol, protocol.coordinates, kernel, likelihood, arrived, 0, 3, 1, 1.)
         return result[1], result[2]

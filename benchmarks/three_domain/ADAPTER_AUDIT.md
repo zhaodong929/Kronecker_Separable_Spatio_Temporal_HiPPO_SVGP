@@ -159,3 +159,15 @@ covariance factorizations without caching the evolving posterior prediction.
 Tests compare the cached prediction after a later state update to a fresh
 official spatial conditional, in addition to the official-prefix checks.
 Already submitted COVID jobs retain their immutable earlier release.
+
+The PEMS ST-SVGP launcher first runs GPU correctness checks, then fits one
+initial iteration on the real full 2016-step initial protocol and compares
+three online steps of official replay with continuation using the same frozen
+checkpoint. A failed equivalence or resource check prevents final evaluation.
+Only after that check does it select 16/32 spatial inducing points using
+Task-1 validation (500 iterations, 1000 when endpoint-best), refit and execute
+all 50,100 steps. This is a queued qualification-and-final pipeline, not a
+claim that PEMS GPU qualification or convergence has already succeeded.
+Continuation writes atomic state/prediction checkpoints every 500 steps,
+including the state before the preceding update needed for delayed labels.
+Automatic resume from those checkpoints is not yet implemented.

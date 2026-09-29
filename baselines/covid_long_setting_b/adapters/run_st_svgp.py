@@ -416,7 +416,7 @@ def run_causal_segment(
     return information_rows, np.stack(means), np.stack(variances), np.asarray(seconds)
 
 
-def run_stateful_segment(protocol, inducing, kernel_values, likelihood_values, start, end):
+def run_stateful_segment(protocol, inducing, kernel_values, likelihood_values, start, end, checkpoint_directory=None):
     """Exact frozen Gaussian continuation; no observation-history replay per update."""
     from baselines.st_svgp_filter import GaussianSTFilter
     # A small, label-free container constructs the official kernel/likelihood.
@@ -449,6 +449,18 @@ def run_stateful_segment(protocol, inducing, kernel_values, likelihood_values, s
         information_rows.append(info);means.append(mean);variances.append(variance);seconds.append(elapsed)
         emit('online',week+1,dict(update_and_prediction_seconds=elapsed,
             mean_predictive_variance=float(np.mean(variance)),backend='stateful'))
+        if checkpoint_directory is not None and ((week+1)%500==0 or week+1==end):
+            directory=Path(checkpoint_directory);directory.mkdir(parents=True,exist_ok=True)
+            temporary=directory/'online-state.tmp.npz'
+            np.savez_compressed(temporary, completed_steps=week+1, segment_start=start,
+                state_mean=np.asarray(state.mean),state_covariance=np.asarray(state.covariance),
+                before_previous_mean=np.asarray(state.before_previous[0]),
+                before_previous_covariance=np.asarray(state.before_previous[1]),
+                previous_sites=state.previous[0],previous_values=state.previous[1],
+                previous_dt=state.previous_dt,time=state.time,
+                pred_mean=np.asarray(means),pred_var=np.asarray(variances),
+                update_prediction_seconds=np.asarray(seconds))
+            temporary.replace(directory/'online-state.npz')
     return information_rows,np.stack(means),np.stack(variances),np.asarray(seconds)
 
 
@@ -587,7 +599,8 @@ def main() -> None:
     continuation_started = time.perf_counter()
     if args.online_backend == 'stateful':
         information_rows, means, variances, online_seconds = run_stateful_segment(
-            protocol,frozen_inducing,frozen_kernel_values,frozen_likelihood_values,segment_start,segment_end)
+            protocol,frozen_inducing,frozen_kernel_values,frozen_likelihood_values,segment_start,segment_end,
+            checkpoint_directory=args.output_dir)
     else:
         information_rows, means, variances, online_seconds = run_causal_segment(
             protocol,
