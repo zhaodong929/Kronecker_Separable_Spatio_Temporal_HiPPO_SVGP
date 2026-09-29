@@ -8,7 +8,7 @@
 #SBATCH --array=1-3%3
 set -euo pipefail
 C=/vol/bitbucket/nk523/hipposvgp-fair-20260929
-RELEASE=${HIPPO_RELEASE:?Set an immutable tested release commit}
+RELEASE=${1:?Pass an immutable tested release commit as the first argument}
 CODE="$C/releases/$RELEASE/source"
 SEED=${SLURM_ARRAY_TASK_ID}
 O="$C/results/pems/seed${SEED}/online-${SLURM_ARRAY_JOB_ID}"
