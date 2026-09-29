@@ -439,6 +439,11 @@ def main():
     coordinates = np.asarray(arrays["coordinates"], dtype=float)
     train_indices = np.asarray(arrays["train_indices"], dtype=int)
     test_indices = np.asarray(arrays["test_indices"], dtype=int)
+    task1_indices = np.asarray(metadata.get("task1_observed_indices", train_indices), dtype=int)
+    if (task1_indices.ndim != 1 or not task1_indices.size or
+            len(np.unique(task1_indices)) != len(task1_indices) or
+            np.any(task1_indices < 0) or np.any(task1_indices >= y.shape[1])):
+        raise ValueError("Invalid explicitly declared Task-1 observation sites")
     blocks = tuple(
         slice(int(start), int(stop))
         for start, stop in zip(arrays["block_start"], arrays["block_stop"])
@@ -497,7 +502,7 @@ def main():
     solver_setup_started = time.perf_counter()
     if solver_backend == "torch":
         assert runtime is not None
-        model = (TorchMultiGeometryHiPPOSVGP if delayed_observation_blocks > 0 else TorchJointSSGPKronHiPPOSVGP)(
+        model = (TorchMultiGeometryHiPPOSVGP if delayed_observation_blocks > 0 or not np.array_equal(task1_indices, train_indices) else TorchJointSSGPKronHiPPOSVGP)(
             Ks=ks,
             C=c_train,
             sigma2=sigma2,
@@ -669,7 +674,7 @@ def main():
             task1_factors = make_factors(
                 calibration_y,
                 calibration_phi,
-                train_indices,
+                task1_indices,
                 t_mat,
                 kt,
                 None,
@@ -683,7 +688,7 @@ def main():
                 Kt_new=task1_factors.Kt,
                 state=None,
                 K_on_t=None,
-                C_observed=c_train_backend,
+                C_observed=torch.as_tensor(c_all[task1_indices], device=runtime.device, dtype=runtime.dtype),
             )
         task1_initialization_seconds = initialization_timer.elapsed
         task1_initialization_rows = int(task1_factors.y_vec.size)
@@ -998,6 +1003,7 @@ def main():
         "delayed_observation_rows": delayed_observation_rows,
         "task1_posterior_initialization": bool(args.task1_posterior_init),
         "task1_posterior_initialization_rows": task1_initialization_rows,
+        "task1_observed_indices": task1_indices.tolist(),
         "task1_posterior_initialization_summary": task1_initialization_summary,
         "target_mode": "joint X-lag mean and GP posterior",
         "temporal_representation": args.representation,

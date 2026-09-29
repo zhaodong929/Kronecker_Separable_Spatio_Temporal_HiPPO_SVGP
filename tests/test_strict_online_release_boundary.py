@@ -7,7 +7,8 @@ import torch
 
 
 @pytest.mark.parametrize("device",["cpu","cuda"])
-def test_actual_runner_never_uses_unreleased_targets(tmp_path,device):
+@pytest.mark.parametrize("initial_all", [False, True])
+def test_actual_runner_never_uses_unreleased_targets(tmp_path,device,initial_all):
     if device=="cuda" and not torch.cuda.is_available():pytest.skip("CUDA required")
     root=Path(__file__).resolve().parents[1]
     r=np.random.default_rng(14);coords=r.normal(size=(5,2))
@@ -16,7 +17,7 @@ def test_actual_runner_never_uses_unreleased_targets(tmp_path,device):
       stream_y=r.normal(size=(3,5)),stream_phi=np.ones((3,5,1)),coordinates=coords,
       train_indices=np.arange(3),test_indices=np.arange(3,5),inducing_coords_ms2=coords[:2],
       block_start=np.arange(3),block_stop=np.arange(1,4))
-    (tmp_path/'protocol.json').write_text('{}')
+    (tmp_path/'protocol.json').write_text(json.dumps({'task1_observed_indices':list(range(5))} if initial_all else {}))
     (tmp_path/'theta.json').write_text(json.dumps({'learned_theta':dict(ell_t=1.,ell_s=[1.,1.],kernel_variance=1.,noise_std=.3)}))
     def run(label,arrays,extra=(),expected_delayed=4):
         path=tmp_path/label;path.mkdir();np.savez(path/'protocol.npz',**arrays)
@@ -33,7 +34,7 @@ def test_actual_runner_never_uses_unreleased_targets(tmp_path,device):
                        env={**os.environ,'OMP_NUM_THREADS':'2','OPENBLAS_NUM_THREADS':'2'})
         meta=json.loads((path/'result.json').read_text())
         assert meta['delayed_observation_rows']==expected_delayed
-        assert meta['task1_posterior_initialization_rows']==15
+        assert meta['task1_posterior_initialization_rows']==(25 if initial_all else 15)
         with np.load(path/'predictions.npz') as p:return p['pred_mean'].copy(),p['pred_var'].copy()
     base=run('base',data)
     hidden={**data,'stream_y':data['stream_y'].copy()};hidden['stream_y'][0,3:]+=100
