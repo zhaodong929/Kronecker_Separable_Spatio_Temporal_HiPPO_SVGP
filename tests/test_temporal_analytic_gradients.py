@@ -153,3 +153,29 @@ def test_spherical_bessel_and_temporal_builder_cuda_parity() -> None:
         torch.testing.assert_close(
             cuda_factor.cpu(), cpu_factor, rtol=1e-7, atol=1e-8
         )
+
+
+def test_frozen_scipy_basis_matches_torch_and_rejects_training():
+    builder=AnalyticTemporalBuilder(TemporalAnalyticConfig(inducing_size=128,
+        rff_sample_size=32,lengthscale=.2,kernel_type='matern32',seed=2))
+    for end in (0.01, 1., 30.):
+        horizon=TemporalBlockSpec(0.,end,100,phase_origin=0.)
+        with torch.no_grad():
+            builder.config.bessel_backend='torch'
+            expected,_=builder.compute_temporal_basis(horizon)
+            builder.config.bessel_backend='scipy'
+            actual,_=builder.compute_temporal_basis(horizon)
+        torch.testing.assert_close(actual,expected,rtol=2e-8,atol=2e-12)
+    with pytest.raises(RuntimeError,match='inference only'):
+        builder.compute_temporal_basis(horizon)
+    # Large arguments use the same analytic basis without a loop proportional
+    # to horizon length. Check finiteness and its first-order closed form.
+    horizon=TemporalBlockSpec(0.,100000.,100000,phase_origin=0.)
+    with torch.no_grad():
+        actual,_=builder.compute_temporal_basis(horizon)
+        kappa=.5*builder.current_frequencies()*100000.
+        expected_j0=torch.sin(kappa)/kappa
+        scale=(1./32)**.5
+        expected0=scale*torch.cat([expected_j0*torch.sin(kappa),expected_j0*torch.cos(kappa)],dim=1).reshape(-1)
+    assert torch.isfinite(actual).all()
+    torch.testing.assert_close(actual[:,0],expected0,rtol=1e-10,atol=1e-14)

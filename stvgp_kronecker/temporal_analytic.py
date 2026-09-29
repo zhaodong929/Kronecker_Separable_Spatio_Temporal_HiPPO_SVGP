@@ -206,6 +206,7 @@ class TemporalAnalyticConfig:
     device: str = "cpu"
     jitter: float = 1e-6
     seed: int = 0
+    bessel_backend: str = "torch"
     spectral_mixture_means: tuple[float, ...] = (0.0, 1.5, 4.0)
     spectral_mixture_scales: tuple[float, ...] = (1.0, 0.8, 0.45)
     spectral_mixture_weights: tuple[float, ...] = (0.55, 0.30, 0.15)
@@ -328,7 +329,20 @@ class AnalyticTemporalBuilder(nn.Module):
             dtype=self.config.dtype,
             device=w.device,
         )
-        j = spherical_bessel_j(self.config.inducing_size - 1, kappa).squeeze(1)
+        if self.config.bessel_backend == "torch":
+            j = spherical_bessel_j(self.config.inducing_size - 1, kappa).squeeze(1)
+        elif self.config.bessel_backend == "scipy":
+            if torch.is_grad_enabled():
+                raise RuntimeError("SciPy Bessel backend is frozen-parameter inference only")
+            import numpy as np
+            from scipy.special import spherical_jn
+            argument = kappa.detach().cpu().numpy()
+            orders = np.arange(self.config.inducing_size).reshape(-1, *([1]*argument.ndim))
+            values = spherical_jn(orders, np.abs(argument)[None])
+            values *= np.where(argument[None] < 0, (-1.)**orders, 1.)
+            j = torch.as_tensor(values, device=w.device, dtype=w.dtype).squeeze(1)
+        else:
+            raise ValueError(f"Unknown Bessel backend: {self.config.bessel_backend}")
         prefactor = torch.sqrt(2.0 * levels + 1.0)[:, None]
         phase = phase_origin_term + kappa + levels[:, None] * math.pi / 2.0
         z_sin = prefactor * j * torch.sin(phase)

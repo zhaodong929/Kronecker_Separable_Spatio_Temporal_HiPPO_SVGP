@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
+import os
 import json
 from pathlib import Path
 import sys
@@ -299,7 +301,31 @@ def main():
             "otherwise."
         ),
     )
+    parser.add_argument("--temporal-bessel-backend", choices=["torch","scipy"], default="torch")
+    parser.add_argument("--checkpoint", type=Path, help="Atomic local campaign checkpoint")
+    parser.add_argument("--checkpoint-every", type=int, default=500)
+    parser.add_argument("--resume", action="store_true", help="Resume only this campaign's trusted checkpoint")
     args = parser.parse_args()
+    if args.checkpoint_every < 1 or (args.resume and args.checkpoint is None):
+        raise ValueError("Positive checkpoint interval and a path for resume required")
+    checkpoint_fingerprint = None
+    if args.checkpoint is not None:
+        digest = hashlib.sha256()
+        for path in (args.protocol_npz, args.protocol_json, args.theta_json,
+                     args.feature_projection_npz, args.spatial_projection_npz,
+                     Path(__file__), ROOT/"stvgp_kronecker/joint_ssgp_kron/torch_backend.py",
+                     ROOT/"stvgp_kronecker/joint_ssgp_kron/multi_geometry.py",
+                     ROOT/"stvgp_kronecker/joint_ssgp_kron/synthetic.py",
+                     ROOT/"stvgp_kronecker/temporal_analytic.py"):
+            if path is not None:
+                with Path(path).open('rb') as handle:
+                    for chunk in iter(lambda: handle.read(1024*1024), b''): digest.update(chunk)
+        excluded = {"output", "blockwise_output", "predictions_output", "checkpoint", "checkpoint_every",
+                    "resume", "max_blocks", "protocol_npz", "protocol_json", "theta_json",
+                    "feature_projection_npz", "spatial_projection_npz"}
+        options = {k:str(v) if isinstance(v,Path) else v for k,v in vars(args).items() if k not in excluded}
+        digest.update(json.dumps(options,sort_keys=True).encode())
+        checkpoint_fingerprint = digest.hexdigest()
 
     if args.delayed_observation_blocks < 0:
         raise ValueError("--delayed-observation-blocks must be non-negative")
@@ -516,6 +542,7 @@ def main():
             spectral_mixture_means=spectral_mixture["means"] if spectral_mixture else None,
             spectral_mixture_scales=spectral_mixture["scales"] if spectral_mixture else None,
         )
+        builder.config.bessel_backend = args.temporal_bessel_backend
         builder = builder.to(
             device=temporal_factor_device,
             dtype=temporal_factor_dtype,
@@ -673,7 +700,34 @@ def main():
         if not torch.isfinite(posterior_values).all():
             raise ValueError("Task-1 posterior initialization produced non-finite state values")
 
+    resume_completed = 0
+    checkpoint_seconds = 0.0
+    previous_attempt_seconds = 0.0
+    if args.resume:
+        # Only load the checkpoint created by this campaign; PyTorch objects are
+        # trusted local state, not arbitrary downloaded checkpoint files.
+        saved = torch.load(args.checkpoint, map_location=solver_device, weights_only=False)
+        if saved["fingerprint"] != checkpoint_fingerprint:
+            raise ValueError("Checkpoint input/configuration/source fingerprint mismatch")
+        resume_completed = saved["completed_blocks"]
+        if not 0 < resume_completed <= len(blocks):
+            raise ValueError("Checkpoint prefix exceeds requested stream")
+        state = saved["state"]
+        previous_basis = saved["previous_basis"]
+        previous_temporal_basis = saved["previous_temporal_basis"]
+        pending_test_contexts = saved["pending_test_contexts"]
+        rows = saved["rows"]
+        all_true,all_mean,all_var = saved["all_true"],saved["all_mean"],saved["all_var"]
+        prediction_grid[:saved["evaluated_stop"]] = saved["prediction_grid"]
+        variance_grid[:saved["evaluated_stop"]] = saved["variance_grid"]
+        delayed_observation_rows = saved["delayed_observation_rows"]
+        total_update_seconds,total_prediction_seconds,total_factor_seconds,total_feature_seconds = saved["totals"]
+        previous_attempt_seconds = saved["attempt_seconds"]
+        checkpoint_seconds = saved["checkpoint_seconds"]
+
     for block_id, block in enumerate(blocks):
+        if block_id < resume_completed:
+            continue
         profile_range = profile_this_index(block_id, len(blocks))
         profile_open = push_range("era5_online_block", profile_range)
         feature_started = time.perf_counter()
@@ -894,6 +948,24 @@ def main():
             )
         print(json.dumps(row), flush=True)
 
+        if args.checkpoint is not None and ((block_id+1) % args.checkpoint_every == 0 or block_id+1 == len(blocks)):
+            checkpoint_started = time.perf_counter()
+            saved = dict(fingerprint=checkpoint_fingerprint,completed_blocks=block_id+1,
+                state=state,previous_basis=previous_basis,previous_temporal_basis=previous_temporal_basis,
+                pending_test_contexts=pending_test_contexts,rows=rows,
+                all_true=all_true,all_mean=all_mean,all_var=all_var,
+                evaluated_stop=block.stop,prediction_grid=prediction_grid[:block.stop],
+                variance_grid=variance_grid[:block.stop],delayed_observation_rows=delayed_observation_rows,
+                totals=(total_update_seconds,total_prediction_seconds,total_factor_seconds,total_feature_seconds),
+                attempt_seconds=previous_attempt_seconds+time.perf_counter()-process_started,
+                checkpoint_seconds=checkpoint_seconds)
+            args.checkpoint.parent.mkdir(parents=True,exist_ok=True)
+            temporary = args.checkpoint.with_suffix(args.checkpoint.suffix+".tmp")
+            with temporary.open("wb") as handle:
+                torch.save(saved,handle);handle.flush();os.fsync(handle.fileno())
+            os.replace(temporary,args.checkpoint)
+            checkpoint_seconds += time.perf_counter()-checkpoint_started
+
     overall = metrics(np.concatenate(all_true), np.concatenate(all_mean), np.concatenate(all_var))
     final_block = {
         key: rows[-1][key]
@@ -962,7 +1034,11 @@ def main():
         ),
         "overall_current_block": overall,
         "final_block": final_block,
+        "resumed_prefix_blocks": resume_completed,
+        "checkpoint_fingerprint": checkpoint_fingerprint,
         "timing": {
+            "checkpoint_seconds": checkpoint_seconds,
+            "previous_attempt_seconds": previous_attempt_seconds,
             "spatial_projection_setup_seconds": spatial_setup_seconds,
             "solver_setup_seconds": solver_setup_seconds,
             "temporal_static_setup_seconds": temporal_setup_seconds,

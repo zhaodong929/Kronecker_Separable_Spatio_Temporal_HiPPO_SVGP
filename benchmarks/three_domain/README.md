@@ -55,3 +55,17 @@ not the paper's single-Sylvester complexity guarantee. Dense joint-Gaussian
 parity covers mean, variance, noncommuting geometries and rectangular temporal
 transfers; a real-runner perturbation test checks release boundaries. GPU and
 full-scale numerical qualification remain necessary before final admission.
+
+The frozen online temporal builder optionally uses SciPy `spherical_jn` with
+negative-argument parity, preserving the analytic HiPPO features. Training
+retains the differentiable Torch implementation. The original Miller start
+order grew with frequency times horizon and caused substantial inference cost.
+Reference: https://docs.scipy.org/doc/scipy/reference/generated/scipy.special.spherical_jn.html
+
+Online checkpoints atomically retain the completed prefix and the pending
+one-step-delayed observations. Resume verifies input, configuration and source
+fingerprints. Tests require identical uninterrupted/resumed predictions and
+reject a changed-input checkpoint. The full PEMS launcher validates a 100-step
+prefix first, then resumes the same state through all 50,100 steps, saving every
+500. Completion requires finite full-shaped outputs and exactly 50,099 * 65
+delayed observations. Completion alone is not final table admission.
