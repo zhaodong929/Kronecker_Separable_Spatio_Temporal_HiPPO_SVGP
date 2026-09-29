@@ -315,9 +315,9 @@ def main():
     if inducing_key in arrays:
         spatial_inducing = np.asarray(arrays[inducing_key], dtype=NP_DTYPE)
     else:
-        from stvgp_kronecker.joint_ssgp_kron.synthetic import select_spatial_inducing_indices
+        from benchmarks.three_domain.geometry import farthest_indices
         candidate_coordinates=coordinates[train_indices]
-        chosen=select_spatial_inducing_indices(candidate_coordinates,args.ms,method='farthest')
+        chosen=farthest_indices(candidate_coordinates,args.ms)
         spatial_inducing=np.asarray(candidate_coordinates[chosen],dtype=NP_DTYPE)
     z = product_inducing(calibration_times, spatial_inducing, args.mt)
 

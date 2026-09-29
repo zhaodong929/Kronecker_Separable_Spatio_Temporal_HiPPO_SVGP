@@ -39,9 +39,9 @@ class TrafficProtocolN(COVIDSettingBProtocol):
             return self._spatial_inducing[count].copy()
         if not 1 <= count <= self.visible_locations.size:
             raise ValueError('Spatial inducing count exceeds initial visible sites')
-        from stvgp_kronecker.joint_ssgp_kron.synthetic import select_spatial_inducing_indices
+        from benchmarks.three_domain.geometry import farthest_indices
         coordinates = self.coordinates[self.visible_locations]
-        indices = select_spatial_inducing_indices(coordinates,count,method='farthest')
+        indices = farthest_indices(coordinates,count)
         return coordinates[indices].copy()
 
     def make_audit(self) -> ProtocolAudit:
