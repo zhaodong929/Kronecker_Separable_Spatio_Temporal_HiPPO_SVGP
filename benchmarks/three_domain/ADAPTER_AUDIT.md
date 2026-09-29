@@ -142,3 +142,13 @@ prefix and never reads the formal 143-week stream. Tests independently perturb
 the complete formal stream and future internal labels to check this boundary.
 The formal test remains separate; none of these gates establish main-table
 admission. GPU tests run again before candidate training and final execution.
+
+OSGPR final qualification searches Cartesian initial grids (Mt, Ms) in
+{2,4} x {16,32}, with official adaptive pseudo-input optimization. It compares
+100/400 initial steps per block, extends to 800 if NLPD improves by over 0.01,
+and requests review if the selected configuration still materially improves
+at that endpoint. Online budgets 5/20/80 use the same internal 40/12 temporal
+fold; an improving endpoint also blocks final evaluation. These thresholds
+are declared before viewing the final stream, and are validation-budget gates,
+not a proof of global optimization convergence. Previous 25/5 settings are
+not automatically treated as sufficient.

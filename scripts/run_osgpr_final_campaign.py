@@ -1,0 +1,85 @@
+#!/usr/bin/env python3
+"""Official Bui OSGPR with own initial and chronological update-budget tuning."""
+import argparse
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--seed',type=int,required=True)
+    p.add_argument('--output',type=Path,required=True)
+    p.add_argument('--release',required=True)
+    p.add_argument('--compute-root',type=Path,required=True)
+    a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
+    worker=str(a.compute_root/'env-osgpr/bin/python')
+    source=a.compute_root/f'protocol/covid-v2/seed{a.seed}'
+    tests=['tests/test_osgpr_release_boundary.py']
+    with (a.output/'tests.txt').open('w') as f:
+        subprocess.run([worker,'-m','pytest','-q',*tests],stdout=f,stderr=subprocess.STDOUT,check=True)
+    subprocess.run([worker,'-c',"import tensorflow as tf; assert tf.config.list_physical_devices('GPU')"],check=True)
+    fold=a.output/'online-budget-protocol'
+    subprocess.run([str(a.compute_root/'env-routeb/bin/python'),'-c',
+        'from benchmarks.three_domain.online_validation import build_fold; import sys; build_fold(sys.argv[1],sys.argv[2])',
+        str(source/'protocol.npz'),str(fold)],check=True)
+    def run(output,stage,mt,ms,budget,updates,protocol,calibration_only=False):
+        output.mkdir(parents=True,exist_ok=True)
+        spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',
+            dataset='covid',method='osgpr',split_seed=a.seed,training_seed=a.seed,stage=stage,
+            source_commit=a.release,worker_python=worker,
+            input_files=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')],
+            temporal_inducing=mt,spatial_inducing=ms,calibration_steps_per_block=budget,
+            online_steps_per_update=updates,main_table_admitted=False)
+        if stage=='final':
+            spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=143,
+                expected_sites=10,hidden_delay_steps=1,initial_observed_sites=52,predictive_family='gaussian')
+        (output/'spec.json').write_text(json.dumps(spec,indent=2))
+        command=[worker,'scripts/run_official_bui_osgpr_era5.py','--protocol-npz',str(protocol/'protocol.npz'),
+            '--protocol-json',str(protocol/'protocol.json'),'--output',str(output/'result.json'),
+            '--blockwise-output',str(output/'blocks.csv'),'--predictions-output',str(output/'predictions.npz'),
+            '--seed',str(a.seed),'--mt',str(mt),'--ms',str(ms),'--adaptive',
+            '--adaptive-calibration-steps',str(budget),'--adaptive-online-steps',str(updates),
+            '--delayed-observations','--device','cuda']
+        if calibration_only:command.append('--task1-validation-only')
+        subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
+            '--output',str(output),'--',*command],check=True)
+        return json.loads((output/'result.json').read_text())
+    candidates=[]
+    for mt,ms in [(2,16),(2,32),(4,16),(4,32)]:
+        scores=[]
+        for budget in [100,400]:
+            result=run(a.output/f'calibration-mt{mt}-ms{ms}-b{budget}','validation',mt,ms,budget,5,source,True)
+            scores.append(dict(mt=mt,ms=ms,budget=budget,nlpd=result['metrics']['gaussian_nlpd'],result=result))
+        if scores[-1]['nlpd'] < scores[0]['nlpd']-0.01:
+            result=run(a.output/f'calibration-mt{mt}-ms{ms}-b800','validation',mt,ms,800,5,source,True)
+            scores.append(dict(mt=mt,ms=ms,budget=800,nlpd=result['metrics']['gaussian_nlpd'],result=result))
+            if scores[-1]['nlpd'] < scores[-2]['nlpd']-0.01:
+                scores[-1]['requires_larger_budget']=True
+        candidates.extend(scores)
+    selected=min(candidates,key=lambda c:c['nlpd'])
+    if selected.get('requires_larger_budget'):
+        (a.output/'initial-budget-incomplete.json').write_text(json.dumps(candidates,indent=2))
+        raise RuntimeError('Selected initial configuration improves at maximum budget; extend qualification')
+    mt,ms,budget=selected['mt'],selected['ms'],selected['budget']
+    online=[]
+    for updates in [5,20,80]:
+        result=run(a.output/f'online-budget-u{updates}','validation',mt,ms,budget,updates,fold)
+        online.append(dict(updates=updates,nlpd=result['final']['nll'],
+            update_seconds=result['timing']['mean_block_update_seconds']))
+    best=min(online,key=lambda c:c['nlpd'])
+    if best['updates']==80 and best['nlpd'] < min(c['nlpd'] for c in online[:-1])-0.01:
+        (a.output/'online-budget-incomplete.json').write_text(json.dumps(online,indent=2))
+        raise RuntimeError('Online validation materially improves at maximum budget; extend qualification')
+    selection=dict(initial_candidates=candidates,selected_initial=selected,
+        online_candidates=online,selected_online=best,
+        selection_scope='Formal Task-1 only: spatial capacity and prefix 40/12 chronological update budget')
+    (a.output/'selection.json').write_text(json.dumps(selection,indent=2))
+    qualification=dict(status='passed',method='osgpr',dataset='covid',source_commit=a.release,
+        tests=tests,selection=selection,main_table_admitted=False)
+    (a.output/'qualification.json').write_text(json.dumps(qualification,indent=2))
+    run(a.output,'final',mt,ms,budget,best['updates'],source)
+
+
+if __name__=='__main__':main()
