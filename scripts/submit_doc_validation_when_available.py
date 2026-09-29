@@ -21,9 +21,11 @@ def main():
     p.add_argument('--release', required=True)
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--vault-note', type=Path, required=True)
+    p.add_argument('--followup-json', type=Path, help='Explicit final-array follow-up plan; omitted means baseline validation')
     a = p.parse_args()
     a.output.mkdir(parents=True, exist_ok=True)
-    name = 'hippo-val-'+a.release[:8]
+    plan = json.loads(a.followup_json.read_text()) if a.followup_json else {}
+    name = plan.get('job_name','hippo-val-'+a.release[:8])
     c = '/vol/bitbucket/nk523/hipposvgp-fair-20260929'
     job = None
     def record_failure(record):
@@ -44,9 +46,10 @@ def main():
                 job = int(jobs.pop())
             else:
                 submission = ['sbatch', '--parsable', '--job-name='+name, '--chdir='+c,
-                    '--output='+c+'/logs/baseline-validation-%j.log',
-                    c+'/releases/'+a.release+'/source/slurm/fair_three_domain/baseline_validation.sbatch',
-                    a.release]
+                    '--output='+c+'/logs/'+name+'-%A_%a.log']
+                if plan.get('array'): submission.append('--array='+plan['array'])
+                submission += [c+'/releases/'+a.release+'/source/'+plan.get('sbatch',
+                    'slurm/fair_three_domain/baseline_validation.sbatch'),a.release]
                 receipt = c+'/submissions/'+name+'.jobid'
                 script = ('if test -s '+shlex.quote(receipt)+'; then cat '+shlex.quote(receipt)+
                     '; else '+shlex.join(submission)+' > '+shlex.quote(receipt+'.tmp')+
@@ -69,18 +72,20 @@ def main():
         except (OSError, subprocess.TimeoutExpired, RuntimeError) as error:
             record['error'] = str(error)
         if job is not None:
-            record.update(status='submitted', job=job, source_commit=a.release)
+            record.update(status='submitted', job=job, source_commit=a.release, followup_plan=plan)
         (a.output/'latest.json').write_text(json.dumps(record, indent=2))
         with (a.output/'attempts.jsonl').open('a') as log:
             log.write(json.dumps(record)+'\n')
         if job is not None:
             (a.output/'submission.json').write_text(json.dumps(record, indent=2))
             with a.vault_note.open('a') as note:
-                note.write(f'\n## ベースラインvalidation自動投入 {record["time"]}\n\nDoC job **{job}**、release `{a.release}`。OHSVGP/OSGPR/ST-SVGP/MGPVAEのTask-1 capacity/budget validation。最終比較65本には数えない。\n')
+                scope=plan.get('scope','OHSVGP/OSGPR/ST-SVGP/MGPVAEのTask-1 validation。最終比較65本には数えない')
+                note.write(f'\n## 後続ジョブの自動投入 {record["time"]}\n\nDoC job **{job}**、release `{a.release}`。{scope}。\n')
+            template=plan.get('result_template',c+'/results/fair-three-domain-wandb-20260929/baseline-validation/job-{job}')
             return subprocess.call([sys.executable, str(Path(__file__).with_name('watch_doc_tracked_job.py')),
-                '--job', str(job), '--result-template', c+f'/results/fair-three-domain-wandb-20260929/baseline-validation/job-{job}',
-                '--seeds', '0', '--output', str(a.output/'monitor'), '--vault-note', str(a.vault_note),
-                '--kind', 'baseline-validation', '--max-polls', '145'])
+                '--job', str(job), '--result-template', template.replace('{job}',str(job)),
+                '--seeds', *map(str,plan.get('seeds',[0])), '--output', str(a.output/'monitor'), '--vault-note', str(a.vault_note),
+                '--kind', plan.get('kind','baseline-validation'), '--max-polls', '145'])
         time.sleep(600)
     record['status'] = 'submission_timeout_unverified'
     record_failure(record)
