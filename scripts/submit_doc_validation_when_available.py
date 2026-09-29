@@ -32,8 +32,16 @@ def main():
         (a.output/'terminal.json').write_text(json.dumps(record, indent=2))
         with a.vault_note.open('a') as note:
             note.write(f'\n## 自動投入の未完了 {record["time"]}\n\n{record["status"]}。記録: `{a.output}/terminal.json`。投入完了とは扱わない。\n')
-    for _ in range(144):
+    for _ in range(288):
         record = dict(time=datetime.datetime.now(datetime.timezone.utc).isoformat())
+        dependencies=plan.get('wait_for_submissions',[])
+        if any(not Path(path).is_file() for path in dependencies):
+            record['status']='waiting_for_prior_submissions'
+            record['dependencies']=dependencies
+            (a.output/'latest.json').write_text(json.dumps(record,indent=2))
+            with (a.output/'attempts.jsonl').open('a') as log:log.write(json.dumps(record)+'\n')
+            time.sleep(600)
+            continue
         try:
             # Reconcile first: an SSH timeout can follow a successful sbatch.
             q = ssh(['squeue', '-h', '-u', 'nk523', '-n', name, '-o', '%A'])
@@ -85,7 +93,7 @@ def main():
             return subprocess.call([sys.executable, str(Path(__file__).with_name('watch_doc_tracked_job.py')),
                 '--job', str(job), '--result-template', template.replace('{job}',str(job)),
                 '--seeds', *map(str,plan.get('seeds',[0])), '--output', str(a.output/'monitor'), '--vault-note', str(a.vault_note),
-                '--kind', plan.get('kind','baseline-validation'), '--max-polls', '145'])
+                '--kind', plan.get('kind','baseline-validation'), '--max-polls', '433'])
         time.sleep(600)
     record['status'] = 'submission_timeout_unverified'
     record_failure(record)

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=hippo-st-svgp-pems
 #SBATCH --partition=a30
+#SBATCH --nice=1000
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=60G
-#SBATCH --time=12:00:00
+#SBATCH --time=1-00:00:00
 #SBATCH --array=1-3%3
 set -euo pipefail
 C=/vol/bitbucket/nk523/hipposvgp-fair-20260929

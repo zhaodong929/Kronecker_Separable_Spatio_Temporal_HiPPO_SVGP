@@ -184,3 +184,23 @@ The stored PEMS protocol contains only a 32-point inducing grid. For a missing
 candidate size, the traffic adapter derives the same deterministic farthest
 point design used by the exporter from visible-site coordinates only; no
 labels enter grid construction. Existing stored grids remain unchanged.
+
+PEMS OSGPR/OHSVGP online-budget selection uses a separate day-1–6/day-7 fold
+within Task 1: all 260 originally available sensors initialize the model,
+234 are visible during the internal stream and the original 26 validation
+sensors become delayed query sites. Original 65 final held-out targets never
+enter this fold. Target and dynamic-feature normalization are refitted on the
+shorter prefix and its 234 fitting sensors. Stored affine graph-context features
+are renormalized without changing their original legal context sensor set.
+Perturbation tests cover original held-out labels, formal stream, and future
+internal labels/features. A real PEMS OHSVGP three-step CPU integration passed
+with all 260 initial sites and exactly 52 delayed rows; it is not a convergence
+or timing measurement.
+
+For PEMS OSGPR only, initial batches contain 256 time slices instead of 10,
+reducing repeated optimizer/model construction while keeping the official loss
+and all initial observations. This initial batching is recorded and used in
+its own validation. Online blocks remain one real time step. PEMS jobs request
+24h (the A30 partition allows 72h) and lower scheduling priority. Dispatch waits
+until both shorter COVID baseline arrays have actual submission receipts so
+long PEMS jobs cannot fill the submission quota ahead of them.

@@ -183,6 +183,7 @@ def main():
     parser.add_argument("--ms", type=int, default=64)
     parser.add_argument("--prediction-chunk-size", type=int, default=4096)
     parser.add_argument("--max-calibration-blocks", type=int, default=0)
+    parser.add_argument("--calibration-block-size", type=int, default=10)
     parser.add_argument("--max-stream-blocks", type=int, default=0)
     parser.add_argument(
         "--task1-validation-only",
@@ -268,9 +269,11 @@ def main():
     validation_indices = np.asarray(arrays["validation_indices"], dtype=int)
     test_indices = np.asarray(arrays["test_indices"], dtype=int)
     stream_blocks = blocks_from_arrays(arrays["block_start"], arrays["block_stop"])
+    if args.calibration_block_size<1:
+        raise ValueError("Positive calibration block size required")
     calibration_blocks = tuple(
-        slice(start, min(calibration_times.size, start + 10))
-        for start in range(0, calibration_times.size, 10)
+        slice(start, min(calibration_times.size, start + args.calibration_block_size))
+        for start in range(0, calibration_times.size, args.calibration_block_size)
     )
     if args.max_calibration_blocks > 0:
         calibration_blocks = calibration_blocks[: args.max_calibration_blocks]
@@ -309,7 +312,13 @@ def main():
     )
     noise_variance = float(theta["noise_std"]) ** 2
     inducing_key = f"inducing_coords_ms{args.ms}"
-    spatial_inducing = np.asarray(arrays[inducing_key], dtype=NP_DTYPE)
+    if inducing_key in arrays:
+        spatial_inducing = np.asarray(arrays[inducing_key], dtype=NP_DTYPE)
+    else:
+        from stvgp_kronecker.joint_ssgp_kron.synthetic import select_spatial_inducing_indices
+        candidate_coordinates=coordinates[train_indices]
+        chosen=select_spatial_inducing_indices(candidate_coordinates,args.ms,method='farthest')
+        spatial_inducing=np.asarray(candidate_coordinates[chosen],dtype=NP_DTYPE)
     z = product_inducing(calibration_times, spatial_inducing, args.mt)
 
     old_mean = None

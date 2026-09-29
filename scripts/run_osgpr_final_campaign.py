@@ -10,38 +10,43 @@ import sys
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--seed',type=int,required=True)
+    p.add_argument('--dataset',choices=['covid','pems'],default='covid')
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--release',required=True)
     p.add_argument('--compute-root',type=Path,required=True)
     a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
     worker=str(a.compute_root/'env-osgpr/bin/python')
-    source=a.compute_root/f'protocol/covid-v2/seed{a.seed}'
+    source=a.compute_root/f"protocol/{'covid-v2' if a.dataset=='covid' else 'pems'}/seed{a.seed}"
+    expected_steps,expected_sites,initial_sites=(143,10,52) if a.dataset=='covid' else (50100,65,260)
+    fold_function='build_fold' if a.dataset=='covid' else 'build_pems_fold'
     tests=['tests/test_osgpr_release_boundary.py']
     with (a.output/'tests.txt').open('w') as f:
         subprocess.run([worker,'-m','pytest','-q',*tests],stdout=f,stderr=subprocess.STDOUT,check=True)
     subprocess.run([worker,'-c',"import tensorflow as tf; assert tf.config.list_physical_devices('GPU')"],check=True)
     fold=a.output/'online-budget-protocol'
     subprocess.run([str(a.compute_root/'env-routeb/bin/python'),'-c',
-        'from benchmarks.three_domain.online_validation import build_fold; import sys; build_fold(sys.argv[1],sys.argv[2])',
+        f'from benchmarks.three_domain.online_validation import {fold_function}; import sys; {fold_function}(sys.argv[1],sys.argv[2])',
         str(source/'protocol.npz'),str(fold)],check=True)
     def run(output,stage,mt,ms,budget,updates,protocol,calibration_only=False):
         output.mkdir(parents=True,exist_ok=True)
         spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',
-            dataset='covid',method='osgpr',split_seed=a.seed,training_seed=a.seed,stage=stage,
+            dataset=a.dataset,method='osgpr',split_seed=a.seed,training_seed=a.seed,stage=stage,
             source_commit=a.release,worker_python=worker,
             input_files=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')],
             temporal_inducing=mt,spatial_inducing=ms,calibration_steps_per_block=budget,
-            online_steps_per_update=updates,main_table_admitted=False)
+            online_steps_per_update=updates,initial_block_times=10 if a.dataset=='covid' else 256,
+            main_table_admitted=False)
         if stage=='final':
-            spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=143,
-                expected_sites=10,hidden_delay_steps=1,initial_observed_sites=52,predictive_family='gaussian')
+            spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
+                expected_sites=expected_sites,hidden_delay_steps=1,initial_observed_sites=initial_sites,predictive_family='gaussian')
         (output/'spec.json').write_text(json.dumps(spec,indent=2))
         command=[worker,'scripts/run_official_bui_osgpr_era5.py','--protocol-npz',str(protocol/'protocol.npz'),
             '--protocol-json',str(protocol/'protocol.json'),'--output',str(output/'result.json'),
             '--blockwise-output',str(output/'blocks.csv'),'--predictions-output',str(output/'predictions.npz'),
             '--seed',str(a.seed),'--mt',str(mt),'--ms',str(ms),'--adaptive',
             '--adaptive-calibration-steps',str(budget),'--adaptive-online-steps',str(updates),
-            '--delayed-observations','--device','cuda']
+            '--delayed-observations','--device','cuda','--calibration-block-size',
+            '10' if a.dataset=='covid' else '256']
         if calibration_only:command.append('--task1-validation-only')
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
             '--output',str(output),'--',*command],check=True)
@@ -74,9 +79,10 @@ def main():
         raise RuntimeError('Online validation materially improves at maximum budget; extend qualification')
     selection=dict(initial_candidates=candidates,selected_initial=selected,
         online_candidates=online,selected_online=best,
-        selection_scope='Formal Task-1 only: spatial capacity and prefix 40/12 chronological update budget')
+        selection_scope='Formal Task-1 only: spatial capacity plus chronological online-budget fold; '+a.dataset)
+    selection['projected_stream_update_seconds']=best['update_seconds']*expected_steps
     (a.output/'selection.json').write_text(json.dumps(selection,indent=2))
-    qualification=dict(status='passed',method='osgpr',dataset='covid',source_commit=a.release,
+    qualification=dict(status='passed',method='osgpr',dataset=a.dataset,source_commit=a.release,
         tests=tests,selection=selection,main_table_admitted=False)
     (a.output/'qualification.json').write_text(json.dumps(qualification,indent=2))
     run(a.output,'final',mt,ms,budget,best['updates'],source)

@@ -21,7 +21,8 @@ class TrafficProtocolN(COVIDSettingBProtocol):
     def task1(self) -> KnownObservation:
         """Task 1 exposes only the 260 sensors visible in the formal split."""
 
-        locations = self.visible_locations
+        locations = (np.asarray(self.metadata["task1_observed_indices"],dtype=int)
+                     if self.metadata.get("development_protocol") else self.visible_locations)
         return KnownObservation(
             kind="task1",
             stream_week=None,
@@ -53,6 +54,24 @@ class TrafficProtocolN(COVIDSettingBProtocol):
             raise ValueError("calibration_y and stream_y must have shape [time, sensor]")
         if self._calibration_y.shape[1] != self._stream_y.shape[1]:
             raise ValueError("Task 1 and stream sensor counts differ")
+        if self.metadata.get('development_protocol'):
+            if self.locations!=260 or self.calibration_weeks<1 or self.online_weeks<1:
+                raise ValueError('PEMS internal fold must use the 260 originally observed sensors')
+            if self._visible.size!=234 or self._hidden.size!=26:
+                raise ValueError('PEMS internal fold uses original fit/validation sensors as visible/hidden')
+            if (set(self._visible)&set(self._hidden) or set(self._visible)|set(self._hidden)!=set(range(260))
+                or not np.array_equal(self._fit,self._visible) or not np.array_equal(self._validation,self._hidden)):
+                raise ValueError('Invalid internal sensor partition')
+            if (self.coordinates.shape!=(260,2) or not np.isfinite(self.coordinates).all()
+                or self._calibration_times.shape!=(self.calibration_weeks,)
+                or self._stream_times.shape!=(self.online_weeks,)
+                or not np.all(np.diff(self._calibration_times)>0)
+                or not np.all(np.diff(self._stream_times)>0)
+                or self._stream_times[0]<=self._calibration_times[-1]
+                or int(self.metadata.get('delayed_target_steps',-1))!=1
+                or set(self.metadata.get('task1_observed_indices',[]))!=set(range(260))):
+                raise ValueError('Invalid internal time/initial-observation manifest')
+            return
         if self.locations != 325 or self.calibration_weeks != 2016 or self.online_weeks != 50100:
             raise ValueError("Formal PEMS-BAY Protocol N requires 325 sensors and a 2016/50100 split")
         if self._visible.size != 260 or self._hidden.size != 65:
