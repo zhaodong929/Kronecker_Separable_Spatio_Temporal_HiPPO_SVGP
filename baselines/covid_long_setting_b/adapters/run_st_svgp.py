@@ -22,14 +22,13 @@ from typing import List, Sequence, Tuple
 import numpy as np
 from scipy.cluster.vq import kmeans2
 
-import bayesnewton
-import objax
-from jax.interpreters import xla as jax_xla
-
-
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
-
+from baselines.bayesnewton_compat import prepare_jax, clear_caches
+from baselines.causal_mean import get_mean, select_initial_targets
+prepare_jax()
+import bayesnewton
+import objax
 from benchmarks.three_domain.tracking import emit
 from baselines.covid_long_setting_b.archive import PredictionArchive
 from baselines.covid_long_setting_b.protocol import COVIDSettingBProtocol, KnownObservation
@@ -101,15 +100,18 @@ class ArrivedObservations:
         self._targets: List[np.ndarray] = []
         task1 = protocol.task1()
         locations = task1.locations if locations is None else np.asarray(locations, dtype=np.int64)
+        selected_targets = select_initial_targets(task1, locations)
+        mean = get_mean(protocol)
         for index, time_value in enumerate(protocol.calibration_times):
             self._times.append(np.full(locations.size, time_value, dtype=np.float64))
             self._locations.append(locations.copy())
-            self._targets.append(task1.targets[index].astype(np.float64, copy=True))
+            self._targets.append(selected_targets[index]-mean.at(time_value,locations))
+        self.mean = mean
 
     def append(self, observation: KnownObservation) -> None:
         self._times.append(np.full(observation.locations.size, observation.time, dtype=np.float64))
         self._locations.append(observation.locations.astype(np.int64, copy=True))
-        self._targets.append(observation.targets.astype(np.float64, copy=True))
+        self._targets.append(observation.targets.astype(np.float64, copy=True)-self.mean.at(observation.time,observation.locations))
         self._prune()
 
     def _prune(self) -> None:
@@ -176,6 +178,7 @@ def train_task1(
     checkpoint_directory: Path | None,
     seed: int,
     spatial_inducing: int,
+    validation_probe=None,
 ) -> dict[str, object]:
     """Fit Task 1 until the predeclared objective-plateau gate is met."""
 
@@ -208,6 +211,10 @@ def train_task1(
             "chunk_objective_median": float(np.median(values)),
             "chunk_objective_mean": float(np.mean(values)),
         }
+        if validation_probe is not None:
+            model.inference(lr=1.0)
+            row['validation'] = validation_probe(model)
+            emit('validation', completed, row['validation'])
         if checkpoint_directory is not None:
             checkpoint_directory.mkdir(parents=True, exist_ok=True)
             checkpoint_path = checkpoint_directory / f"checkpoint_{completed:05d}.npz"
@@ -324,13 +331,15 @@ def predict_locations(
     query_grid = np.repeat(protocol.coordinates[None, :, :], 2, axis=0)
     mean, variance = model.predict_y(X=query_times, R=query_grid)
     return (
-        np.asarray(mean, dtype=np.float64)[-1, locations],
+        np.asarray(mean, dtype=np.float64)[-1, locations]+get_mean(protocol).at(time_value,locations),
         np.asarray(variance, dtype=np.float64)[-1, locations],
     )
 
 
 def gaussian_metrics(target: np.ndarray, mean: np.ndarray, variance: np.ndarray) -> dict[str, float]:
-    variance = np.maximum(np.asarray(variance, dtype=np.float64), 1e-10)
+    variance = np.asarray(variance, dtype=np.float64)
+    if not np.isfinite(variance).all() or np.any(variance <= 0):
+        raise FloatingPointError('Invalid predictive observation variance')
     error = np.asarray(target, dtype=np.float64) - np.asarray(mean, dtype=np.float64)
     half = 1.6448536269514722 * np.sqrt(variance)
     return {
@@ -340,14 +349,21 @@ def gaussian_metrics(target: np.ndarray, mean: np.ndarray, variance: np.ndarray)
     }
 
 
+def task1_validation_metrics(model, protocol):
+    locations = protocol.validation_locations
+    times = np.asarray(protocol.calibration_times)[:, None]
+    grid = np.repeat(protocol.coordinates[None], len(times), axis=0)
+    mean, variance = model.predict_y(X=times, R=grid)
+    offsets = np.stack([get_mean(protocol).at(t, locations) for t in times[:, 0]])
+    return gaussian_metrics(protocol.calibration_targets(locations),
+        np.asarray(mean)[:, locations] + offsets, np.asarray(variance)[:, locations])
+
+
 def release_finished_week_model() -> None:
     """Release legacy JAX shape-specialised executables after a causal refit."""
 
     gc.collect()
-    jax_xla._xla_callable.cache_clear()
-    jax_xla.xla_primitive_callable.cache_clear()
-    jax_xla.primitive_computation.cache_clear()
-    jax_xla._lazy_force_computation.cache_clear()
+    clear_caches()
 
 
 def run_causal_segment(
@@ -366,12 +382,12 @@ def run_causal_segment(
     information_rows = []
     means, variances, seconds = [], [], []
     for week in range(start, end):
+        started = time.perf_counter()
         information = protocol.week(week)
         if information.delayed_hidden is not None:
             arrived.append(information.delayed_hidden)
         arrived.append(information.current_visible)
         times, spatial_grid, targets = arrived.as_grid()
-        started = time.perf_counter()
         model = make_model(
             times,
             spatial_grid,
@@ -388,13 +404,13 @@ def run_causal_segment(
             information.hidden_query.time,
             protocol.hidden_locations,
         )
-        seconds.append(time.perf_counter() - started)
-        emit("online", information.hidden_query.stream_week + 1, {"update_and_prediction_seconds": seconds[-1], "mean_predictive_variance": float(np.mean(variance))})
         information_rows.append(information)
         means.append(mean)
         variances.append(variance)
         del model
         release_finished_week_model()
+        seconds.append(time.perf_counter() - started)
+        emit("online", information.hidden_query.stream_week + 1, {"update_and_prediction_seconds": seconds[-1], "mean_predictive_variance": float(np.mean(variance))})
     return information_rows, np.stack(means), np.stack(variances), np.asarray(seconds)
 
 
@@ -469,6 +485,8 @@ def main() -> None:
             checkpoint_directory=args.output_dir / "task1_checkpoints",
             seed=args.seed,
             spatial_inducing=args.spatial_inducing,
+            validation_probe=(lambda model: task1_validation_metrics(model, protocol))
+                if args.task1_validation_only else None,
         )
         task1_seconds = time.perf_counter() - task1_started
         frozen_inducing = np.asarray(task1_model.kernel.z.value, dtype=np.float64)
@@ -492,24 +510,16 @@ def main() -> None:
     if args.task1_validation_only:
         assert task1_model is not None
         validation_locations = protocol.validation_locations
-        means, variances = [], []
-        for time_value in protocol.calibration_times:
-            mean, variance = predict_locations(
-                task1_model, protocol, float(time_value), validation_locations
-            )
-            means.append(mean)
-            variances.append(variance)
-        metrics = gaussian_metrics(
-            protocol.calibration_targets(validation_locations),
-            np.stack(means),
-            np.stack(variances),
-        )
+        selected = min(convergence['trace'], key=lambda row: row['validation']['gaussian_nlpd'])
+        metrics = selected['validation']
         result = {
             "status": "task1_validation_complete",
             "method": "ST-SVGP",
             "source": "AaltoML/spatio-temporal-GPs",
             "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
-            "protocol": "Task-1-only 38-fit/4-validation spatial split",
+            "protocol": "Task-1-only fit/validation spatial split from common manifest",
+            "selected_iteration": selected['steps_completed'],
+            "selected_checkpoint": selected.get('checkpoint'),
             "seed": args.seed,
             "capacity": {"spatial_inducing": int(args.spatial_inducing)},
             "task1_iterations": int(args.task1_iterations),

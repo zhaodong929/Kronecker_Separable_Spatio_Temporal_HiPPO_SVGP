@@ -174,6 +174,7 @@ def write_csv(rows, path):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--protocol-npz", type=Path, required=True)
+    parser.add_argument("--protocol-json", type=Path)
     parser.add_argument("--theta-json", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--blockwise-output", type=Path, required=True)
@@ -251,7 +252,16 @@ def main():
     stream_residual = stream - stream_offset
     calibration_times = np.asarray(arrays["calibration_times"], dtype=NP_DTYPE)
     stream_times = np.asarray(arrays["stream_times"], dtype=NP_DTYPE)
+    original_stream_times = stream_times.copy()
     calibration_times = calibration_before_stream(calibration_times, stream_times)
+    # Use only the initial time span to set units. In particular, traffic hours
+    # must not turn a lengthscale of 0.05 into a three-minute initial kernel.
+    time_origin = float(calibration_times[0])
+    time_scale = float(calibration_times[-1] - time_origin)
+    if time_scale <= 0:
+        raise ValueError("Positive Task-1 time span required")
+    calibration_times = (calibration_times - time_origin) / time_scale
+    stream_times = (stream_times - time_origin) / time_scale
     coordinates = np.asarray(arrays["coordinates"], dtype=NP_DTYPE)
     train_indices = np.asarray(arrays["train_indices"], dtype=int)
     fit_indices = np.asarray(arrays["fit_indices"], dtype=int)
@@ -267,7 +277,14 @@ def main():
     if args.max_stream_blocks > 0:
         stream_blocks = stream_blocks[: args.max_stream_blocks]
 
-    calibration_train_indices = train_indices
+    metadata_path = args.protocol_json or args.protocol_npz.with_suffix('.json')
+    metadata = json.loads(metadata_path.read_text())
+    calibration_train_indices = np.asarray(
+        metadata.get('task1_observed_indices', train_indices), dtype=int)
+    if (len(np.unique(calibration_train_indices)) != len(calibration_train_indices)
+            or np.any(calibration_train_indices < 0)
+            or np.any(calibration_train_indices >= calibration.shape[1])):
+        raise ValueError('Invalid Task-1 observation manifest')
     if args.task1_validation_only:
         calibration_phi = np.asarray(arrays["calibration_phi"], dtype=NP_DTYPE)
         design = calibration_phi[:, fit_indices, :].reshape(-1, calibration_phi.shape[-1])
@@ -293,8 +310,7 @@ def main():
     noise_variance = float(theta["noise_std"]) ** 2
     inducing_key = f"inducing_coords_ms{args.ms}"
     spatial_inducing = np.asarray(arrays[inducing_key], dtype=NP_DTYPE)
-    combined_time = np.concatenate([calibration_times, stream_times])
-    z = product_inducing(combined_time, spatial_inducing, args.mt)
+    z = product_inducing(calibration_times, spatial_inducing, args.mt)
 
     old_mean = None
     old_covariance = None
@@ -516,8 +532,8 @@ def main():
         "delayed_observations": bool(args.delayed_observations),
         "delayed_observation_rows": delayed_rows,
         "current_hidden_labels_read": 0,
-        "current_visible_observation_rows": int(len(stream_blocks) * train_indices.size),
-        "hidden_prediction_rows": int(len(stream_blocks) * test_indices.size),
+        "current_visible_observation_rows": int(sum(b.stop-b.start for b in stream_blocks) * train_indices.size),
+        "hidden_prediction_rows": int(sum(b.stop-b.start for b in stream_blocks) * test_indices.size),
         "target_mode": "Task-1 fixed X-lag residual, evaluated on original y",
         "split_seed": args.seed,
         "num_stream_times": int(stream_times.size),
@@ -525,6 +541,8 @@ def main():
         "calibration_time_range": [float(calibration_times[0]), float(calibration_times[-1])],
         "stream_time_range": [float(stream_times[0]), float(stream_times[-1])],
         "num_train_space": int(train_indices.size),
+        "num_initial_observed_space": int(calibration_train_indices.size),
+        "input_time_transform": {"origin": time_origin, "scale": time_scale, "fit_scope": "Task 1 times only"},
         "num_test_space": int(test_indices.size),
         "joint_inducing": int(z.shape[0]),
         "temporal_grid_count": args.mt,
@@ -596,7 +614,7 @@ def main():
             pred_mean=prediction_mean.reshape(evaluated_stop, test_indices.size),
             pred_var=prediction_variance.reshape(evaluated_stop, test_indices.size),
             test_indices=test_indices,
-            times=stream_times[:evaluated_stop],
+            times=original_stream_times[:evaluated_stop],
         )
     print(json.dumps(payload, indent=2), flush=True)
 
