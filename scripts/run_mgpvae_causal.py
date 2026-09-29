@@ -8,6 +8,7 @@ the training sites in the spatial Cholesky ordering: their prior extension
 preserves the original spatial conditional (tested independently).
 """
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -46,10 +47,17 @@ def main():
     p.add_argument('--prediction-samples', type=int, default=128)
     p.add_argument('--max-blocks', type=int, default=0)
     p.add_argument('--validation-only', action='store_true')
+    p.add_argument('--selection-json', type=Path)
     a = p.parse_args()
     if min(a.iterations, a.check_every, a.training_samples, a.prediction_samples) < 1 or a.latent < 2:
         p.error('Positive budgets and at least two latent dimensions required by upstream shapes')
     a.output_dir.mkdir(parents=True, exist_ok=True)
+    if a.selection_json is not None and a.validation_only:
+        p.error('A frozen selection cannot be used for validation')
+    digest = hashlib.sha256()
+    with a.protocol_npz.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1048576), b''): digest.update(chunk)
+    protocol_hash = digest.hexdigest()
     (a.output_dir/'run-config.json').write_text(json.dumps(
         {key: str(value) if isinstance(value, Path) else value for key, value in vars(a).items()}, indent=2))
     protocol = load_protocol(a.protocol_npz, a.protocol_json, protocol_kind=a.protocol_kind)
@@ -123,7 +131,7 @@ def main():
                 kernel_lengthscale_space=np.asarray(model.kernel.lengthscale).tolist(),
                 decoder_noise_variance=float(model.likelihood.variance))
             emit(phase, i, row)
-            if i % a.check_every == 0 or i == iterations:
+            if i == 1 or i % a.check_every == 0 or i == iterations:
                 if tune:
                     row['validation'] = validation(model, training)
                     emit('validation', i, row['validation'])
@@ -135,11 +143,20 @@ def main():
             trace.append(row)
         return best
 
-    selected = fit(model, protocol.fit_locations, a.iterations, 'train', True)
-    calibration = dict(status='validation_complete', selected=selected, trace=trace,
-        iterations=a.iterations, official_commit=COMMIT, covariance_pushforward_corrected=True,
-        main_table_admitted=False, time_origin=origin, time_scale=span,
-        elapsed_seconds=time.perf_counter()-training_started)
+    if a.selection_json is None:
+        selected = fit(model, protocol.fit_locations, a.iterations, 'train', True)
+        calibration = dict(status='validation_complete', selected=selected, trace=trace,
+            iterations=a.iterations, official_commit=COMMIT, covariance_pushforward_corrected=True,
+            split_seed=a.seed, latent=a.latent, width=a.width, protocol_sha256=protocol_hash,
+            main_table_admitted=False, time_origin=origin, time_scale=span,
+            elapsed_seconds=time.perf_counter()-training_started)
+    else:
+        calibration = json.loads(a.selection_json.read_text())
+        expected = dict(split_seed=a.seed, latent=a.latent, width=a.width, protocol_sha256=protocol_hash,
+            official_commit=COMMIT, covariance_pushforward_corrected=True)
+        if any(calibration.get(k) != v for k,v in expected.items()):
+            raise ValueError('Frozen selection does not match the split, architecture or protocol')
+        selected = calibration['selected']
     (a.output_dir/'calibration.json').write_text(json.dumps(calibration, indent=2))
     if a.validation_only:
         return
