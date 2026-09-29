@@ -16,9 +16,13 @@ export MPLBACKEND=Agg PYTHONHASHSEED=0
 cd "${SOURCE}"
 OUTPUT="${CAMPAIGN}/results/pems/seed${SEED}/calibration"
 mkdir -p "${OUTPUT}"
+trap 'printf "%s\n" "{\"stage\":\"task1_calibration\",\"main_table_admitted\":false,\"status\":\"failed\"}" > "${OUTPUT}/campaign_status.json"' ERR
+sha256sum --quiet -c "${CAMPAIGN}/source.sha256"
+cp "${CAMPAIGN}/source_commit.txt" "${OUTPUT}/source_commit.txt"
 nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv > "${OUTPUT}/hardware.csv"
 "${PYTHON}" -c 'import torch; assert torch.cuda.is_available(), "CUDA required"; print(torch.__version__, torch.cuda.get_device_name())'
 "${PYTHON}" -m pip freeze > "${OUTPUT}/environment.txt" 2>/dev/null || "${CAMPAIGN}/uv" pip freeze --python "${PYTHON}" > "${OUTPUT}/environment.txt"
+"${PYTHON}" -m pytest -q tests/test_routeb_torch_backend.py tests/test_temporal_analytic_gradients.py > "${OUTPUT}/backend-tests.txt"
 "${PYTHON}" scripts/prepare_fair_pems.py --data-root "${CAMPAIGN}/data" --output "${CAMPAIGN}/protocol/pems" --seeds "${SEED}"
 PROTOCOL="${CAMPAIGN}/protocol/pems/seed${SEED}"
 # Development/calibration run only. This does not publish a formal score or
