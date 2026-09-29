@@ -218,3 +218,13 @@ normalization differences from distorting cross-split summaries. Independent
 Gaussian/one-component-mixture and affine-restoration tests pass. Source and
 prediction hashes and evaluator hashes are saved; successful scoring does not
 approve the implementation or manuscript claim.
+
+A completed COVID seed5 reference was subsequently checked over all 143 online
+weeks against continuation using the same trained state: maximum absolute mean
+error 1.822e-7 and variance error 1.554e-9. This CPU correctness comparison is
+not a GPU speed claim. A separate exclusive-A30 measurement job repeats this
+full comparison for all five completed reference splits. It records parent
+initial-fit cost, new initial-filter cost and online continuation time separately.
+It is the same replicate, not five additional independent experiments. Use
+these qualified continuation timings for a consistent implementation comparison
+with PEMS; retain original replay timings as reference costs.

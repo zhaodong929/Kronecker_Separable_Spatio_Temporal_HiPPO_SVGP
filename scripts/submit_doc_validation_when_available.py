@@ -93,7 +93,7 @@ def main():
             return subprocess.call([sys.executable, str(Path(__file__).with_name('watch_doc_tracked_job.py')),
                 '--job', str(job), '--result-template', template.replace('{job}',str(job)),
                 '--seeds', *map(str,plan.get('seeds',[0])), '--output', str(a.output/'monitor'), '--vault-note', str(a.vault_note),
-                '--kind', plan.get('kind','baseline-validation'), '--max-polls', '433'])
+                '--kind', plan.get('kind','baseline-validation'), '--methods', *plan.get('methods',['ohsvgp','osgpr','st_svgp','mgpvae']), '--max-polls', '433'])
         time.sleep(600)
     record['status'] = 'submission_timeout_unverified'
     record_failure(record)

@@ -478,7 +478,7 @@ def main() -> None:
         raise ValueError(f"--spatial-inducing must be between 1 and {protocol.locations}")
     if args.history_window < 0:
         raise ValueError("--history-window must be non-negative")
-    if args.online_backend == 'stateful' and (args.history_window or args.online_inference_steps != 1):
+    if args.online_backend == 'stateful' and (args.history_window or args.online_inference_steps != 1 or args.task1_newton_learning_rate != 1.):
         raise ValueError('Gaussian state continuation requires full history and one conjugate natural update')
     segment_mode = args.segment_output is not None or args.segment_start != 0 or args.segment_end is not None
     segment_start = int(args.segment_start)
