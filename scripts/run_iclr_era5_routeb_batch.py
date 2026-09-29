@@ -28,6 +28,7 @@ from scripts.run_routeb_batch_empirical_bayes import (
 )
 from scripts.run_hipposvgp_era5_routeb import augment_dataset_phi
 from scripts.run_iclr_era5_routeb_strict_online import TaskPhiCache
+from benchmarks.three_domain.tracking import emit
 from stvgp_kronecker.benchmark_runtime import (
     SynchronizedTimer,
     host_snapshot,
@@ -521,11 +522,13 @@ def main() -> None:
                 best_iteration = iteration
                 best_elapsed = time.perf_counter() - training_started
                 best_state = copy.deepcopy(model.state_dict())
+            emit("validation", iteration, validation)
             should_stop_early = early_stopping.observe(validation["nll"])
             row["validation_checks_without_improvement"] = (
                 early_stopping.checks_without_improvement
             )
         row["training_elapsed_seconds"] = time.perf_counter() - training_started
+        emit("train", iteration, row)
         trace.append(row)
         iterations_completed = iteration
         if iteration == 1 or iteration % args.validation_every == 0 or iteration == args.iterations:
@@ -543,6 +546,13 @@ def main() -> None:
     if best_state is None:
         raise RuntimeError("No validation checkpoint was recorded")
     training_seconds = time.perf_counter() - training_started
+    # Preserve the selected model and last optimizer separately: the latter
+    # must not be misrepresented as belonging to the earlier best iteration.
+    torch.save(dict(model_state_dict=model.state_dict(), optimizer_state_dict=optimizer.state_dict(),
+                    iteration=iterations_completed, torch_rng_state=torch.get_rng_state(),
+                    numpy_rng_state=np.random.get_state()), args.output_dir / "last_training_state.pt")
+    torch.save(dict(model_state_dict=best_state, iteration=best_iteration,
+                    validation_nll=best_nll), args.output_dir / "selected_model.pt")
     model.load_state_dict(best_state)
     torch.testing.assert_close(model.spatial_inducing, initial_spatial_inducing, rtol=0.0, atol=0.0)
     torch.testing.assert_close(model.temporal.z_t, initial_temporal_support, rtol=0.0, atol=0.0)

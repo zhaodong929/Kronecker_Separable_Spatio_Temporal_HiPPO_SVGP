@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 import numpy as np
+from benchmarks.three_domain.tracking import emit
 from baselines.mgpvae.official import make_model, COMMIT
 from baselines.mgpvae.filtering import OfficialVisibleFilter
 from benchmarks.three_domain.metrics import gaussian_mixture_metrics
@@ -66,6 +67,7 @@ def main():
         losses=[float(v) for v in update(i)]
         if not np.isfinite(losses).all():raise RuntimeError('Nonfinite official training objective')
         trace.append(dict(step=i+1,negative_elbo=losses[0],elapsed_seconds=time.monotonic()-start))
+        emit("train", i+1, trace[-1])
         print(json.dumps(trace[-1]),flush=True)
     adapter=OfficialVisibleFilter(model)
     for i in range(48):adapter.observe(i/12.,y[i,fit])

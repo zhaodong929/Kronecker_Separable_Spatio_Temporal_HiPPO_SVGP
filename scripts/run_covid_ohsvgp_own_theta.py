@@ -33,7 +33,9 @@ from hipposvgp.likelihood import GaussianLikelihood  # noqa: E402
 from hipposvgp.multidim import HIPPOOSVGP, SE_kernel  # noqa: E402
 from baselines.covid_long_setting_b.archive import PredictionArchive  # noqa: E402
 from baselines.covid_long_setting_b.protocol import COVIDSettingBProtocol  # noqa: E402
-from scripts.run_traffic_ohsvgp import predictive_metrics  # noqa: E402
+from baselines.traffic_protocol_n import load_protocol
+from scripts.run_traffic_ohsvgp import LazyHiPPOLegS, predictive_metrics  # noqa: E402
+from benchmarks.three_domain.tracking import emit
 from stvgp_kronecker.benchmark_runtime import host_snapshot, resolve_torch_runtime  # noqa: E402
 from stvgp_kronecker.temporal_kernel_config import load_spectral_mixture_config  # noqa: E402
 
@@ -224,11 +226,23 @@ def write_csv(rows: list[dict[str, object]], path: Path) -> None:
         writer.writerows(rows)
 
 
+def basis_grid(x: np.ndarray, maximum: int) -> np.ndarray:
+    """Deterministic input-only interpolation grid; all labels remain in training."""
+    if maximum <= 0 or len(x) <= maximum:
+        return x
+    return x[np.linspace(0, len(x)-1, maximum, dtype=int)]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--protocol-npz", type=Path, required=True)
     parser.add_argument("--protocol-json", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--protocol-kind", choices=("covid", "traffic"), default="covid")
+    parser.add_argument("--basis-grid-size", type=int, default=0,
+                        help="Input-only subsampling for official RFF interpolation; 0 uses all inputs.")
+    parser.add_argument("--max-blocks", type=int, default=0)
+    parser.add_argument("--calibration-only", action="store_true")
     parser.add_argument("--kernel", choices=["rbf", "spectral_mixture_q2"], required=True)
     parser.add_argument("--spectral-mixture-json", type=Path)
     parser.add_argument("--inducing-size", type=int, default=32)
@@ -268,7 +282,9 @@ def main() -> None:
         torch.cuda.reset_peak_memory_stats(runtime.device)
     started = time.perf_counter()
 
-    protocol = COVIDSettingBProtocol(args.protocol_npz, args.protocol_json)
+    protocol = load_protocol(args.protocol_npz, args.protocol_json, protocol_kind=args.protocol_kind)
+    if args.protocol_kind == "traffic" and not args.delayed_observations:
+        raise ValueError("PEMS requires one-step delayed hidden observations")
     arrays = np.load(args.protocol_npz)
     metadata = json.loads(args.protocol_json.read_text(encoding="utf-8"))
     if int(metadata["split_seed"]) != args.seed:
@@ -301,11 +317,11 @@ def main() -> None:
 
     kernel = make_kernel(args, runtime, mixture)
     likelihood = GaussianLikelihood(args.initial_noise**2).to(device=runtime.device, dtype=runtime.dtype)
-    calibration_hippo = HiPPO_LegS(args.inducing_size, runtime.device, max_length=x_fit.shape[0] + 1).to(device=runtime.device, dtype=runtime.dtype)
+    calibration_hippo = LazyHiPPOLegS(args.inducing_size, runtime.device, runtime.dtype)
     calibration_model = make_model(
         kernel=kernel,
         likelihood=likelihood,
-        z_interpolate=x_fit,
+        z_interpolate=basis_grid(x_fit, args.basis_grid_size),
         rff_sample_size=args.rff_sample_size,
         previous_steps=0,
         hippo=calibration_hippo,
@@ -349,6 +365,7 @@ def main() -> None:
         optimizer.step()
         clamp_hyperparameters(calibration_model)
         losses_in_check.append(float(loss.detach()))
+        emit("train", iteration, {"negative_elbo": float(loss.detach()), **kernel_summary(calibration_model, args.kernel, mixture)})
         completed_iterations = iteration
         if iteration % args.task1_check_interval == 0 or iteration == args.calibration_iterations:
             row: dict[str, object] = {
@@ -361,6 +378,7 @@ def main() -> None:
             mean, variance = predict(calibration_model, validation_frequencies, x_validation, device=runtime.device, dtype=runtime.dtype)
             validation = predictive_metrics(y_validation + validation_offset, mean + validation_offset, variance)
             row.update({f"validation_{key}": value for key, value in validation.items()})
+            emit("validation", iteration, validation)
             if validation["nll"] < best_validation_nll:
                 best_validation_nll = validation["nll"]
                 best_validation_state = deepcopy(calibration_model.state_dict())
@@ -382,13 +400,27 @@ def main() -> None:
                     trace.append(row)
                     break
             trace.append(row)
+            print(json.dumps(row), flush=True)
             losses_in_check.clear()
 
     if best_validation_state is None:
         raise RuntimeError("No finite validation checkpoint was selected")
     calibration_model.load_state_dict(best_validation_state)
+    write_csv(trace, args.output_dir / "calibration_trace.csv")
+    torch.save({"model_state_dict": best_validation_state, "spectral_base": spectral_base,
+                "best_iteration": best_validation_iteration, "fit_beta": fit_beta,
+                "args": vars(args)}, args.output_dir / "selected_calibration.pt")
+    calibration_result = dict(status="calibration_complete", main_table_admitted=False,
+        best_validation_nll=best_validation_nll, best_validation_iteration=best_validation_iteration,
+        completed_iterations=completed_iterations, convergence_status=convergence_status,
+        elapsed_seconds=time.perf_counter()-started, protocol_kind=args.protocol_kind,
+        learned_theta=kernel_summary(calibration_model, args.kernel, mixture))
+    (args.output_dir / "calibration.json").write_text(json.dumps(calibration_result, indent=2))
+    if args.calibration_only:
+        print(json.dumps(calibration_result), flush=True)
+        return
     # COVID Task 1 exposes all jurisdictions, including future hidden sites.
-    initial_indices = np.arange(protocol.locations)
+    initial_indices = protocol.task1().locations
     full_calibration_mean, full_beta = ridge_mean(calibration_phi, calibration_y, initial_indices)
     stream_mean = np.einsum("tsp,p->ts", stream_phi, full_beta)
     x_calibration, y_calibration = sorted_xy(
@@ -400,9 +432,7 @@ def main() -> None:
         all_online_observations += sum(
             (block.stop - block.start) * test_indices.size for block in blocks[:-1]
         )
-    online_hippo = HiPPO_LegS(
-        args.inducing_size, runtime.device, max_length=x_calibration.shape[0] + all_online_observations + 1
-    ).to(device=runtime.device, dtype=runtime.dtype)
+    online_hippo = LazyHiPPOLegS(args.inducing_size, runtime.device, runtime.dtype)
     for parameter in calibration_model.kernel.parameters():
         parameter.requires_grad_(False)
     for parameter in calibration_model.likelihood.parameters():
@@ -410,7 +440,7 @@ def main() -> None:
     refit_model = make_model(
         kernel=calibration_model.kernel,
         likelihood=calibration_model.likelihood,
-        z_interpolate=x_calibration,
+        z_interpolate=basis_grid(x_calibration, args.basis_grid_size),
         rff_sample_size=args.rff_sample_size,
         previous_steps=0,
         hippo=online_hippo,
@@ -421,7 +451,7 @@ def main() -> None:
     )
     fixed_frequencies = (spectral_base / torch.exp(refit_model.kernel.log_ls)[None, :]).detach()
     refit_optimizer = torch.optim.Adam([refit_model.mv, refit_model.Lv], lr=args.learning_rate)
-    for iteration in range(completed_iterations):
+    for iteration in range(best_validation_iteration):
         batch_index = iteration % int(math.ceil(x_calibration.shape[0] / args.calibration_batch_size))
         start = batch_index * args.calibration_batch_size
         stop = min(x_calibration.shape[0], start + args.calibration_batch_size)
@@ -436,7 +466,7 @@ def main() -> None:
         torch.nn.utils.clip_grad_norm_([refit_model.mv, refit_model.Lv], 20.0)
         refit_optimizer.step()
     old_state = export_state(refit_model, fixed_frequencies)
-    previous_steps = x_calibration.shape[0]
+    previous_steps = len(basis_grid(x_calibration, args.basis_grid_size))
 
     rows: list[dict[str, object]] = []
     true_grid = np.empty((stream_y.shape[0], test_indices.size), dtype=np.float64)
@@ -444,7 +474,8 @@ def main() -> None:
     variance_grid = np.empty_like(true_grid)
     delayed_rows = 0
     archive = PredictionArchive(protocol, method="official_ohsvgp_multidimensional_setting_b_adapter", seed=args.seed)
-    for block_id, block in enumerate(blocks):
+    requested = len(blocks) if args.max_blocks <= 0 else min(args.max_blocks, len(blocks))
+    for block_id, block in enumerate(blocks[:requested]):
         model = None
         update_started = time.perf_counter()
         updates = [(block, train_indices, "current_visible")]
@@ -501,11 +532,17 @@ def main() -> None:
         mean_grid[block] = mean.reshape(block.stop - block.start, test_indices.size)
         variance_grid[block] = variance.reshape(block.stop - block.start, test_indices.size)
         rows.append({"block_id": block_id, "block_start": block.start, "block_stop": block.stop, "update_seconds": update_seconds, "prediction_seconds": prediction_seconds, **metric})
+        emit("online", block_id + 1, rows[-1])
         archive.append(protocol.week(block_id), mean.reshape(-1), variance.reshape(-1))
+        if (block_id+1) % 100 == 0:
+            print(json.dumps(dict(completed_blocks=block_id+1, elapsed_seconds=time.perf_counter()-started)), flush=True)
+            write_csv(rows, args.output_dir / "blocks.csv")
 
-    overall = predictive_metrics(true_grid, mean_grid, variance_grid)
+    overall = predictive_metrics(true_grid[:requested], mean_grid[:requested], variance_grid[:requested])
     payload = {
-        "status": "complete",
+        "status": "complete" if requested == len(blocks) else "pilot_complete",
+        "main_table_admitted": False,
+        "num_completed_blocks": requested,
         "implementation": "official OHSVGP core adapted to multidimensional COVID Setting B",
         "source_repository": "https://github.com/harrisonzhu508/HIPPOSVGP",
         "source_commit": "a1bff1b",
@@ -550,6 +587,7 @@ def main() -> None:
     write_csv(rows, args.output_dir / "blocks.csv")
     audit = archive.write(
         args.output_dir / "predictions.npz",
+        require_complete=requested == len(blocks),
         extra_metadata={
             "adapter": "official_ohsvgp_multidimensional_setting_b",
             "source_commit": "a1bff1b",

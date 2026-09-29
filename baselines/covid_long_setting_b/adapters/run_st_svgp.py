@@ -30,6 +30,7 @@ from jax.interpreters import xla as jax_xla
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 
+from benchmarks.three_domain.tracking import emit
 from baselines.covid_long_setting_b.archive import PredictionArchive
 from baselines.covid_long_setting_b.protocol import COVIDSettingBProtocol, KnownObservation
 from baselines.traffic_protocol_n import load_protocol
@@ -194,7 +195,11 @@ def train_task1(
     status = "max_budget_not_converged"
     while completed < int(iterations):
         steps = min(int(check_interval), int(iterations) - completed)
-        values = [float(np.asarray(train_op())) for _ in range(steps)]
+        values = []
+        for i in range(steps):
+            value = float(np.asarray(train_op()))
+            values.append(value)
+            emit("train", completed+i+1, {"negative_elbo": value})
         if not np.isfinite(values).all():
             raise FloatingPointError("ST-SVGP Task-1 objective became non-finite")
         completed += steps
@@ -217,6 +222,7 @@ def train_task1(
                 likelihood_values=likelihood_values,
             )
             row["checkpoint"] = str(checkpoint_path)
+        emit("train", completed, row)
         window = int(plateau_checks)
         if completed >= int(min_steps) and len(trace) >= 2 * window - 1:
             combined_trace = trace + [row]
@@ -383,6 +389,7 @@ def run_causal_segment(
             protocol.hidden_locations,
         )
         seconds.append(time.perf_counter() - started)
+        emit("online", information.hidden_query.stream_week + 1, {"update_and_prediction_seconds": seconds[-1], "mean_predictive_variance": float(np.mean(variance))})
         information_rows.append(information)
         means.append(mean)
         variances.append(variance)

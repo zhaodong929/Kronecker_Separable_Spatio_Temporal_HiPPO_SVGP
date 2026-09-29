@@ -24,6 +24,7 @@ import numpy as np
 import tensorflow as tf
 
 from osgpr import OSGPR_VFE
+from benchmarks.three_domain.tracking import emit
 from stvgp_kronecker.benchmark_runtime import (  # noqa: E402
     configure_tensorflow,
     host_snapshot,
@@ -33,6 +34,7 @@ from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
 
 
 NP_DTYPE = np.float64
+_OPTIMIZER_STEP = 0
 
 
 def flatten_inputs(times, coordinates, spatial_indices, block):
@@ -83,6 +85,7 @@ def make_kernel(theta, *, frozen: bool):
 def adapt_model(model, *, steps: int, learning_rate: float) -> int:
     """Run a bounded, causal Adam update for the official GPflow model."""
 
+    global _OPTIMIZER_STEP
     if steps <= 0:
         return 0
     optimizer = tf.optimizers.Adam(float(learning_rate))
@@ -97,8 +100,10 @@ def adapt_model(model, *, steps: int, learning_rate: float) -> int:
             for gradient in gradients
         ):
             raise FloatingPointError("Non-finite Bui adaptive objective or gradient")
+        emit("train", _OPTIMIZER_STEP + 1, {"negative_elbo": float(loss), "requested_steps": steps})
         optimizer.apply_gradients(zip(gradients, variables))
         completed += 1
+        _OPTIMIZER_STEP += 1
     return completed
 
 
@@ -463,6 +468,8 @@ def main():
             "prediction_seconds": prediction_seconds,
             **block_metrics,
         }
+        row["learned_theta"] = theta_from_model(model)
+        emit("online", block_id + 1, row)
         block_rows.append(row)
         all_true.append(y_test)
         all_mean.append(mean)

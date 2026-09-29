@@ -5,6 +5,20 @@ import pytest
 import torch
 
 
+@pytest.mark.parametrize("previous", [0, 17, 91])
+def test_lazy_legendre_matches_pinned_official_transition(previous):
+    from scripts.run_traffic_ohsvgp import LazyHiPPOLegS
+    from hipposvgp.hippo import HiPPO_LegS
+    x = torch.randn(7, 6, dtype=torch.float64, generator=torch.Generator().manual_seed(11))
+    initial = torch.randn(6, 4, dtype=torch.float64, generator=torch.Generator().manual_seed(12))
+    official = HiPPO_LegS(4, "cpu", max_length=100)
+    adapted = LazyHiPPOLegS(4, torch.device("cpu"), torch.float64)
+    for fast in (False, True):
+        expected = official(x, prev_discrete_steps=previous, ini=initial, fast=fast)
+        actual = adapted(x, prev_discrete_steps=previous, ini=initial, fast=fast)
+        torch.testing.assert_close(actual, expected, rtol=1e-12, atol=1e-12)
+
+
 def test_official_rff_lengthscale_gradient_matches_finite_difference():
     source = Path(__file__).resolve().parents[1]/'baselines/external/harrisonzhu508_HIPPOSVGP'
     if not source.exists():

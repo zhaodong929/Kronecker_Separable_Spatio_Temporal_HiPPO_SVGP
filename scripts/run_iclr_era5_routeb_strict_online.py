@@ -27,6 +27,7 @@ from scripts.run_hipposvgp_era5_routeb import (
 )
 from scripts.run_routeb_batch_empirical_bayes import object_array_bytes
 from scripts.run_routeb_online_parity_ladder import spatial_projection, temporal_factors
+from benchmarks.three_domain.tracking import emit
 from stvgp_kronecker.benchmark_runtime import (
     SynchronizedTimer,
     host_snapshot,
@@ -941,6 +942,7 @@ def main():
             row["peak_cuda_allocated_mib"] = (
                 torch.cuda.max_memory_allocated(runtime.device) / 1024.0**2
             )
+        emit("online", block_id + 1, row)
         rows.append(row)
         if delayed_observation_blocks > 0:
             pending_test_contexts.append(
