@@ -414,7 +414,12 @@ class TorchJointSSGPKronHiPPOSVGP:
         beta_drift: TensorLike | None = None,
         no_transfer: bool = False,
         L_t_override: TensorLike | None = None,
+        C_observed: TensorLike | None = None,
     ) -> TorchStructuredKronState:
+        if C_observed is not None and not torch.equal(
+            _as_tensor(C_observed, device=self.device, dtype=self.dtype), self.C
+        ):
+            raise ValueError("Changed observation geometry requires the multi-geometry solver")
         y_tensor = _as_tensor(y_vec, device=self.device, dtype=self.dtype).reshape(-1)
         phi = _as_tensor(Phi, device=self.device, dtype=self.dtype)
         t_n = _as_tensor(T_n, device=self.device, dtype=self.dtype)

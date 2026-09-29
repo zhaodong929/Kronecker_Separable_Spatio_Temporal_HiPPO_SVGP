@@ -35,6 +35,7 @@ from stvgp_kronecker.temporal_kernel_config import (
     load_spectral_mixture_config,
     temporal_kernel_metadata,
 )
+from stvgp_kronecker.joint_ssgp_kron.multi_geometry import TorchMultiGeometryHiPPOSVGP
 from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
 from stvgp_kronecker.data.hipposvgp_era5 import load_hipposvgp_era5
 from stvgp_kronecker.joint_ssgp_kron.kron_utils import solve_spd, vec_f
@@ -469,7 +470,7 @@ def main():
     solver_setup_started = time.perf_counter()
     if solver_backend == "torch":
         assert runtime is not None
-        model = TorchJointSSGPKronHiPPOSVGP(
+        model = (TorchMultiGeometryHiPPOSVGP if delayed_observation_blocks > 0 else TorchJointSSGPKronHiPPOSVGP)(
             Ks=ks,
             C=c_train,
             sigma2=sigma2,
@@ -875,6 +876,7 @@ def main():
             "update_seconds": update_seconds,
             "prediction_seconds": prediction_seconds,
             "persistent_state_bytes": persistent_state_bytes,
+            "solver_diagnostics": {**state.metadata, "max_solve_relative_residual": getattr(getattr(state,"solver",None),"max_relative_residual",None)},
             "solver_backend": solver_backend,
             "solver_device": solver_device,
             "solver_dtype": solver_dtype,
@@ -909,6 +911,8 @@ def main():
     persistent_bytes = rows[-1]["persistent_state_bytes"]
     payload = {
         "implementation": "Route B strict-online structured joint beta-GP",
+        "geometry_solver": ("sum_kronecker_sylvester_preconditioned_cg" if delayed_observation_blocks > 0 else "single_sylvester"),
+        "fixed_geometry_complexity_claim_applies": delayed_observation_blocks == 0,
         "protocol": (
             "Task-1 empirical-Bayes calibration and all-visible-location posterior initialization; "
             "frozen theta; delayed-observation strict online stream"

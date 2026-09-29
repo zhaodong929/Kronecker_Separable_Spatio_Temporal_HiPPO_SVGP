@@ -46,3 +46,12 @@ historical delayed-label insertion, with full causal-prefix replay. It preserves
 upstream mean-field covariance projection. Five focused checks cover official
 full-observation parity, dense one-site conditioning, release boundaries, and
 mixture metrics. Masked training, covariates, and final admission remain open.
+
+Delayed visible/hidden updates now retain a sum of spatial Gram Kronecker
+terms in `multi_geometry.py`. Sylvester-preconditioned CG solves this precision
+with explicit residual checks (target 1e-9, accepted true relative residual at
+most 1e-8). Unconverged solves fail. This is a multiple-geometry adaptation,
+not the paper's single-Sylvester complexity guarantee. Dense joint-Gaussian
+parity covers mean, variance, noncommuting geometries and rectangular temporal
+transfers; a real-runner perturbation test checks release boundaries. GPU and
+full-scale numerical qualification remain necessary before final admission.
