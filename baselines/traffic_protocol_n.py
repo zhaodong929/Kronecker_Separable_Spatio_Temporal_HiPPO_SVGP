@@ -31,6 +31,18 @@ class TrafficProtocolN(COVIDSettingBProtocol):
             targets=self._calibration_y[:, locations].copy(),
         )
 
+    def spatial_inducing_locations(self, count: int) -> np.ndarray:
+        """Preserve stored grids; derive missing sizes from input geometry only."""
+        count = int(count)
+        if count in self._spatial_inducing:
+            return self._spatial_inducing[count].copy()
+        if not 1 <= count <= self.visible_locations.size:
+            raise ValueError('Spatial inducing count exceeds initial visible sites')
+        from stvgp_kronecker.joint_ssgp_kron.synthetic import select_spatial_inducing_indices
+        coordinates = self.coordinates[self.visible_locations]
+        indices = select_spatial_inducing_indices(coordinates,count,method='farthest')
+        return coordinates[indices].copy()
+
     def make_audit(self) -> ProtocolAudit:
         return ProtocolAudit(self)
 

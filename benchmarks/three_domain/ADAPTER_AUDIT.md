@@ -179,3 +179,8 @@ unchanged (tested). Final evaluation still computes full mixture CRPS and CDF
 coverage. The PEMS pipeline first exercises the entire 2016-step initial window,
 refit, and three legal online updates on its allocated GPU before candidate
 training. GPU memory/runtime feasibility is an empirical gate, not assumed.
+
+The stored PEMS protocol contains only a 32-point inducing grid. For a missing
+candidate size, the traffic adapter derives the same deterministic farthest
+point design used by the exporter from visible-site coordinates only; no
+labels enter grid construction. Existing stored grids remain unchanged.
