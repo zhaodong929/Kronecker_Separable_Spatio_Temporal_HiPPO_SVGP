@@ -1,7 +1,8 @@
 # Three-domain comparison rerun
 
-Scope: the ERA5, COVID and PEMS main comparisons only. The 93 candidate final
-runs in `plan.json` include one MGPVAE-family comparator per domain. Ablations
+Scope: the ERA5, COVID and PEMS main comparisons only. The 65 candidate final
+runs in `plan.json` compare KronHiPPO-SVGP, OSGPR, OHSVGP with a spatial
+kernel, ST-SVGP and MGPVAE on all three domains (5/5/3 paired splits). Ablations
 and mechanism experiments are excluded. A candidate is not a completed or
 publication-admitted result.
 
@@ -31,3 +32,11 @@ base; its ancestry includes the COVID exploratory archives and ERA5 archived
 results. Those are audit evidence, not new results. `codex/fair-three-domain-comparison`
 is the active correction/campaign branch. No remote branches are deleted or
 force-pushed.
+
+The 2026-09-29 baseline-selection policy is authoritative. No StreamingSGPR,
+Kron-STGP, Persistence, IGNNK, LMC/ICM/FSDE or HiPPO-SVGPVAE runs belong to
+this campaign. Legacy scripts retain historical identifiers; display names use
+KronHiPPO-SVGP. Each external method needs independent legal validation.
+Execution uses DoC; Vast.ai is disabled by user instruction. Previous 80/93
+run estimates are obsolete. Runtime needs new per-method pilots, especially
+ST-SVGP replay and MGPVAE adaptation; count scaling is not an ETA.
