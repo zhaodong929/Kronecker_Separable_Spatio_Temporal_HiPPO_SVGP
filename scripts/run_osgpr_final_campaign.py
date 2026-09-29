@@ -21,7 +21,7 @@ def main():
     source=a.compute_root/f"protocol/{'covid-v2' if a.dataset=='covid' else 'pems'}/seed{a.seed}"
     expected_steps,expected_sites,initial_sites=(143,10,52) if a.dataset=='covid' else (50100,65,260)
     fold_function='build_fold' if a.dataset=='covid' else 'build_pems_fold'
-    tests=['tests/test_osgpr_release_boundary.py']
+    tests=['tests/test_osgpr_release_boundary.py','tests/test_osgpr_graph_optimizer.py']
     with (a.output/'tests.txt').open('w') as f:
         subprocess.run([worker,'-m','pytest','-q',*tests],stdout=f,stderr=subprocess.STDOUT,check=True)
     subprocess.run([worker,'-c',"import tensorflow as tf; assert tf.config.list_physical_devices('GPU')"],check=True)
@@ -36,7 +36,7 @@ def main():
             source_commit=a.release,worker_python=worker,
             input_files=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')],
             temporal_inducing=mt,spatial_inducing=ms,calibration_steps_per_block=budget,
-            online_steps_per_update=updates,initial_block_times=10 if a.dataset=='covid' else 256,
+            online_steps_per_update=updates,initial_optimizer_execution='eager' if a.dataset=='covid' else 'graph',initial_block_times=10 if a.dataset=='covid' else 256,
             main_table_admitted=False)
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
@@ -48,7 +48,8 @@ def main():
             '--seed',str(a.seed),'--mt',str(mt),'--ms',str(ms),'--adaptive',
             '--adaptive-calibration-steps',str(budget),'--adaptive-online-steps',str(updates),
             '--delayed-observations','--device','cuda','--calibration-block-size',
-            '10' if a.dataset=='covid' else '256']
+            '10' if a.dataset=='covid' else '256','--initial-optimizer-execution',
+            'eager' if a.dataset=='covid' else 'graph']
         if calibration_only:command.append('--task1-validation-only')
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
             '--output',str(output),'--',*command],check=True)

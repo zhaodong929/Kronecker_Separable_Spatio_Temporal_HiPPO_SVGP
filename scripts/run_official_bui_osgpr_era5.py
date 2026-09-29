@@ -82,13 +82,32 @@ def make_kernel(theta, *, frozen: bool):
     return kernel
 
 
-def adapt_model(model, *, steps: int, learning_rate: float) -> int:
+def adapt_model(model, *, steps: int, learning_rate: float, execution: str = 'eager') -> int:
     """Run a bounded, causal Adam update for the official GPflow model."""
 
     global _OPTIMIZER_STEP
     if steps <= 0:
         return 0
     optimizer = tf.optimizers.Adam(float(learning_rate), jit_compile=False)
+    if execution not in {'eager','graph'}:
+        raise ValueError('Unknown TensorFlow optimizer execution mode')
+    if execution == 'graph':
+        @tf.function(autograph=False,jit_compile=False)
+        def graph_step():
+            with tf.GradientTape() as tape:
+                loss=tf.debugging.check_numerics(model.training_loss(),'Nonfinite Bui objective')
+            variables=model.trainable_variables
+            gradients=tape.gradient(loss,variables)
+            if any(gradient is None for gradient in gradients):
+                raise FloatingPointError('Missing Bui objective gradient')
+            gradients=[tf.debugging.check_numerics(g,'Nonfinite Bui gradient') for g in gradients]
+            optimizer.apply_gradients(zip(gradients,variables))
+            return loss
+        for _ in range(int(steps)):
+            loss=graph_step()
+            emit('train',_OPTIMIZER_STEP+1,dict(negative_elbo=float(loss),requested_steps=steps,execution='graph'))
+            _OPTIMIZER_STEP+=1
+        return int(steps)
     completed = 0
     for _ in range(int(steps)):
         with tf.GradientTape() as tape:
@@ -216,6 +235,7 @@ def main():
         ),
     )
     parser.add_argument("--adaptive-calibration-steps", type=int, default=25)
+    parser.add_argument("--initial-optimizer-execution", choices=["eager","graph"], default="eager")
     parser.add_argument("--adaptive-online-steps", type=int, default=5)
     parser.add_argument("--adaptive-learning-rate", type=float, default=0.01)
     parser.add_argument("--initial-ell-t", type=float, default=0.05)
@@ -362,6 +382,7 @@ def main():
                     model,
                     steps=args.adaptive_calibration_steps,
                     learning_rate=args.adaptive_learning_rate,
+                    execution=args.initial_optimizer_execution,
                 )
                 z = np.asarray(model.inducing_variable.Z)
                 noise_variance = float(model.likelihood.variance.numpy())
