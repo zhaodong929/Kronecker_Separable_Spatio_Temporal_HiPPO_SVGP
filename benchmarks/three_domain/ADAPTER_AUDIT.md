@@ -96,3 +96,30 @@ and per-step random seed to reconstruct the mixture. Validation records
   clean comparison. Do not drop covariates silently.
 - Final cross-method metrics, independent time/site/scale checks, and revised
   manuscript wording for the proposal's multi-geometry solver adaptation.
+
+## Gaussian ST-SVGP continuation qualification
+
+The optional `--online-backend stateful` adapter retains the official kernel,
+likelihood, inducing locations and frozen parameters. Its Gaussian update is
+qualified against unit-natural-gradient BayesNewton prefix replay, including
+one-step delayed labels. Spatial residual covariance enters prediction, not
+site precision. The replay backend remains the default and remains in the
+already submitted COVID release.
+
+A real COVID seed5 three-step integration, using the same trained checkpoint,
+agreed with replay to maximum absolute mean error 1.30e-7 and variance error
+3.37e-9. Small synthetic sparse comparisons also pass. These are correctness
+checks, not final benchmark measurements. Stateful timing separately records
+initial filtering/prefix cost and subsequent update/prediction cost. PEMS GPU
+qualification and long-run numerical stability remain pending.
+
+## Interpretation of the mean function
+
+The proposal jointly updates its Bayesian linear coefficients and GP state
+online. Current external adapters use an initial-data ridge mean and freeze
+that mean online. They share the covariates and legal observation boundaries,
+but their mean-learning dynamics are not identical. Accordingly this is an
+end-to-end comparison of the stated models/adaptations; accuracy differences
+cannot be attributed solely to the GP inference algorithm or solver. This
+limitation must appear in the manuscript. No additional ablation is scheduled
+and no running configuration is silently changed to remove the distinction.

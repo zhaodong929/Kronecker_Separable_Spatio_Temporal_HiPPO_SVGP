@@ -50,6 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--task1-plateau-checks", type=int, default=10)
     parser.add_argument("--task1-plateau-relative-improvement", type=float, default=1e-3)
     parser.add_argument("--online-inference-steps", type=int, default=5)
+    parser.add_argument('--online-backend', choices=['replay','stateful'], default='replay')
     parser.add_argument(
         "--history-window",
         type=int,
@@ -415,6 +416,42 @@ def run_causal_segment(
     return information_rows, np.stack(means), np.stack(variances), np.asarray(seconds)
 
 
+def run_stateful_segment(protocol, inducing, kernel_values, likelihood_values, start, end):
+    """Exact frozen Gaussian continuation; no observation-history replay per update."""
+    from baselines.st_svgp_filter import GaussianSTFilter
+    # A small, label-free container constructs the official kernel/likelihood.
+    model = make_model(protocol.calibration_times[:2,None],
+        np.repeat(protocol.coordinates[None],2,axis=0),np.zeros((2,protocol.locations)),
+        inducing,trainable_inducing=False)
+    assign_frozen_hyperparameters(model,kernel_values,likelihood_values)
+    state = GaussianSTFilter(model.kernel,model.likelihood,protocol.coordinates)
+    mean_function = get_mean(protocol)
+    initial = protocol.task1()
+    for i,t in enumerate(protocol.calibration_times):
+        state.advance(t,initial.locations,initial.targets[i]-mean_function.at(t,initial.locations))
+    np.asarray(state.mean)  # include asynchronous initial filtering before timing online updates
+    information_rows=[];means=[];variances=[];seconds=[]
+    for week in range(end):
+        started=time.perf_counter()
+        info=protocol.week(week)
+        delayed={}
+        if info.delayed_hidden is not None:
+            d=info.delayed_hidden
+            delayed=dict(delayed_time=d.time,delayed_sites=d.locations,
+                delayed_values=d.targets-mean_function.at(d.time,d.locations))
+        current=info.current_visible
+        state.advance(current.time,current.locations,
+            current.targets-mean_function.at(current.time,current.locations),**delayed)
+        if week < start: continue
+        mean,variance=state.predict(protocol.hidden_locations)
+        mean=mean+mean_function.at(info.hidden_query.time,protocol.hidden_locations)
+        elapsed=time.perf_counter()-started
+        information_rows.append(info);means.append(mean);variances.append(variance);seconds.append(elapsed)
+        emit('online',week+1,dict(update_and_prediction_seconds=elapsed,
+            mean_predictive_variance=float(np.mean(variance)),backend='stateful'))
+    return information_rows,np.stack(means),np.stack(variances),np.asarray(seconds)
+
+
 def main() -> None:
     args = parse_args()
     protocol = load_protocol(
@@ -429,6 +466,8 @@ def main() -> None:
         raise ValueError(f"--spatial-inducing must be between 1 and {protocol.locations}")
     if args.history_window < 0:
         raise ValueError("--history-window must be non-negative")
+    if args.online_backend == 'stateful' and (args.history_window or args.online_inference_steps != 1):
+        raise ValueError('Gaussian state continuation requires full history and one conjugate natural update')
     segment_mode = args.segment_output is not None or args.segment_start != 0 or args.segment_end is not None
     segment_start = int(args.segment_start)
     segment_end = requested_weeks if args.segment_end is None else int(args.segment_end)
@@ -539,23 +578,29 @@ def main() -> None:
     # Rebuild the legal history before the requested segment. Current hidden
     # labels never enter this list: protocol.week() exposes only delayed hidden
     # labels and current visible labels.
-    for history_week in range(segment_start):
+    for history_week in range(segment_start if args.online_backend == 'replay' else 0):
         history = protocol.week(history_week)
         if history.delayed_hidden is not None:
             arrived.append(history.delayed_hidden)
         arrived.append(history.current_visible)
 
-    information_rows, means, variances, online_seconds = run_causal_segment(
-        protocol,
-        frozen_inducing,
-        frozen_kernel_values,
-        frozen_likelihood_values,
-        arrived,
-        segment_start,
-        segment_end,
-        args.online_inference_steps,
-        args.task1_newton_learning_rate,
-    )
+    continuation_started = time.perf_counter()
+    if args.online_backend == 'stateful':
+        information_rows, means, variances, online_seconds = run_stateful_segment(
+            protocol,frozen_inducing,frozen_kernel_values,frozen_likelihood_values,segment_start,segment_end)
+    else:
+        information_rows, means, variances, online_seconds = run_causal_segment(
+            protocol,
+            frozen_inducing,
+            frozen_kernel_values,
+            frozen_likelihood_values,
+            arrived,
+            segment_start,
+            segment_end,
+            args.online_inference_steps,
+            args.task1_newton_learning_rate,
+        )
+    continuation_total_seconds = time.perf_counter()-continuation_started
 
     if segment_mode:
         assert args.segment_output is not None
@@ -571,12 +616,14 @@ def main() -> None:
         )
         segment_status = {
             "status": "segment_complete",
-            "method": "ST-SVGP causal refit",
+            "method": "ST-SVGP Gaussian continuation" if args.online_backend == "stateful" else "ST-SVGP causal refit",
             "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
             "seed": int(args.seed),
             "segment_start": segment_start,
             "segment_end": segment_end,
             "task1_seconds": task1_seconds,
+            "online_backend": args.online_backend,
+            "continuation_total_seconds": continuation_total_seconds,
             "online_seconds_total": float(np.sum(online_seconds)),
             "online_seconds_per_week": float(np.mean(online_seconds)),
             "audit": {
@@ -593,7 +640,7 @@ def main() -> None:
         print(json.dumps(segment_status, indent=2))
         return
 
-    archive = PredictionArchive(protocol, method="st_svgp_causal_refit", seed=args.seed)
+    archive = PredictionArchive(protocol, method="st_svgp_" + args.online_backend, seed=args.seed)
     for information, mean, variance in zip(information_rows, means, variances):
         archive.append(information, mean, variance)
 
@@ -602,7 +649,7 @@ def main() -> None:
         args.output_dir / "predictions.npz",
         require_complete=requested_weeks == protocol.online_weeks,
         extra_metadata={
-            "adapter": "official_aaltoml_st_svgp_causal_refit",
+            "adapter": "official_aaltoml_st_svgp_" + args.online_backend,
             "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
             "task1_iterations": int(args.task1_iterations),
             "online_inference_steps": int(args.online_inference_steps),
@@ -610,11 +657,12 @@ def main() -> None:
             "task1_state_source": task1_state_source,
             "task1_convergence": convergence,
             "history_window": int(args.history_window),
+            "online_backend": args.online_backend,
         },
     )
     status = {
         "status": "complete",
-        "method": "ST-SVGP causal refit",
+        "method": "ST-SVGP Gaussian continuation" if args.online_backend == "stateful" else "ST-SVGP causal refit",
         "source": "AaltoML/spatio-temporal-GPs",
         "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
         "protocol": getattr(protocol, "protocol_id", "covid_long_setting_b"),
@@ -624,6 +672,9 @@ def main() -> None:
         "task1_state_source": task1_state_source,
         "task1_convergence": convergence,
         "history_window": int(args.history_window),
+        "online_backend": args.online_backend,
+        "continuation_total_seconds": continuation_total_seconds,
+        "initial_filter_and_prefix_seconds": max(0.,continuation_total_seconds-float(np.sum(online_seconds))),
         "online_seconds_total": float(np.sum(online_seconds)),
         "online_seconds_per_week": float(np.mean(online_seconds)),
         "online_update_prediction_seconds": [float(value) for value in online_seconds],
@@ -631,12 +682,13 @@ def main() -> None:
         "delayed_observation_rows": audit['delayed_hidden_labels'],
         "main_table_admitted": False,
         "final": gaussian_metrics(protocol.evaluation_targets()[:requested_weeks], means, variances),
-        "note": (
+        "note": ('Frozen Gaussian state continuation using official kernel/likelihood; qualified against official prefix replay.'
+            if args.online_backend == 'stateful' else (
             "The official API has no posterior extension method for a growing irregular grid. "
             "Each online posterior is therefore reconstructed from legal arrived observations with "
             "Task-1 kernel, likelihood and inducing locations frozen. A non-zero history_window is "
             "a predeclared bounded causal-refit adaptation, not posterior transfer."
-        ),
+        )),
     }
     (args.output_dir / "status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
     (args.output_dir / "result.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")

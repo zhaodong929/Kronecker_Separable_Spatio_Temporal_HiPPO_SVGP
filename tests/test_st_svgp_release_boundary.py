@@ -1,10 +1,12 @@
 from types import SimpleNamespace
 import numpy as np
+import pytest
 
 
-def test_causal_refit_uses_hidden_targets_only_after_release():
+@pytest.mark.parametrize("backend", ["replay", "stateful"])
+def test_causal_refit_uses_hidden_targets_only_after_release(backend):
     from baselines.covid_long_setting_b.adapters.run_st_svgp import (
-        ArrivedObservations, make_model, frozen_hyperparameters, run_causal_segment)
+        ArrivedObservations, make_model, frozen_hyperparameters, run_causal_segment, run_stateful_segment)
     class Protocol:
         coordinates = np.array([[0., 0.], [.2, .3]])
         calibration_times = np.array([0., .1, .2])
@@ -26,7 +28,10 @@ def test_causal_refit_uses_hidden_targets_only_after_release():
         times, grid, targets = arrived.as_grid()
         model = make_model(times, grid, targets, protocol.coordinates, trainable_inducing=False)
         kernel, likelihood = frozen_hyperparameters(model)
-        result = run_causal_segment(protocol, protocol.coordinates, kernel, likelihood, arrived, 0, 3, 1, 1.)
+        if backend == "stateful":
+            result = run_stateful_segment(protocol, protocol.coordinates, kernel, likelihood, 0, 3)
+        else:
+            result = run_causal_segment(protocol, protocol.coordinates, kernel, likelihood, arrived, 0, 3, 1, 1.)
         return result[1], result[2]
     y = np.array([[.4,.6],[.2,.3],[.1,.2]])
     baseline = run(y)
