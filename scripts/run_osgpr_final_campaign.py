@@ -2,6 +2,7 @@
 """Official Bui OSGPR with own initial and chronological update-budget tuning."""
 import argparse
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -15,6 +16,7 @@ def main():
     p.add_argument('--release',required=True)
     p.add_argument('--compute-root',type=Path,required=True)
     a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
+    os.environ['HIPPO_TEST_DEVICE']='cuda'
     worker=str(a.compute_root/'env-osgpr/bin/python')
     source=a.compute_root/f"protocol/{'covid-v2' if a.dataset=='covid' else 'pems'}/seed{a.seed}"
     expected_steps,expected_sites,initial_sites=(143,10,52) if a.dataset=='covid' else (50100,65,260)
