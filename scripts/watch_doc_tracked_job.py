@@ -17,6 +17,7 @@ def main():
     p.add_argument('--output', type=Path, required=True)
     p.add_argument('--vault-note', type=Path, required=True)
     p.add_argument('--max-polls', type=int, default=73)
+    p.add_argument('--kind', choices=['final', 'baseline-validation'], default='final')
     a = p.parse_args()
     a.output.mkdir(parents=True, exist_ok=True)
     script = '''import pathlib,json,hashlib
@@ -31,6 +32,9 @@ for name in PATHS:
    if (d/f).exists():item[f]=json.loads((d/f).read_text())
   attempts.append(item)
  row['attempts']=attempts
+ for method in ('ohsvgp','osgpr','st_svgp'):
+  marker=p/method/'completed.json'
+  if marker.exists():row.setdefault('validation_completed',[]).append(method)
  if row.get('exit',{}).get('exit_code')==0:
   row['sha256']={}
   for f in ('result.json','predictions.npz'):
@@ -55,8 +59,12 @@ print(json.dumps(rows))
                 rows = json.loads(r.stdout)
                 record['results'] = rows
                 if all('exit' in row for row in rows):
-                    success = all(row['exit']['exit_code'] == 0 and row['sha256'].keys() >= {'result.json','predictions.npz'} and
-                        any(x.get('terminal.json',{}).get('status') == 'completed_and_verified' for x in row['attempts']) for row in rows)
+                    if a.kind == 'baseline-validation':
+                        success = all(row['exit']['exit_code'] == 0 and
+                            set(row.get('validation_completed',[])) == {'ohsvgp','osgpr','st_svgp'} for row in rows)
+                    else:
+                        success = all(row['exit']['exit_code'] == 0 and row.get('sha256',{}).keys() >= {'result.json','predictions.npz'} and
+                            any(x.get('terminal.json',{}).get('status') == 'completed_and_verified' for x in row['attempts']) for row in rows)
                     status = 'completed_and_verified' if success else 'failed_or_incomplete'
                     record['status'] = status
         except Exception as error:

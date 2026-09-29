@@ -21,8 +21,13 @@ def import_official(source):
     return STMarkovGaussianProcessVAEExternal
 
 
-def make_model(source, coordinates, *, seed=0, latent=2, width=16):
+def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spatial_covariance=False):
     cls = import_official(source)
+    if correct_spatial_covariance:
+        from .spatial_moments import corrected_energy
+        class SpatialCovarianceCorrectedMGPVAE(cls):
+            energy = corrected_energy
+        cls = SpatialCovarianceCorrectedMGPVAE
     import jax.numpy as jnp
     import objax
     from mgpvae.kernels import SpatiotemporalMatern32

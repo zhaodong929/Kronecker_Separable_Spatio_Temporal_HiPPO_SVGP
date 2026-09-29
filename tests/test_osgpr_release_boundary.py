@@ -26,7 +26,8 @@ def test_osgpr_hidden_observation_changes_only_predictions_after_release(tmp_pat
             '--protocol-npz', str(output/'protocol.npz'), '--output', str(output/'result.json'),
             '--blockwise-output', str(output/'blocks.csv'), '--predictions-output', str(output/'predictions.npz'),
             '--mt', '2', '--ms', '2', '--adaptive', '--adaptive-calibration-steps', '2',
-            '--adaptive-online-steps', '2', '--delayed-observations', '--seed', '5', '--device', 'cpu']
+            '--adaptive-online-steps', '2', '--delayed-observations', '--seed', '5', '--device', 'cpu',
+            '--initial-ell-t', '1.0', '--initial-ell-s', '2.0', '2.0']
         result = subprocess.run(command, cwd=root, capture_output=True, text=True, timeout=180,
             env={**os.environ, 'OMP_NUM_THREADS': '2', 'OPENBLAS_NUM_THREADS': '2',
                  'TF_NUM_INTEROP_THREADS': '2', 'TF_NUM_INTRAOP_THREADS': '2'})
