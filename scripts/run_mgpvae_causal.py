@@ -208,7 +208,9 @@ def main():
         truth = truth_for_scoring[step]
         score = gaussian_mixture_metrics(truth, components, noise)
         calibration_score = gaussian_mixture_calibration(truth, components, noise)
-        row = dict(step=step+1, update_and_prediction_seconds=seconds, **score, **calibration_score)
+        coverage90 = gaussian_mixture_calibration(truth, components, noise, [.9])['coverage'][0]
+        row = dict(step=step+1, update_and_prediction_seconds=seconds, coverage90=coverage90,
+            **score, **calibration_score)
         emit('online', step+1, row)
         rows.append(row)
         latent_means.append(lm); latent_vars.append(lv); seeds.append(seed)
@@ -221,11 +223,15 @@ def main():
                 decoder_noise_variance=noise, spatial_order=ordering,
                 test_indices=protocol.hidden_locations, times=protocol.stream_times[:step+1])
             (a.output_dir/'online-metrics.json').write_text(json.dumps(rows, indent=2))
+    pooled_coverage = np.mean([row['coverage'] for row in rows], axis=0)
+    scores = {k:float(np.mean([row[k] for row in rows])) for k in ['nlpd','crps','coverage90']}
+    scores['rmse'] = float(np.sqrt(np.mean((truth_for_scoring[:n]-np.asarray(means))**2)))
+    scores['ece'] = float(np.mean(np.abs(pooled_coverage-np.asarray(rows[0]['levels']))))
     result = dict(status='complete', method='MGPVAE causal adaptation', official_commit=COMMIT,
         main_table_admitted=False, covariance_pushforward_corrected=True, initial_observed_sites=len(initial.locations),
         expected_steps=n, delayed_observation_rows=delayed_rows, current_hidden_labels_read=0,
         predictive_family='finite Gaussian decoder mixture', prediction_samples=a.prediction_samples,
-        scores={k:float(np.mean([row[k] for row in rows])) for k in ['nlpd','crps','ece']},
+        scores=scores, coverage_levels=rows[0]['levels'], pooled_coverage=pooled_coverage.tolist(),
         task1_validation_seconds=calibration['elapsed_seconds'], refit_and_initial_filter_seconds=refit_seconds,
         online_update_prediction_seconds=online_seconds, online_metrics_include_scoring_time=False,
         normalization='common protocol; shared Task-1 covariate mean', selected_iteration=selected['step'],
