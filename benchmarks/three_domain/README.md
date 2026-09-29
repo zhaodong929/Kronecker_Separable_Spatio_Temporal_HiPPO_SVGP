@@ -40,3 +40,9 @@ KronHiPPO-SVGP. Each external method needs independent legal validation.
 Execution uses DoC; Vast.ai is disabled by user instruction. Previous 80/93
 run estimates are obsolete. Runtime needs new per-method pilots, especially
 ST-SVGP replay and MGPVAE adaptation; count scaling is not an ETA.
+
+`PartialPrefixFilter` adds a reference for observed-site row selection and
+historical delayed-label insertion, with full causal-prefix replay. It preserves
+upstream mean-field covariance projection. Five focused checks cover official
+full-observation parity, dense one-site conditioning, release boundaries, and
+mixture metrics. Masked training, covariates, and final admission remain open.

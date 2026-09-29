@@ -14,7 +14,7 @@ SEED="${SLURM_ARRAY_TASK_ID}"
 export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4
 export MPLBACKEND=Agg PYTHONHASHSEED=0
 cd "${SOURCE}"
-OUTPUT="${CAMPAIGN}/results/pems/seed${SEED}/calibration"
+OUTPUT="${CAMPAIGN}/results/pems/seed${SEED}/calibration-${SLURM_ARRAY_JOB_ID}"
 mkdir -p "${OUTPUT}"
 trap 'printf "%s\n" "{\"stage\":\"task1_calibration\",\"main_table_admitted\":false,\"status\":\"failed\"}" > "${OUTPUT}/campaign_status.json"' ERR
 sha256sum --quiet -c "${CAMPAIGN}/source.sha256"
@@ -23,8 +23,16 @@ nvidia-smi --query-gpu=name,memory.total,driver_version --format=csv > "${OUTPUT
 "${PYTHON}" -c 'import torch; assert torch.cuda.is_available(), "CUDA required"; print(torch.__version__, torch.cuda.get_device_name())'
 "${PYTHON}" -m pip freeze > "${OUTPUT}/environment.txt" 2>/dev/null || "${CAMPAIGN}/uv" pip freeze --python "${PYTHON}" > "${OUTPUT}/environment.txt"
 "${PYTHON}" -m pytest -q tests/test_routeb_torch_backend.py tests/test_temporal_analytic_gradients.py > "${OUTPUT}/backend-tests.txt"
-"${PYTHON}" scripts/prepare_fair_pems.py --data-root "${CAMPAIGN}/data" --output "${CAMPAIGN}/protocol/pems" --seeds "${SEED}"
 PROTOCOL="${CAMPAIGN}/protocol/pems/seed${SEED}"
+if [ ! -f "${PROTOCOL}/raw_provenance.json" ]; then
+  "${PYTHON}" scripts/prepare_fair_pems.py --data-root "${CAMPAIGN}/data" --output "${CAMPAIGN}/protocol/pems" --seeds "${SEED}"
+fi
+"${PYTHON}" - "${PROTOCOL}" <<'CHECK'
+import hashlib,json,pathlib,sys
+p=pathlib.Path(sys.argv[1]); meta=json.loads((p/'protocol.json').read_text())
+assert hashlib.sha256((p/'protocol.npz').read_bytes()).hexdigest()==meta['protocol_npz_sha256']
+assert hashlib.sha256((p/'split.json').read_bytes()).hexdigest()==meta['split_manifest_sha256']
+CHECK
 # Development/calibration run only. This does not publish a formal score or
 # claim convergence at the iteration budget. Selection uses Task-1 validation.
 printf '%s\n' '{"stage":"task1_calibration","main_table_admitted":false,"status":"running"}' > "${OUTPUT}/campaign_status.json"

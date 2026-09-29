@@ -253,10 +253,7 @@ def main() -> None:
 
     spectral_mixture = load_spectral_mixture_config(args.spectral_mixture_json)
     if args.temporal_kernel == "spectral_mixture":
-        if args.representation != "analytic_hippo_rff":
-            raise ValueError("The fixed spectral-mixture screen is only supported by HiPPO-RFF")
-        if spectral_mixture is None:
-            raise ValueError("--spectral-mixture-json is required for spectral_mixture")
+        raise NotImplementedError("This empirical-Bayes backend currently implements Matern32 only")
     elif spectral_mixture is not None:
         raise ValueError("--spectral-mixture-json requires --temporal-kernel spectral_mixture")
     if args.early_stopping_patience_validations < 0:
@@ -367,8 +364,6 @@ def main() -> None:
         rff_sample_size=args.rff_sample_size,
         seed=args.model_seed,
         objective_type=args.training_objective,
-        temporal_kernel=args.temporal_kernel,
-        spectral_mixture=spectral_mixture,
     ).to(device=runtime.device, dtype=runtime.dtype)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
     version_index = int(args.objective_optimization_version[1])
