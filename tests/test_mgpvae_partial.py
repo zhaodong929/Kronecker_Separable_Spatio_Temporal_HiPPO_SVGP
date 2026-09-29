@@ -71,3 +71,25 @@ def test_one_observed_site_matches_dense_gaussian_conditioning():
         np.testing.assert_allclose(np.asarray(means[latent]).ravel(), expected_mean, atol=1e-9)
         for site in range(3):
             np.testing.assert_allclose(covs[latent,site], expected_cov[site*2:site*2+2,site*2:site*2+2], atol=1e-9)
+
+
+def test_bounded_delay_matches_every_lawful_prefix():
+    from baselines.mgpvae.partial import OneStepDelayedFilter
+    m = model()
+    reference, bounded = PartialPrefixFilter(m), OneStepDelayedFilter(m)
+    y = np.random.default_rng(29).normal(size=(7,3))
+    times = np.array([0., .3, 1., 1.7, 3., 4., 6.])
+    for i,t in enumerate(times):
+        reference.release(t, [0,1], y[i,:2], available_at=t)
+        kwargs = {}
+        if i:
+            reference.release(times[i-1], [2], y[i-1,2:], available_at=t)
+            kwargs = dict(delayed_time=times[i-1], delayed_sites=[2], delayed_values=y[i-1,2:])
+        actual = bounded.advance(t, [0,1], y[i,:2], **kwargs)
+        expected = reference.infer(t)
+        np.testing.assert_allclose(actual[0], expected[0], atol=1e-9)
+        np.testing.assert_allclose(actual[1], expected[1], atol=1e-9)
+    assert len(bounded._records) == 0  # no retained prefix
+    assert bounded.replayed_steps == 2*len(times)-1
+    with pytest.raises(ValueError, match='preceding'):
+        bounded.advance(7., [0,1], [0.,0.], delayed_time=0., delayed_sites=[2], delayed_values=[1.])
