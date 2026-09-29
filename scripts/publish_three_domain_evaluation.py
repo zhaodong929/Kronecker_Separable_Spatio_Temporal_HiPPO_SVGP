@@ -35,8 +35,8 @@ def main():
         for artifact in artifacts:run.use_artifact(artifact)
         scores=evaluation['original_scale_scores']
         run.summary.update({f'evaluation/{k}':v for k,v in scores.items()})
-        run.summary.update(status='complete_source_verified',metric_scale=evaluation['metric_scale'],
-            main_table_admitted=False,original_run=parent.url)
+        run.summary.update(dict(status='complete_source_verified',metric_scale=evaluation['metric_scale'],
+            main_table_admitted=False,original_run=parent.url))
         run.log({'evaluation/coverage':wandb.Table(columns=['nominal','observed'],
             data=list(zip(scores['levels'],scores['coverage'])))})
         artifact=wandb.Artifact(f"verified-scores-{original['id']}",type='evaluation')
@@ -45,10 +45,9 @@ def main():
         if independent.exists():artifact.add_file(str(independent))
         run.log_artifact(artifact)
         link=run.url
-    parent.summary.update({f'verified_original_scale/{k}':v for k,v in scores.items()})
-    parent.summary.update(independent_evaluation_url=link,source_protocol_verified=True,
-        verified_metric_scale=evaluation['metric_scale'],main_table_admitted=False)
-    parent.summary.update()
+    parent.summary.update({**{f'verified_original_scale/{k}':v for k,v in scores.items()},
+        'independent_evaluation_url':link,'source_protocol_verified':True,
+        'verified_metric_scale':evaluation['metric_scale'],'main_table_admitted':False})
     (a.run/'evaluation-tracking.json').write_text(json.dumps(dict(status='synchronized',
         id=identity,url=link,original_run=parent.url,main_table_admitted=False),indent=2))
     print(link)
