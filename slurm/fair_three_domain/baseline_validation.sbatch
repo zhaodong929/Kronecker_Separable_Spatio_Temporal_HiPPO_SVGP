@@ -11,6 +11,7 @@ RELEASE=${1:?immutable release commit}
 CODE="$C/releases/$RELEASE/source"
 O="$C/results/fair-three-domain-wandb-20260929/baseline-validation/job-$SLURM_JOB_ID"
 mkdir -p "$O"
+export HIPPO_TEST_DEVICE=cuda
 export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4
 export TF_NUM_INTEROP_THREADS=4 TF_NUM_INTRAOP_THREADS=4
 export XLA_PYTHON_CLIENT_PREALLOCATE=false MPLBACKEND=Agg

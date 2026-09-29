@@ -228,3 +228,14 @@ initial-fit cost, new initial-filter cost and online continuation time separatel
 It is the same replicate, not five additional independent experiments. Use
 these qualified continuation timings for a consistent implementation comparison
 with PEMS; retain original replay timings as reference costs.
+
+## Qualification device clarification
+
+Earlier OHSVGP/OSGPR release-boundary tests explicitly requested CPU even when
+launched on an allocated GPU node. They verified causality with the actual
+models, and the candidate training used the GPU, but those boundary tests were
+not themselves GPU executions. Before any OHSVGP/OSGPR final runs were submitted,
+the tests were made device-selectable and their Slurm launchers now explicitly
+set `HIPPO_TEST_DEVICE=cuda`. Local CPU tests retain the CPU default. The
+qualification record states the actual requested test device. ST-SVGP/MGPVAE
+JAX tests already selected the allocated GPU backend.

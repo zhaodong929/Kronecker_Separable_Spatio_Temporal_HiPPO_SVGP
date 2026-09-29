@@ -86,7 +86,7 @@ def main():
     selection['projected_stream_update_seconds']=best['update_seconds']*expected_steps
     (a.output/'selection.json').write_text(json.dumps(selection,indent=2))
     qualification=dict(status='passed',method='ohsvgp',dataset=a.dataset,source_commit=a.release,
-        tests=tests,selection=selection,main_table_admitted=False)
+        tests=tests,qualification_test_device='cuda',selection=selection,main_table_admitted=False)
     (a.output/'qualification.json').write_text(json.dumps(qualification,indent=2))
     run(a.output,'final',capacity,budget,best['updates'],source)
 

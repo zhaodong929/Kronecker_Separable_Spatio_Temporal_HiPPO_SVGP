@@ -27,7 +27,7 @@ def test_ohsvgp_current_hidden_is_used_only_after_its_release(tmp_path):
             '--output-dir',str(path/'run'),'--kernel','rbf','--inducing-size','4',
             '--rff-sample-size','16','--basis-grid-size','32','--calibration-iterations','2',
             '--task1-check-interval','1','--task1-min-steps','2','--calibration-batch-size','128',
-            '--max-blocks','3','--delayed-observations','--seed','5','--device','cpu']
+            '--max-blocks','3','--delayed-observations','--seed','5','--device',os.environ.get('HIPPO_TEST_DEVICE','cpu')]
         subprocess.run(command,cwd=root,check=True,capture_output=True,text=True,timeout=90,
                        env={**os.environ,'OMP_NUM_THREADS':'2','OPENBLAS_NUM_THREADS':'2'})
         result = json.loads((path/'run/result.json').read_text())
