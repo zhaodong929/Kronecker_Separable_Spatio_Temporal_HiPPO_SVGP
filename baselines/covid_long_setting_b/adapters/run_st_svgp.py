@@ -197,7 +197,7 @@ def train_task1(
     completed = 0
     status = "max_budget_not_converged"
     while completed < int(iterations):
-        steps = min(int(check_interval), int(iterations) - completed)
+        steps = min(1 if completed == 0 else int(check_interval)-completed % int(check_interval), int(iterations) - completed)
         values = []
         for i in range(steps):
             value = float(np.asarray(train_op()))
@@ -269,8 +269,9 @@ def assign_frozen_hyperparameters(
     kernel_values: Sequence[np.ndarray],
     likelihood_values: Sequence[np.ndarray],
 ) -> None:
-    destination.kernel.vars().assign([np.asarray(value) for value in kernel_values])
-    destination.likelihood.vars().assign([np.asarray(value) for value in likelihood_values])
+    import jax.numpy as jnp
+    destination.kernel.vars().assign([jnp.asarray(value) for value in kernel_values])
+    destination.likelihood.vars().assign([jnp.asarray(value) for value in likelihood_values])
 
 
 def write_frozen_task1_state(
@@ -627,6 +628,9 @@ def main() -> None:
         "online_seconds_per_week": float(np.mean(online_seconds)),
         "online_update_prediction_seconds": [float(value) for value in online_seconds],
         "audit": audit,
+        "delayed_observation_rows": audit['delayed_hidden_labels'],
+        "main_table_admitted": False,
+        "final": gaussian_metrics(protocol.evaluation_targets()[:requested_weeks], means, variances),
         "note": (
             "The official API has no posterior extension method for a growing irregular grid. "
             "Each online posterior is therefore reconstructed from legal arrived observations with "
@@ -635,6 +639,7 @@ def main() -> None:
         ),
     }
     (args.output_dir / "status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
+    (args.output_dir / "result.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(status, indent=2))
 
 
