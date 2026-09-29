@@ -24,7 +24,8 @@ spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-dom
  dataset='covid',method='st_svgp',split_seed='all-five',training_seed='inherited',stage='qualification',
  worker_python=str(c/'env-jax-gpu/bin/python'),source_commit=release,main_table_admitted=False,
  purpose='Exact continuation equivalence and exclusive A30 timing; no additional independent replicate',
- input_files=[str(c/f'results/fair-three-domain-wandb-20260929/covid/st_svgp/seed{s}/job-294321/task1-frozen.npz') for s in range(5,10)])
+ input_files=[str(c/f'results/fair-three-domain-wandb-20260929/covid/st_svgp/seed{s}/job-294321/{name}') for s in range(5,10) for name in ['task1-frozen.npz','result.json','selection.json']]
+ +[str(c/f'protocol/covid-v2/seed{s}/{name}') for s in range(5,10) for name in ['protocol.npz','protocol.json']])
 (out/'spec.json').write_text(json.dumps(spec,indent=2))
 PY
 "$C/env-tracking/bin/python" scripts/run_tracked_experiment.py --spec "$O/st_svgp/spec.json" --output "$O/st_svgp" -- \

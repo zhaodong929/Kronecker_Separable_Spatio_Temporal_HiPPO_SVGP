@@ -26,7 +26,8 @@ def main():
     if parent.state!='finished' or not artifacts:raise ValueError('Original team run/artifact has not synchronized')
     evaluator_hash=evaluation['evaluator_source_sha256']['benchmarks/three_domain/evaluation.py'][:8]
     identity=f"eval-{original['id']}-{evaluator_hash}"
-    with wandb.init(entity=entity,project=project,id=identity,resume='allow',
+    logs=a.run/'evaluation-logs';logs.mkdir(exist_ok=True)
+    with wandb.init(entity=entity,project=project,id=identity,resume='allow',dir=str(logs),
         name=f"Verified scores: {a.dataset}/{evaluation['method']}/seed{evaluation['split_seed']}",
         group='fair-three-domain-wandb-20260929',job_type='evaluation',save_code=False,
         config=dict(parent_run=parent.url,dataset=a.dataset,method=evaluation['method'],
@@ -41,8 +42,8 @@ def main():
             data=list(zip(scores['levels'],scores['coverage'])))})
         artifact=wandb.Artifact(f"verified-scores-{original['id']}",type='evaluation')
         artifact.add_file(str(a.run/'common-evaluation.json'))
-        independent=a.run/'independent-protocol-check.json'
-        if independent.exists():artifact.add_file(str(independent))
+        for independent in sorted(a.run.glob('independent-*.json')):
+            artifact.add_file(str(independent))
         run.log_artifact(artifact)
         link=run.url
     parent.summary.update({**{f'verified_original_scale/{k}':v for k,v in scores.items()},
