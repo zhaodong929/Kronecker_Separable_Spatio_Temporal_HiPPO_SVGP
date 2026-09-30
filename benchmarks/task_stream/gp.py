@@ -27,8 +27,9 @@ class OSGPRTaskAdapter:
         x, y = inputs(batch, self.coordinates), batch.values.reshape(-1, 1)
         kernel = o.make_kernel(self.theta, frozen=False)
         if self.old is None:
-            model = gpflow.models.SGPR(data=(x, y), kernel=kernel, inducing_variable=self.inducing,
-                                       noise_variance=self.theta['noise_std'] ** 2)
+            from baselines.chunked_sgpr import ChunkedSGPR
+            model = ChunkedSGPR(data=(x, y), kernel=kernel, inducing_variable=self.inducing,
+                               noise_variance=self.theta['noise_std'] ** 2, chunk_rows=2048)
         else:
             mean, covariance, old_kernel, old_z = self.old
             model = o.OSGPR_VFE(data=(x, y), kernel=kernel, mu_old=mean, Su_old=covariance,

@@ -173,7 +173,8 @@ class FittedTaskAdapter:
                 rff=c.rff, initial_steps=c.initial_iterations, update_steps=c.online_iterations,
                 batch_rows=c.batch_rows, grid_rows=c.grid_rows, learning_rate=c.learning_rate, seed=c.seed, device=c.device)
         elif c.method == 'st_svgp':
-            from baselines.covid_long_setting_b.adapters.run_st_svgp import make_model, train_task1
+            from baselines.covid_long_setting_b.adapters.run_st_svgp import train_task1
+            from baselines.st_svgp_task_training import make_compact_model as make_model
             from .markov import STTaskAdapter
             model = make_model(batch.times[:, None], np.repeat(coordinates[None, batch.sites], len(batch.times), axis=0),
                 batch.values, inducing, trainable_inducing=False, theta=theta)

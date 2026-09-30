@@ -42,3 +42,9 @@ Subsequent changes: ERA calendar columns use physical 24/168-hour cycles (same 1
 `294570` のコンパクトMGP CPU/GPU再照合は成功。`294573` はCOVID全5方式、PEMSのKron/OH/MGP、ERAのKron/OHが実規模2-step/2-task検証を完了。PEMS OSGPRは初期SGPRの128×1,048,320行の中間行列、STは4032×260×260行列の複数保持でA30メモリ不足。両方とも初期学習中で、オンラインタスク開始前。失敗成果物は保存し、成功扱いにしない。ERAの当該2方式は元のworkerが停止したため未実行。独立した後続domain検証は継続し、workerの最終終了コードは失敗を保つようdispatcherを修正。
 
 目的関数・データ量を変えずに、OSGPRの加法的十分統計を行チャンクで計算し、STの反復する空間行列を保持しない実装を検証中。小規模dense参照の損失・全勾配・予測との照合を通すまでは実規模再投入しない。本番65本は依然未開始。
+
+### Exact bounded-memory initialization repairs
+
+Initial SGPR now accumulates full-data sufficient statistics in 2048-row chunks, with a recomputing custom VJP. Dense GPflow objective/all-gradient/prediction/two-Adam-step comparisons passed **7 tests** in the actual DoC TensorFlow environment. ST Gaussian training now stores scalar observation precision and a single fixed-geometry spatial projection instead of time-indexed observation-space covariance matrices. Official posterior/objective/all-gradient and two-Adam-step plus delayed-task prediction comparisons passed **4 tests**, and the switched ST factory passed its integration test. Both preserve the full initial observations and original objective; upstream source is unchanged. GPU requalification is required next.
+
+The earlier compact MGP completed all three real-size shape pilots. All13prepared splits/39artifacts are now on DoC with transfer verification. NCU was not found on the accessible scheduler/corgi environments; corgi restricts hardware counters. A30-specific availability is recorded inside allocated qualification workers. Actual FLOP counter acquisition remains unqualified and absent counters remain NA.

@@ -24,6 +24,15 @@ case "$METHOD" in
 esac
 O="$C/results/$CAMPAIGN/$METHOD/job-$SLURM_ARRAY_JOB_ID"
 mkdir -p "$O"
+"$C/env-tracking/bin/python" - "$O/profiling-availability.json" <<'PY'
+import json, pathlib, shutil, socket, sys
+driver = pathlib.Path('/proc/driver/nvidia/params')
+lines = driver.read_text().splitlines() if driver.exists() else []
+restriction = next((line.strip() for line in lines if line.startswith('RmProfilingAdminOnly:')), None)
+pathlib.Path(sys.argv[1]).write_text(json.dumps(dict(hostname=socket.gethostname(),
+    ncu_path=shutil.which('ncu'), driver_counter_restriction=restriction,
+    counter_acquisition_verified=False), indent=2))
+PY
 export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4
 export TF_NUM_INTEROP_THREADS=4 TF_NUM_INTRAOP_THREADS=4
 export XLA_PYTHON_CLIENT_PREALLOCATE=false MPLBACKEND=Agg
