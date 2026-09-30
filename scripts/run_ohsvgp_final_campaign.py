@@ -9,6 +9,8 @@ import sys
 
 
 def main():
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+    from benchmarks.three_domain.convergence import initial_budget_resolved
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--seed',type=int,required=True)
     p.add_argument('--dataset',choices=['covid','pems','era5'],default='covid')
@@ -23,7 +25,7 @@ def main():
     expected_steps,expected_sites,initial_sites={'covid':(143,10,52),'pems':(50100,65,260),'era5':(1674,200,800)}[a.dataset]
     fold_function={'covid':'build_fold','pems':'build_pems_fold','era5':'build_era5_fold'}[a.dataset]
     tests=['tests/test_ohsvgp_release_boundary.py','tests/test_ohsvgp_lengthscale_learning.py',
-           'tests/test_online_budget_fold.py']
+           'tests/test_online_budget_fold.py','tests/test_initial_budget_gate.py']
     if a.dataset!='covid':tests.append('tests/test_ohsvgp_prediction_cache.py')
     if a.dataset=='era5':tests += ['tests/test_era5_information_boundary.py','tests/test_era5_adapter_boundary.py::test_actual_era5_no_release_adapter[ohsvgp]']
     with (a.output/'tests.txt').open('w') as f:
@@ -71,8 +73,9 @@ def main():
     for capacity in [32,64]:
         for budget in [500,1000,2000,4000,8000]:
             result=run(a.output/f'calibration-m{capacity}-b{budget}','validation',capacity,budget,1,source,True)
-            if result['best_validation_iteration']<budget:break
-        if result['best_validation_iteration']>=budget:
+            resolved=initial_budget_resolved(result['best_validation_iteration'],budget,result['convergence_status'])
+            if resolved:break
+        if not resolved:
             raise RuntimeError('Initial validation best checkpoint remains at budget boundary')
         candidates.append(dict(capacity=capacity,budget=budget,result=result))
     selected=min(candidates,key=lambda c:c['result']['best_validation_nll'])

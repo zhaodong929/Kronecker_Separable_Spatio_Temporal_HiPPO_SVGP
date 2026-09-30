@@ -70,3 +70,13 @@ def reuse_checked(previous,destination,spec,compute_root,source_root,result_name
     (destination/result_name).write_bytes((previous/result_name).read_bytes())
     (destination/'reused-validation.json').write_text(json.dumps(record,indent=2)+'\n')
     return json.loads((previous/result_name).read_text())
+
+
+def reuse_st_svgp(previous,destination,spec,compute_root,source_root):
+    dependencies=[Path(p) for p in [
+        'baselines/covid_long_setting_b/adapters/run_st_svgp.py',
+        'baselines/covid_long_setting_b/archive.py','baselines/covid_long_setting_b/protocol.py',
+        'baselines/st_svgp_filter.py','baselines/bayesnewton_compat.py','baselines/causal_mean.py',
+        'baselines/traffic_protocol_n.py','baselines/era5_protocol.py',
+        'benchmarks/three_domain/geometry.py','benchmarks/three_domain/tracking.py']]
+    return reuse_checked(previous,destination,spec,compute_root,source_root,'task1_validation.json',dependencies)
