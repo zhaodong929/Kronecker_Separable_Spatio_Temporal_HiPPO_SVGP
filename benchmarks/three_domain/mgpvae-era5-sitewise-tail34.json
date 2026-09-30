@@ -1,0 +1,23 @@
+{
+  "job_name": "hippo-mgpvae-era5-sitewise-tail34-20260930",
+  "array": "3,4%3",
+  "sbatch": "slurm/fair_three_domain/mgpvae_era5.sbatch",
+  "seeds": [
+    3,
+    4
+  ],
+  "kind": "final",
+  "scope": "ERA5 mgpvae: full-source verification, own initial validation, no hidden-label release, hourly full 1674-step evaluation; memory recovery preserving objective and precision, GPU equivalence and full-size resource gates required; direct initial-time spatial marginals with official full-state prediction parity on real spatial prefix; exact official blockwise RTS and 1e-8 bridge interpolation, rematerialized gradients, full-geometry GPU parity gate retained; compact corrected-energy marginal pushforward with dense-loss/all-gradient parity; no capacity or precision reduction; identity-measurement spatial factorization calls official scalar filters, full-initial GPU loss/all-gradient parity required before pilots and final",
+  "result_template": "/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/fair-three-domain-wandb-20260929/era5/mgpvae/seed{seed}/job-{job}",
+  "wait_for_submissions": [
+    "/data/nk523/projects/hipposvgp-fair-comparison/outputs/2026-09-29-doc-campaign/era5-ready.json",
+    "/data/nk523/projects/hipposvgp-fair-comparison/outputs/2026-09-29-doc-campaign/mgpvae-era5-sitewise-head/submission.json"
+  ],
+  "wait_for_qualifications": [
+    {
+      "head_submission": "/data/nk523/projects/hipposvgp-fair-comparison/outputs/2026-09-29-doc-campaign/mgpvae-era5-sitewise-head/submission.json",
+      "seed": 0,
+      "method": "mgpvae"
+    }
+  ]
+}

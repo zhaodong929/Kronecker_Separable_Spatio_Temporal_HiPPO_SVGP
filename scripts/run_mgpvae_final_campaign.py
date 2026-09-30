@@ -25,11 +25,12 @@ def main():
         '--official-source',os.environ['MGPVAE_SOURCE'],'--prediction-samples','512',
         '--protocol-kind',{'covid':'covid','pems':'traffic','era5':'era5'}[a.dataset],
         '--metric-backend','numpy' if a.dataset=='covid' else 'jax']
-    if a.dataset!='covid':common += ['--rematerialize-scans','--initial-marginals','direct','--compact-training-marginals']
+    if a.dataset!='covid':common += ['--rematerialize-scans','--initial-marginals','direct','--compact-training-marginals','--sitewise-training-filter']
     tests=['tests/test_mgpvae_spatial_moments.py','tests/test_mgpvae_selected.py',
         'tests/test_mgpvae_partial.py','tests/test_mgpvae_official_filter.py','tests/test_mgpvae_mixture_metrics.py',
         'tests/test_mgpvae_gpu_metrics.py','tests/test_mgpvae_memory.py',
-        'tests/test_mgpvae_initial_marginals.py','tests/test_mgpvae_compact_energy.py']
+        'tests/test_mgpvae_initial_marginals.py','tests/test_mgpvae_compact_energy.py',
+        'tests/test_mgpvae_sitewise_filter.py']
     if a.dataset=='era5':tests.append('tests/test_era5_information_boundary.py')
     with (a.output/'tests.txt').open('w') as log:
         subprocess.run([worker,'-m','pytest','-q',*tests],stdout=log,stderr=subprocess.STDOUT,check=True)
@@ -43,6 +44,7 @@ def main():
             covariance_pushforward_corrected=True,main_table_admitted=False)
         spec['scan_rematerialization']=a.dataset!='covid'
         spec['compact_training_marginals']=a.dataset!='covid'
+        spec['sitewise_training_filter']=a.dataset!='covid'
         spec['initial_marginals']='reference' if a.dataset=='covid' else 'official_blockwise_bridge'
         spec['initial_bridge_jitter']=1e-8
         if stage=='final':
@@ -58,6 +60,16 @@ def main():
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
             '--output',str(output),'--',*command],check=True)
     if a.dataset!='covid':
+        parity=a.output/'full-initial-sitewise-parity';parity.mkdir(parents=True,exist_ok=True)
+        spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',
+            dataset=a.dataset,method='mgpvae',split_seed=a.seed,training_seed=17,stage='qualification',
+            source_commit=a.release,worker_python=worker,input_files=inputs,main_table_admitted=False,
+            purpose='Full initial-data dense versus sitewise official filtering loss and all gradients')
+        (parity/'spec.json').write_text(json.dumps(spec,indent=2))
+        subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(parity/'spec.json'),
+            '--output',str(parity),'--',worker,'scripts/qualify_mgpvae_sitewise.py',
+            '--protocol',str(protocol),'--protocol-kind',{'pems':'traffic','era5':'era5'}[a.dataset],
+            '--official-source',os.environ['MGPVAE_SOURCE'],'--require-gpu','--output',str(parity/'result.json')],check=True)
         for capacity in [2,4]:
             run(a.output/f'full-initial-resource-pilot-latent{capacity}',
                 'qualification',capacity,1,qualification=True)

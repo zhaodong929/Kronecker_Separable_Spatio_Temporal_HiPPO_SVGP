@@ -49,6 +49,7 @@ def main():
     p.add_argument('--metric-backend', choices=['numpy','jax'], default='numpy')
     p.add_argument('--rematerialize-scans', action='store_true')
     p.add_argument('--compact-training-marginals', action='store_true')
+    p.add_argument('--sitewise-training-filter', action='store_true')
     p.add_argument('--initial-marginals', choices=['reference','direct'], default='reference')
     p.add_argument('--check-initial-marginal-prefix', action='store_true')
     p.add_argument('--validation-only', action='store_true')
@@ -77,7 +78,8 @@ def main():
     def create(locations):
         return make_model(a.official_source, protocol.coordinates[locations], seed=a.seed,
             latent=a.latent, width=a.width, correct_spatial_covariance=True,
-            compact_spatial_marginals=a.compact_training_marginals)
+            compact_spatial_marginals=a.compact_training_marginals,
+            sitewise_training_filter=a.sitewise_training_filter)
     def residuals(locations):
         offsets = np.stack([mean_function.at(t, locations) for t in times])
         return select_initial_targets(initial, locations)-offsets

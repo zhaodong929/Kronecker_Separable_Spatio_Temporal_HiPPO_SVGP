@@ -21,7 +21,7 @@ def import_official(source):
     return STMarkovGaussianProcessVAEExternal
 
 
-def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spatial_covariance=False, compact_spatial_marginals=False):
+def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spatial_covariance=False, compact_spatial_marginals=False, sitewise_training_filter=False):
     cls = import_official(source)
     if compact_spatial_marginals and not correct_spatial_covariance:
         raise ValueError('Compact training requires the explicit covariance correction')
@@ -30,6 +30,11 @@ def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spati
         class SpatialCovarianceCorrectedMGPVAE(cls):
             energy = diagonal_corrected_energy if compact_spatial_marginals else corrected_energy
         cls = SpatialCovarianceCorrectedMGPVAE
+    if sitewise_training_filter:
+        from .sitewise_filter import sitewise_official_filter
+        class SitewiseMGPVAE(cls):
+            filter = staticmethod(sitewise_official_filter)
+        cls = SitewiseMGPVAE
     import jax.numpy as jnp
     import objax
     from mgpvae.kernels import SpatiotemporalMatern32
@@ -42,7 +47,7 @@ def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spati
         R=jnp.asarray(coordinates), lengthscale=2., variance=1.,
         lengthscale_time=jnp.ones(latent)*5., variance_time=jnp.ones(latent),
         fix_variance=True)
-    if compact_spatial_marginals:
+    if compact_spatial_marginals or sitewise_training_filter:
         import numpy as np
         expected=np.kron(np.eye(kernel.Ns),np.array([[1.,0.]]))
         h=np.asarray(kernel.measurement_model())
