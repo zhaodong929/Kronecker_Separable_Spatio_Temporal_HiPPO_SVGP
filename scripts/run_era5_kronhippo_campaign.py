@@ -11,14 +11,14 @@ with (a.output/'tests.txt').open('w') as f:subprocess.run([worker,'-m','pytest',
 subprocess.run([worker,'-c','import torch; assert torch.cuda.is_available()'],check=True)
 def run(output,stage,mt,ms,budget,command):
     output.mkdir(parents=True,exist_ok=True)
-    spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',dataset='era5',method='kronhippo_svgp',split_seed=a.seed,training_seed=a.seed,stage=stage,source_commit=a.release,worker_python=worker,input_files=inputs,temporal_inducing=mt,spatial_inducing=ms,iterations=budget,hidden_delay_steps=None,initial_observed_sites=800,main_table_admitted=False)
+    spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',dataset='era5',method='kronhippo_svgp',split_seed=a.seed,training_seed=0,stage=stage,source_commit=a.release,worker_python=worker,input_files=inputs,temporal_inducing=mt,spatial_inducing=ms,iterations=budget,hidden_delay_steps=None,initial_observed_sites=800,main_table_admitted=False)
     if stage=='final':spec.update(expected_steps=1674,expected_sites=200,qualification_record=str(a.output/'qualification.json'))
     (output/'spec.json').write_text(json.dumps(spec,indent=2));subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),'--output',str(output),'--',worker,*command],check=True)
 candidates=[]
 for mt,ms in [(32,32),(64,32),(32,64),(64,64)]:
     for budget in [250,500,1000]:
         output=a.output/f'calibration-mt{mt}-ms{ms}-b{budget}'
-        run(output,'validation',mt,ms,budget,['scripts/run_iclr_era5_routeb_batch.py',*common,'--output-dir',str(output),'--data-part','calibration','--target-mode','joint_xlag','--representation','analytic_hippo_rff','--mt',str(mt),'--ms',str(ms),'--rff-sample-size','256','--training-objective','vfe','--iterations',str(budget),'--learning-rate','0.02','--validation-every','5','--early-stopping-patience-validations','8','--split-seed',str(a.seed),'--model-seed',str(a.seed),'--device','cuda','--dtype','float64','--evaluation-backend','torch','--objective-optimization-version','E3'])
+        run(output,'validation',mt,ms,budget,['scripts/run_iclr_era5_routeb_batch.py',*common,'--output-dir',str(output),'--data-part','calibration','--target-mode','joint_xlag','--representation','analytic_hippo_rff','--mt',str(mt),'--ms',str(ms),'--rff-sample-size','256','--training-objective','vfe','--iterations',str(budget),'--learning-rate','0.02','--validation-every','5','--early-stopping-patience-validations','8','--split-seed',str(a.seed),'--model-seed','0','--device','cuda','--dtype','float64','--evaluation-backend','torch','--objective-optimization-version','E3'])
         result=json.loads((output/'result.json').read_text())
         if result['best_iteration']<budget:break
     if result['best_iteration']>=budget:raise RuntimeError('Proposal initial validation still improves at budget boundary')

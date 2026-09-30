@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Refresh submission ledger from per-run receipts and verified evaluation state."""
+import argparse
 import datetime
 import json
 from pathlib import Path
@@ -11,6 +12,9 @@ PATTERN = re.compile(r'.*/(covid|pems|era5)/(kronhippo_svgp|osgpr|ohsvgp|st_svgp
 
 
 def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--output',type=Path)
+    args=parser.parse_args()
     ledger_path = ROOT/'benchmarks/three_domain/submissions.json'
     ledger = json.loads(ledger_path.read_text())
     lookup = {(r['dataset'], r['method'], r['split_seed']): r for r in ledger['rows']}
@@ -56,7 +60,9 @@ def main():
                 row['submission_status'] = 'failed_requires_review'
                 row['pending_requirement'] = 'Inspect terminal records and recover before counting this comparison complete'
     ledger['as_of'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    ledger_path.write_text(json.dumps(ledger, indent=2)+'\n')
+    destination=args.output or ledger_path
+    destination.parent.mkdir(parents=True,exist_ok=True)
+    temporary=destination.with_suffix('.tmp');temporary.write_text(json.dumps(ledger, indent=2)+'\n');temporary.replace(destination)
     summary = dict(submitted=sum(r.get('job_id') is not None for r in ledger['rows']),
                    verified=sum(r['submission_status']=='completed_and_verified' for r in ledger['rows']))
     print(json.dumps(summary))

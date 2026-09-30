@@ -329,3 +329,15 @@ eager/graph SGPR and OSGPR parameter/prediction parity passed on CPU and CUDA.
 PEMS OSGPR/OHSVGP allocation time is increased to the partition's 72-hour maximum;
 this is an upper allocation bound, not an assertion that every selected run fits.
 Existing submitted COVID releases and recorded timing remain unchanged.
+
+### Separate spatial split and training seeds
+
+The proposal's completed COVID/PEMS calibration uses the batch runner's explicit
+default `model_seed=0`, and the online temporal builder also fixes its RFF seed
+to 0. Those numerical runs agree in both phases. Their original top-level W&B
+spec called the spatial split seed `training_seed`; the lower-level saved args
+and source retain the actual value. Treat this as a provenance-field correction,
+not a numerical rerun. ERA5 proposal calibration now explicitly passes
+`--model-seed 0` and declares `training_seed=0`, matching its online builder.
+All ledger rows record `training_seed_actual` separately from `split_seed`.
+External methods use their explicit `--seed`, equal to the recorded split seed.
