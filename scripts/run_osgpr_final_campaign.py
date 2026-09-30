@@ -18,6 +18,10 @@ def main():
     a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
     os.environ['HIPPO_TEST_DEVICE']='cuda'
     worker=str(a.compute_root/'env-osgpr/bin/python')
+    cuda_root=a.compute_root/'env-osgpr/lib/python3.11/site-packages/nvidia/cuda_nvcc'
+    if not (cuda_root/'nvvm/libdevice/libdevice.10.bc').is_file():
+        raise FileNotFoundError('TensorFlow GPU runtime requires the installed CUDA libdevice')
+    os.environ['XLA_FLAGS']='--xla_gpu_cuda_data_dir='+str(cuda_root)
     source=a.compute_root/f"protocol/{'covid-v2' if a.dataset=='covid' else 'pems'}/seed{a.seed}"
     expected_steps,expected_sites,initial_sites=(143,10,52) if a.dataset=='covid' else (50100,65,260)
     fold_function='build_fold' if a.dataset=='covid' else 'build_pems_fold'

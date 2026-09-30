@@ -256,3 +256,11 @@ official OSGPR eager/graph parameters and predictions to 1e-9 after eight
 steps; both passed in 36.85s on corgi. The PEMS launch repeats these on CUDA
 before training. Online optimization remains eager. No GPU speedup is claimed
 before measurement. Official source files remain unchanged.
+
+OSGPR COVID job 294345 failed before calibration: actual CUDA boundary tests
+exposed TensorFlow libdevice lookup failure (a non-UTF8 diagnostic initially
+masked it). The remaining array was cancelled; no final results admitted.
+The campaign now explicitly points XLA to the installed NVIDIA cuda_nvcc
+libdevice directory and decodes subprocess error logs with replacement so
+future diagnostics remain readable. Model/objective/data are unchanged.
+GPU boundary and graph/eager parity gates must pass on the replacement job.

@@ -1,0 +1,18 @@
+{
+  "job_name": "hippo-os-covid-runtime-retry-tail-20260930",
+  "array": "6,7,8,9%3",
+  "sbatch": "slurm/fair_three_domain/osgpr_covid.sbatch",
+  "seeds": [
+    6,
+    7,
+    8,
+    9
+  ],
+  "kind": "final",
+  "scope": "OSGPR COVID corrected CUDA libdevice path; GPU qualification then own Task-1 selection and full final stream",
+  "result_template": "/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/fair-three-domain-wandb-20260929/covid/osgpr/seed{seed}/job-{job}",
+  "wait_for_submissions": [
+    "outputs/2026-09-29-doc-campaign/ohsvgp-covid-dispatch/submission.json",
+    "outputs/2026-09-29-doc-campaign/osgpr-covid-runtime-retry-head/submission.json"
+  ]
+}
