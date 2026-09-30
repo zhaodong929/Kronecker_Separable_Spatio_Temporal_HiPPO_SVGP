@@ -53,3 +53,28 @@ def test_contribution_arms_reuse_actual_fit_and_change_only_declared_update():
     assert len(set(fits)) == 1
     assert not np.allclose(predictions[0], predictions[1])
     assert not np.allclose(predictions[0], predictions[2])
+
+
+def test_oh_exposure_policy_drives_actual_fit_and_logs_resolution(monkeypatch):
+    from dataclasses import asdict
+    import benchmarks.task_stream.factory as factory
+    s, features = tiny()
+    config = Configuration('ohsvgp', initial_iterations=2, learning_rate=.001,
+        initial_expected_passes=2., inducing_size=3, rff=16, grid_rows=4,
+        batch_rows=4, online_iterations=1)
+    original = asdict(config)
+    events = []
+    monkeypatch.setattr(factory, 'emit', lambda name, step, payload: events.append((name, step, payload)))
+    adapter = FittedTaskAdapter(config, s.coordinates, s.visible, features,
+        initial_step=.1, release_previous=True)
+    adapter.initialize(s.initial())
+    # Nine legal initial rows, four per minibatch: ceil(2*9/4)=5 actual updates.
+    assert adapter.adapter.initial_steps == adapter.adapter.training_iteration == 5
+    assert adapter.training_budget['observation_rows'] == 9
+    assert adapter.training_budget['sampled_rows'] == 20
+    budget_events = [payload for name, _, payload in events if name == 'training_budget']
+    assert budget_events == [adapter.training_budget]
+    configuration = [payload for name, _, payload in events if name == 'fit_configuration'][0]
+    assert configuration['configuration'] == original
+    assert configuration['initial_training_budget'] == adapter.training_budget
+    assert asdict(config) == original

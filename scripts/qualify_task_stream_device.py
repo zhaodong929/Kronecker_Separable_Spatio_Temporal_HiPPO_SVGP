@@ -113,7 +113,8 @@ def main():
         counter_acquisition_verified=False), indent=2))
     configuration = json.loads(args.configuration.read_text())
     configuration.update(initial_iterations=min(configuration['initial_iterations'], args.max_fit_steps),
-                         online_iterations=min(configuration.get('online_iterations', 5), args.max_fit_steps))
+                         online_iterations=min(configuration.get('online_iterations', 5), args.max_fit_steps),
+                         initial_expected_passes=None)  # Diagnostic cap, never the selected training policy.
     method = configuration['method']
     if method not in ('kronhippo_svgp', 'ohsvgp', 'osgpr', 'st_svgp', 'mgpvae'):
         parser.error('Method is outside baseline-selection policy')

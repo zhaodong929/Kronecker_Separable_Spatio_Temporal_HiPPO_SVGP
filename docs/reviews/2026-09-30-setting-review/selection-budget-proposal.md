@@ -1,6 +1,10 @@
 # Proposed initial-period selection and optimization budget
 
-**Status: PROPOSED, not adopted or executed.** The two-step CPU/GPU and full-shape runs are implementation/resource diagnostics. Their scores must not select scientific configurations. No proposed step count below proves convergence, and no completion-time promise follows from it. This proposal does not authorize 65 final runs before the required validation and resource qualification.
+**Status: SUPERSEDED as an adoption proposal by the user’s common-fairness-criteria correction. No listed method-specific step ladder has been adopted or executed.**
+
+The method-specific ladders below were planning scenarios, not a fair-comparison rule. Before launching candidate selection, fix common validation scoring, evaluation opportunities, stopping criteria, and computational/search limits. Method-specific iteration counts may follow those rules; they must not be assigned ad hoc. Matched iteration counts, data exposures, and elapsed computation are distinct quantities. Any finite-budget comparison must be labelled as such, with capped methods not called converged. Generic runner and exposure-accounting utilities do not authorize or define a scientific budget policy.
+
+**Historical proposal follows.** The two-step CPU/GPU and full-shape runs are implementation/resource diagnostics. Their scores must not select scientific configurations. No proposed step count below proves convergence, and no completion-time promise follows from it. This proposal does not authorize 65 final runs before the required validation and resource qualification.
 
 ## Data and selection boundary
 

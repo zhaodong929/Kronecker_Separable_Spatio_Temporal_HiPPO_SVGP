@@ -6,6 +6,7 @@ never receives evaluation targets, selects a checkpoint, or rescales model time.
 from dataclasses import asdict, dataclass, fields
 import hashlib
 import json
+import math
 import numpy as np
 from benchmarks.three_domain.geometry import farthest_indices
 from benchmarks.three_domain.tracking import emit
@@ -40,6 +41,7 @@ class Configuration:
     kernel_variance: float = 1.
     noise_std: float = .2
     official_source: str = ''
+    initial_expected_passes: float | None = None
 
     def __post_init__(self):
         if self.method not in METHODS:
@@ -58,9 +60,46 @@ class Configuration:
             raise ValueError('Finite positive scales and learning rate required')
         if self.latent < 2 or self.prediction_samples < 2:
             raise ValueError('Pinned MGPVAE requires at least two latents and decoder samples')
+        if self.initial_expected_passes is not None:
+            passes = self.initial_expected_passes
+            if self.method != 'ohsvgp':
+                raise ValueError('Initial expected-pass policy applies only to OHSVGP')
+            if (isinstance(passes, (bool, np.bool_))
+                    or not isinstance(passes, (int, float, np.integer, np.floating))
+                    or not np.isfinite(passes) or passes <= 0):
+                raise ValueError('Initial expected passes must be finite and positive')
         if self.method == 'mgpvae' and (self.ell_t != .2 or tuple(self.ell_s) != (1., 1.)
                 or self.kernel_variance != 1. or self.noise_std != .2):
             raise ValueError('MGPVAE uses its official latent-kernel initialization; GP theta fields do not apply')
+
+
+    def resolve_initial_budget(self, observation_rows):
+        """Resolve a hashed policy against the legal initial batch, without mutation.
+
+        OH independently samples rows per optimizer step; exposure is expected
+        sampling effort, not a guarantee that each row is visited every epoch.
+        All other methods retain their declared full-data iteration count.
+        """
+        if (isinstance(observation_rows, (bool, np.bool_))
+                or not isinstance(observation_rows, (int, np.integer)) or observation_rows < 1):
+            raise ValueError('Initial observation rows must be a positive integer')
+        rows = int(observation_rows)
+        batch_rows = min(self.batch_rows, rows) if self.method == 'ohsvgp' else rows
+        effective = self.initial_iterations
+        policy = 'fixed_steps_v1'
+        if self.initial_expected_passes is not None:
+            expected_steps = float(self.initial_expected_passes)*(rows/batch_rows)
+            if not math.isfinite(expected_steps):
+                raise ValueError('Expected-pass policy must resolve to a finite step count')
+            effective = max(effective, math.ceil(expected_steps))
+            policy = 'expected_row_exposures_v1'
+        return dict(policy=policy, method=self.method, observation_rows=rows,
+            rows_per_step=batch_rows, minimum_iterations=int(self.initial_iterations),
+            requested_expected_passes=self.initial_expected_passes,
+            effective_iterations=int(effective), sampled_rows=int(effective)*batch_rows,
+            expected_row_exposures=int(effective)*batch_rows/rows,
+            sampling=('independent_minibatches_without_replacement_within_each_step'
+                      if self.method == 'ohsvgp' else 'full_data_per_step'))
 
 
 class FeatureTable:
@@ -110,6 +149,9 @@ class FittedTaskAdapter:
         if self.adapter is not None:
             raise ValueError('A fitted run may only be initialized once')
         c = self.config
+        self.training_budget = c.resolve_initial_budget(initial.values.size)
+        initial_iterations = self.training_budget['effective_iterations']
+        emit('training_budget', 0, self.training_budget)
         coordinates = self.coordinates
         from .gp import KronTaskAdapter, OSGPRTaskAdapter, OHSVGPTaskAdapter
         if c.method != 'kronhippo_svgp':
@@ -138,7 +180,7 @@ class FittedTaskAdapter:
             phi = self.features(initial.times, initial.sites).reshape(len(initial.times), len(initial.sites), -1)
             yy, pp, xx = tensor(initial.values.T), tensor(phi.transpose(1, 0, 2)), tensor(coordinates[initial.sites])
             optimizer = torch.optim.Adam(model.parameters(), lr=c.learning_rate)
-            for iteration in range(c.initial_iterations):
+            for iteration in range(initial_iterations):
                 optimizer.zero_grad(set_to_none=True)
                 objective = model.objective(y_matrix=yy, phi_tensor=pp, spatial_coordinates=xx,
                                             beta_prior_variance=c.beta_prior_variance)
@@ -160,7 +202,7 @@ class FittedTaskAdapter:
             from scripts.run_official_bui_osgpr_era5 import product_inducing
             self.adapter = OSGPRTaskAdapter(coordinates, theta,
                 product_inducing(initial.times, inducing, c.temporal_inducing),
-                initial_steps=c.initial_iterations, update_steps=c.online_iterations, learning_rate=c.learning_rate)
+                initial_steps=initial_iterations, update_steps=c.online_iterations, learning_rate=c.learning_rate)
         elif c.method == 'ohsvgp':
             import torch
             from scripts.run_covid_ohsvgp_own_theta import SE_kernel, GaussianLikelihood
@@ -170,7 +212,7 @@ class FittedTaskAdapter:
                 kernel.log_sf.fill_(np.log(c.kernel_variance))
             likelihood = GaussianLikelihood(c.noise_std**2).to(dtype=torch.float64, device=c.device)
             self.adapter = OHSVGPTaskAdapter(coordinates, kernel, likelihood, inducing_size=c.inducing_size,
-                rff=c.rff, initial_steps=c.initial_iterations, update_steps=c.online_iterations,
+                rff=c.rff, initial_steps=initial_iterations, update_steps=c.online_iterations,
                 batch_rows=c.batch_rows, grid_rows=c.grid_rows, learning_rate=c.learning_rate, seed=c.seed, device=c.device)
         elif c.method == 'st_svgp':
             from baselines.covid_long_setting_b.adapters.run_st_svgp import train_task1
@@ -178,8 +220,8 @@ class FittedTaskAdapter:
             from .markov import STTaskAdapter
             model = make_model(batch.times[:, None], np.repeat(coordinates[None, batch.sites], len(batch.times), axis=0),
                 batch.values, inducing, trainable_inducing=False, theta=theta)
-            train_task1(model, iterations=c.initial_iterations, check_interval=c.initial_iterations,
-                min_steps=c.initial_iterations, plateau_checks=10, plateau_relative_improvement=0.,
+            train_task1(model, iterations=initial_iterations, check_interval=initial_iterations,
+                min_steps=initial_iterations, plateau_checks=10, plateau_relative_improvement=0.,
                 adam_lr=c.learning_rate, newton_lr=1., checkpoint_directory=None,
                 seed=c.seed, spatial_inducing=c.spatial_inducing)
             self.adapter = STTaskAdapter(model, coordinates)
@@ -204,7 +246,7 @@ class FittedTaskAdapter:
                 optimizer(c.learning_rate, gradients)
                 return values
             update = objax.Jit(update)
-            for iteration in range(c.initial_iterations):
+            for iteration in range(initial_iterations):
                 values = np.asarray(update(iteration))
                 if not np.isfinite(values).all():
                     raise FloatingPointError('Nonfinite MGPVAE initial objective')
@@ -232,7 +274,7 @@ class FittedTaskAdapter:
             emit('fit_identity', 0, dict(fit_sha256=self.fit_sha256, arm=self.arm.name,
                  interpretation='fitted hyperparameters, training inputs/features and base spectral draws'))
         emit('fit_configuration', 0, dict(configuration=asdict(c), arm=asdict(self.arm),
-             initial_sites=initial.sites.tolist(), learned_theta=self.adapter.theta if c.method == 'osgpr' else theta if c.method == 'kronhippo_svgp' else None,
+             initial_sites=initial.sites.tolist(), initial_training_budget=self.training_budget, learned_theta=self.adapter.theta if c.method == 'osgpr' else theta if c.method == 'kronhippo_svgp' else None,
              mgp_initial_parameters=dict(spatial_lengthscale=2., latent_temporal_lengthscale=5.,
                 latent_variance=1., decoder_noise_variance=1.) if c.method == 'mgpvae' else None))
 
