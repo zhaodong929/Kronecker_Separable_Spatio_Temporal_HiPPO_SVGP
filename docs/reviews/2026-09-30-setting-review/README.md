@@ -130,3 +130,6 @@ OHSVGPの1024初期gridは、それ自体が直ちに不正な近似ではない
 - [測定の独立再点検](measurement_crosscheck.md)
 
 原稿: `/data/nk523/projects/hipposvgp-overleaf-6aba8fcfb715ddc40d02c0d2`。比較worktree: `/data/nk523/projects/hipposvgp-fair-comparison`、branch `codex/fair-three-domain-comparison`。DoC実行源・結果: `/vol/bitbucket/nk523/hipposvgp-fair-20260929/{releases,results}`。W&B: `harrisonzhu/KronHiPPO-STGP`。Obsidian: `03-projects/hipposvgp/2026-09-30-comprehensive-setting-review.md`。詳細調査の作業成果は `outputs/2026-09-30-comprehensive-review/`、再現可能な報告をこのディレクトリに固定する。
+
+
+次の設計検討: [タスク分割・規模の提案](task-scale-proposal.md)。未確定の設計案であり、実装・投入の変更ではない。
