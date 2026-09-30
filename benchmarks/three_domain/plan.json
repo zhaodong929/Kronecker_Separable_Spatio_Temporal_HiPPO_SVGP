@@ -62,12 +62,26 @@
     "concurrency_per_gpu": 1,
     "vast_ai": "disabled by user",
     "method_concurrency_per_gpu": {
-      "kronhippo_svgp_task1_ms32_mt128": {
-        "workers": 2,
-        "cpu_threads_each": 4,
-        "status": "short A30 overlap probe completed; confirm for changed capacity"
+      "kronhippo_svgp": {
+        "workers": 1,
+        "reason": "exclusive GPU timing for final comparisons"
       },
-      "unqualified_methods": 1
+      "osgpr": {
+        "workers": 1,
+        "reason": "exclusive GPU timing for final comparisons"
+      },
+      "ohsvgp": {
+        "workers": 1,
+        "reason": "exclusive GPU timing for final comparisons"
+      },
+      "st_svgp": {
+        "workers": 1,
+        "reason": "exclusive GPU timing for final comparisons"
+      },
+      "mgpvae": {
+        "workers": 1,
+        "reason": "exclusive GPU timing for final comparisons"
+      }
     }
   },
   "admission": [
@@ -84,13 +98,12 @@
   "mgpvae": {
     "source": "https://github.com/harrisonzhu508/MGPVAE",
     "commit": "c9a80a05fca66b2911c8e7cb0deccb39d261a5b8",
-    "status": "visible_filter_qualification_only",
+    "status": "causal_adapter_qualified_covid_complete_long_domains_pending",
     "main_table_admitted": false,
     "pending": [
-      "delayed hidden-label assimilation",
-      "common mean/covariate adaptation",
-      "training and predictive distribution qualification",
-      "validation tuning"
+      "PEMS and ERA5 full-initial resource qualification",
+      "PEMS and ERA5 own validation and final streams",
+      "manuscript admission review"
     ]
   },
   "final_run_count": 65,

@@ -1,0 +1,14 @@
+{
+  "job_name": "hippo-ohsvgp-era5-head-20260930",
+  "array": "0%3",
+  "sbatch": "slurm/fair_three_domain/ohsvgp_era5.sbatch",
+  "seeds": [
+    0
+  ],
+  "kind": "final",
+  "scope": "ERA5 ohsvgp: full-source verification, own initial validation, no hidden-label release, hourly full 1674-step evaluation",
+  "result_template": "/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/fair-three-domain-wandb-20260929/era5/ohsvgp/seed{seed}/job-{job}",
+  "wait_for_submissions": [
+    "/data/nk523/projects/hipposvgp-fair-comparison/outputs/2026-09-29-doc-campaign/era5-ready.json"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "job_name": "hippo-osgpr-pems-head-20260930",
+  "array": "1%3",
+  "sbatch": "slurm/fair_three_domain/osgpr_pems.sbatch",
+  "seeds": [
+    1
+  ],
+  "kind": "final",
+  "scope": "osgpr PEMS: correctness tests and own initial/causal online-budget validation, then full 50100-step final evaluation",
+  "result_template": "/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/fair-three-domain-wandb-20260929/pems/osgpr/seed{seed}/job-{job}",
+  "wait_for_submissions": [
+    "outputs/2026-09-29-doc-campaign/ohsvgp-covid-dispatch/submission.json",
+    "outputs/2026-09-29-doc-campaign/osgpr-covid-dispatch/submission.json",
+    "outputs/2026-09-29-doc-campaign/osgpr-covid-runtime-retry-tail/submission.json"
+  ]
+}

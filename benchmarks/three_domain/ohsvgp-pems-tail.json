@@ -1,0 +1,15 @@
+{
+  "job_name": "hippo-ohsvgp-pems-tail-20260930",
+  "array": "2,3%3",
+  "sbatch": "slurm/fair_three_domain/ohsvgp_pems.sbatch",
+  "seeds": [
+    2,
+    3
+  ],
+  "kind": "final",
+  "scope": "ohsvgp PEMS: correctness tests and own initial/causal online-budget validation, then full 50100-step final evaluation",
+  "result_template": "/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/fair-three-domain-wandb-20260929/pems/ohsvgp/seed{seed}/job-{job}",
+  "wait_for_submissions": [
+    "/data/nk523/projects/hipposvgp-fair-comparison/outputs/2026-09-29-doc-campaign/ohsvgp-pems-head/submission.json"
+  ]
+}

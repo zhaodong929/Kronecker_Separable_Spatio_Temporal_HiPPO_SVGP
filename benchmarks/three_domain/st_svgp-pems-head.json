@@ -1,0 +1,16 @@
+{
+  "job_name": "hippo-st_svgp-pems-head-20260930",
+  "array": "1%3",
+  "sbatch": "slurm/fair_three_domain/st_svgp_pems.sbatch",
+  "seeds": [
+    1
+  ],
+  "kind": "final",
+  "scope": "ST-SVGP PEMS: GPU tests, real-prefix replay equivalence and independent validation gates, then full 50100-step evaluation",
+  "result_template": "/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/fair-three-domain-wandb-20260929/pems/st_svgp/seed{seed}/job-{job}",
+  "wait_for_submissions": [
+    "outputs/2026-09-29-doc-campaign/ohsvgp-covid-dispatch/submission.json",
+    "outputs/2026-09-29-doc-campaign/osgpr-covid-dispatch/submission.json",
+    "outputs/2026-09-29-doc-campaign/osgpr-covid-runtime-retry-tail/submission.json"
+  ]
+}
