@@ -49,6 +49,8 @@ class WeekInformation:
 class COVIDSettingBProtocol:
     """Audited Setting B protocol, including explicitly marked development folds."""
 
+    hidden_delay_steps = 1
+
     def __init__(self, npz_path: Path, metadata_path: Optional[Path] = None) -> None:
         self.npz_path = Path(npz_path)
         self.metadata_path = (
@@ -297,7 +299,7 @@ class ProtocolAudit:
             if information.delayed_hidden.stream_week != step - 1:
                 raise ValueError("A delayed hidden update must contain exactly the preceding week")
             self._delayed_labels += int(information.delayed_hidden.targets.size)
-        elif step != 0:
+        elif step != 0 and self.protocol.hidden_delay_steps == 1:
             raise ValueError("Only the first online week may have no delayed hidden labels")
         self._visible_labels += int(information.current_visible.targets.size)
         self._predictions += int(mean.size)
@@ -314,7 +316,7 @@ class ProtocolAudit:
         return {
             "online_steps_completed": completed_steps,
             "delayed_hidden_labels": self._delayed_labels,
-            "expected_delayed_hidden_labels": (expected_steps - 1) * self.protocol.hidden_locations.size,
+            "expected_delayed_hidden_labels": ((expected_steps - 1) * self.protocol.hidden_locations.size if self.protocol.hidden_delay_steps == 1 else 0),
             "current_visible_labels": self._visible_labels,
             "expected_current_visible_labels": expected_steps * self.protocol.visible_locations.size,
             "current_hidden_labels_read": 0,
@@ -322,7 +324,7 @@ class ProtocolAudit:
             "expected_hidden_predictions": expected_steps * self.protocol.hidden_locations.size,
             "passed": (
                 completed_steps == expected_steps
-                and self._delayed_labels == (expected_steps - 1) * self.protocol.hidden_locations.size
+                and self._delayed_labels == ((expected_steps - 1) * self.protocol.hidden_locations.size if self.protocol.hidden_delay_steps == 1 else 0)
                 and self._visible_labels == expected_steps * self.protocol.visible_locations.size
                 and self._predictions == expected_steps * self.protocol.hidden_locations.size
             ),

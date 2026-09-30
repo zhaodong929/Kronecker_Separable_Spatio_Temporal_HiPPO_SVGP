@@ -7,7 +7,7 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 MONITORS = ROOT/'outputs/2026-09-29-doc-campaign'
-PATTERN = re.compile(r'.*/(covid|pems)/(kronhippo_svgp|osgpr|ohsvgp|st_svgp|mgpvae)/seed(\d+)/job-(\d+)')
+PATTERN = re.compile(r'.*/(covid|pems|era5)/(kronhippo_svgp|osgpr|ohsvgp|st_svgp|mgpvae)/seed(\d+)/job-(\d+)')
 
 
 def main():

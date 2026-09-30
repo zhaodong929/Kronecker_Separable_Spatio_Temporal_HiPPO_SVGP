@@ -11,7 +11,7 @@ import sys
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--seed',type=int,required=True)
-    p.add_argument('--dataset',choices=['covid','pems'],default='covid')
+    p.add_argument('--dataset',choices=['covid','pems','era5'],default='covid')
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--release',required=True)
     p.add_argument('--compute-root',type=Path,required=True)
@@ -22,10 +22,11 @@ def main():
     if not (cuda_root/'nvvm/libdevice/libdevice.10.bc').is_file():
         raise FileNotFoundError('TensorFlow GPU runtime requires the installed CUDA libdevice')
     os.environ['XLA_FLAGS']='--xla_gpu_cuda_data_dir='+str(cuda_root)
-    source=a.compute_root/f"protocol/{'covid-v2' if a.dataset=='covid' else 'pems'}/seed{a.seed}"
-    expected_steps,expected_sites,initial_sites=(143,10,52) if a.dataset=='covid' else (50100,65,260)
-    fold_function='build_fold' if a.dataset=='covid' else 'build_pems_fold'
+    source=a.compute_root/f"protocol/{'covid-v2' if a.dataset=='covid' else a.dataset}/seed{a.seed}"
+    expected_steps,expected_sites,initial_sites={'covid':(143,10,52),'pems':(50100,65,260),'era5':(1674,200,800)}[a.dataset]
+    fold_function={'covid':'build_fold','pems':'build_pems_fold','era5':'build_era5_fold'}[a.dataset]
     tests=['tests/test_osgpr_release_boundary.py','tests/test_osgpr_graph_optimizer.py']
+    if a.dataset=='era5':tests += ['tests/test_era5_information_boundary.py','tests/test_era5_adapter_boundary.py::test_actual_era5_no_release_adapter[osgpr]']
     with (a.output/'tests.txt').open('w') as f:
         subprocess.run([worker,'-m','pytest','-q',*tests],stdout=f,stderr=subprocess.STDOUT,check=True)
     subprocess.run([worker,'-c',"import tensorflow as tf; assert tf.config.list_physical_devices('GPU')"],check=True)
@@ -44,16 +45,17 @@ def main():
             main_table_admitted=False)
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
-                expected_sites=expected_sites,hidden_delay_steps=1,initial_observed_sites=initial_sites,predictive_family='gaussian')
+                expected_sites=expected_sites,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=initial_sites,predictive_family='gaussian')
         (output/'spec.json').write_text(json.dumps(spec,indent=2))
         command=[worker,'scripts/run_official_bui_osgpr_era5.py','--protocol-npz',str(protocol/'protocol.npz'),
             '--protocol-json',str(protocol/'protocol.json'),'--output',str(output/'result.json'),
             '--blockwise-output',str(output/'blocks.csv'),'--predictions-output',str(output/'predictions.npz'),
             '--seed',str(a.seed),'--mt',str(mt),'--ms',str(ms),'--adaptive',
             '--adaptive-calibration-steps',str(budget),'--adaptive-online-steps',str(updates),
-            '--delayed-observations','--device','cuda','--calibration-block-size',
+            '--device','cuda','--calibration-block-size',
             '10' if a.dataset=='covid' else '256','--initial-optimizer-execution',
             'eager' if a.dataset=='covid' else 'graph']
+        if a.dataset!='era5':command.append('--delayed-observations')
         if calibration_only:command.append('--task1-validation-only')
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
             '--output',str(output),'--',*command],check=True)

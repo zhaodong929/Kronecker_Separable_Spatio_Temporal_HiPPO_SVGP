@@ -10,33 +10,35 @@ import numpy as np
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--dataset',choices=['pems','era5'],default='pems')
     p.add_argument('--seed',type=int,required=True)
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--release',required=True)
     p.add_argument('--compute-root',type=Path,required=True)
     a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
     worker=str(a.compute_root/'env-jax-gpu/bin/python')
-    protocol=a.compute_root/f'protocol/pems/seed{a.seed}'
+    protocol=a.compute_root/f'protocol/{a.dataset}/seed{a.seed}'
     inputs=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')]
     common=['--protocol-npz',inputs[0],'--protocol-json',inputs[1],'--seed',str(a.seed),
-            '--protocol-kind','traffic']
+            '--protocol-kind','era5' if a.dataset=='era5' else 'traffic']
     tests=['tests/test_st_svgp_dense.py','tests/test_st_svgp_release_boundary.py',
            'tests/test_st_svgp_stateful.py','tests/test_causal_mean.py']
+    if a.dataset=='era5':tests.append('tests/test_era5_information_boundary.py')
     with (a.output/'tests.txt').open('w') as f:
         subprocess.run([worker,'-m','pytest','-q',*tests],stdout=f,stderr=subprocess.STDOUT,check=True)
     subprocess.run([worker,'-c',"import jax; assert jax.default_backend()=='gpu'"],check=True)
     def run(output,stage,capacity,iterations,backend='stateful',validation=False,extra=()):
         output.mkdir(parents=True,exist_ok=True)
         spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',
-            dataset='pems',method='st_svgp',split_seed=a.seed,training_seed=a.seed,stage=stage,
+            dataset=a.dataset,method='st_svgp',split_seed=a.seed,training_seed=a.seed,stage=stage,
             worker_python=worker,source_commit=a.release,input_files=inputs,
             spatial_inducing=capacity,max_iterations=iterations,online_backend=backend,
             history_window=0,main_table_admitted=False)
         if stage=='final':
-            spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=50100,
-                expected_sites=65,hidden_delay_steps=1,initial_observed_sites=260,predictive_family='gaussian')
+            spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=1674 if a.dataset=='era5' else 50100,
+                expected_sites=200 if a.dataset=='era5' else 65,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=800 if a.dataset=='era5' else 260,predictive_family='gaussian')
         elif stage=='qualification':
-            spec.update(expected_steps=3,expected_sites=65,hidden_delay_steps=1)
+            spec.update(expected_steps=3,expected_sites=200 if a.dataset=='era5' else 65,hidden_delay_steps=None if a.dataset=='era5' else 1)
         (output/'spec.json').write_text(json.dumps(spec,indent=2))
         command=[worker,'baselines/covid_long_setting_b/adapters/run_st_svgp.py',*common,
             '--output-dir',str(output),'--spatial-inducing',str(capacity),'--task1-iterations',str(iterations),
@@ -74,7 +76,7 @@ def main():
     (a.output/'selection.json').write_text(json.dumps(dict(candidates=candidates,selected=selected),indent=2))
     if selected['requires_larger_budget']:
         raise RuntimeError('Selected PEMS initial fit improves at budget boundary; extend qualification')
-    qualification=dict(status='passed',method='st_svgp',dataset='pems',source_commit=a.release,
+    qualification=dict(status='passed',method='st_svgp',dataset=a.dataset,source_commit=a.release,
         tests=tests,real_protocol_prefix_max_absolute_error=errors,
         online_budget='One conjugate Gaussian update, equivalent to official legal-prefix replay',
         main_table_admitted=False)

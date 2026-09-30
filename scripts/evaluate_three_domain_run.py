@@ -45,6 +45,8 @@ def main():
     if metadata.get('xlag',{}).get('delay_weeks')==1 or metadata.get('delayed_target_steps')==1:
         if saved_result.get('delayed_observation_rows')!=(len(truth)-1)*len(sites):
             raise ValueError('Delayed-label count does not match full protocol')
+    if metadata.get('hidden_label_policy')=='never released' and saved_result.get('delayed_observation_rows')!=0:
+        raise ValueError('ERA5 hidden labels must never be assimilated')
     record=dict(status='complete_source_verified',method=a.method,split_seed=metadata['split_seed'],
         main_table_admitted=False,predictive_family=family,target_normalization=normalization,
         evaluator_source_sha256={name:sha256(Path(__file__).resolve().parents[1]/name) for name in

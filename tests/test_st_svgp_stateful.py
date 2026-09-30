@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 
 
-def test_state_continuation_matches_official_sparse_gaussian_replay():
+@pytest.mark.parametrize("delayed_release",[True,False])
+def test_state_continuation_matches_official_sparse_gaussian_replay(delayed_release):
     from baselines.covid_long_setting_b.adapters.run_st_svgp import make_model,assign_frozen_hyperparameters,frozen_hyperparameters
     from baselines.st_svgp_filter import GaussianSTFilter
     import bayesnewton
@@ -9,17 +11,18 @@ def test_state_continuation_matches_official_sparse_gaussian_replay():
     z=coords[[0,2]]
     times=np.array([0.,.1,.25,.4,.8])
     targets=np.random.default_rng(48).normal(size=(5,4))
-    base=make_model(times[:2,None],np.repeat(coords[None],2,axis=0),targets[:2],z,trainable_inducing=False)
+    initial_sites=np.arange(4) if delayed_release else np.array([0,1])
+    base=make_model(times[:2,None],np.repeat(coords[None,initial_sites],2,axis=0),targets[:2,initial_sites],z,trainable_inducing=False)
     kv,lv=frozen_hyperparameters(base)
     state=GaussianSTFilter(base.kernel,base.likelihood,coords)
     x=[];y=[]
     def record(t,sites,values):
         x.extend(np.column_stack([np.full(len(sites),t),coords[sites]]));y.extend(values)
     for i in range(2):
-        state.advance(times[i],np.arange(4),targets[i]);record(times[i],np.arange(4),targets[i])
+        state.advance(times[i],initial_sites,targets[i,initial_sites]);record(times[i],initial_sites,targets[i,initial_sites])
     for i in range(2,5):
         delayed={}
-        if i>2:
+        if i>2 and delayed_release:
             delayed=dict(delayed_time=times[i-1],delayed_sites=np.array([2,3]),delayed_values=targets[i-1,2:])
             record(times[i-1],np.array([2,3]),targets[i-1,2:])
         state.advance(times[i],np.array([0,1]),targets[i,:2],**delayed)

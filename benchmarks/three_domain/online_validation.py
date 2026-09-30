@@ -101,3 +101,20 @@ def build_pems_fold(source, output, initial=1728):
     np.savez_compressed(output/'protocol.npz',**arrays)
     (output/'protocol.json').write_text(json.dumps(metadata,indent=2))
     return output/'protocol.npz'
+
+
+def build_era5_fold(source,output,initial=130):
+    """Chronological fold entirely inside the 186-hour, 800-site initial set."""
+    from benchmarks.three_domain.era5_features import features
+    from baselines.covid_long_setting_b.development import _ridge
+    source,output=Path(source),Path(output);meta=json.loads(source.with_suffix('.json').read_text())
+    with np.load(source,allow_pickle=False) as data:
+        visible=data['train_indices'];lookup={int(site):i for i,site in enumerate(visible)}
+        fit=np.array([lookup[int(s)] for s in data['fit_indices']]);validation=np.array([lookup[int(s)] for s in data['validation_indices']])
+        y=data['calibration_y'][:,visible].astype(float);weather=data['calibration_weather'][:,visible].astype(float);coordinates=data['coordinates'][visible]
+    if y.shape!=(186,800) or not 10<initial<186:raise ValueError('Expected complete initial ERA5 window')
+    center=float(y[:initial,fit].mean());scale=float(y[:initial,fit].std());y=(y-center)/scale
+    phi,stats=features(weather,coordinates,fit,initial=initial);beta=_ridge(phi[:initial].astype(float),y[:initial],fit);n=len(y)-initial
+    arrays=dict(train_indices=fit,test_indices=validation,fit_indices=fit,validation_indices=validation,calibration_y=y[:initial],stream_y=y[initial:],calibration_phi=phi[:initial],stream_phi=phi[initial:],coordinates=coordinates,calibration_times=np.arange(initial)/(initial-1),stream_times=np.arange(initial,186)/(initial-1),task1_ridge_beta=beta,task1_calibration_mean=np.einsum('tsp,p->ts',phi[:initial],beta),task1_stream_mean=np.einsum('tsp,p->ts',phi[initial:],beta),block_start=np.arange(n),block_stop=np.arange(1,n+1))
+    metadata=dict(schema_version=2,development_protocol=True,protocol_id='era5_land_hourly_causal',dataset='era5_land',split_seed=meta['split_seed'],task1_observed_indices=fit.tolist(),hidden_label_policy='never released',delayed_target_steps=None,source_protocol_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),purpose='Task-1 chronological online-budget validation; formal 200 held-out sites and all formal stream excluded',formal_stream_used=False,weather_features=stats,normalization=dict(center_in_source_units=center,scale_in_source_units=scale,fit_scope='initial fitting prefix only'))
+    output.mkdir(parents=True,exist_ok=True);np.savez_compressed(output/'protocol.npz',**arrays);(output/'protocol.json').write_text(json.dumps(metadata,indent=2));return output/'protocol.npz'

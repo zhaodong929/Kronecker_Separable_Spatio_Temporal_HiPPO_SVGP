@@ -39,7 +39,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--protocol-npz", type=Path, required=True)
     parser.add_argument("--protocol-json", type=Path)
-    parser.add_argument("--protocol-kind", choices=("covid", "traffic"), default="covid")
+    parser.add_argument("--protocol-kind", choices=("covid", "traffic", "era5"), default="covid")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--seed", type=int, required=True)
     parser.add_argument("--max-weeks", type=int, default=0)

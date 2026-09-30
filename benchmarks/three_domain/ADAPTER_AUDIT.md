@@ -280,3 +280,31 @@ result artifact hash, and a finished team W&B run with an artifact. Reuse record
 retain the original source and run URL. No final run is reused by this mechanism.
 This path was checked against the actual seed5/u80 artifact; a changed update
 budget was correctly rejected. Numerical model/official source stays unchanged.
+
+## ERA5 source recovery and no-release protocol (2026-09-30)
+
+CDS authentication and a two-hour seven-variable NetCDF retrieval succeeded.
+Full-window retrieval and all-site source alignment are required before submission.
+The recovered run retains the 1,000-site spatial splits and 186/1,674-hour window.
+All methods use hourly current/past visible-site conditioning; the 200 hidden
+sites are never released. This explicitly replaces historical 10-hour batch
+conditioning, and is a revised causal comparison, not an exact reproduction of
+those historical predictions. The manuscript protocol and timing must reflect it.
+
+The common 133-column feature family comprises seven coordinate/time columns and
+six weather variables with current, ten lags and ten differences. Target and
+weather normalization use initial fitting sites only; time and lag continuity
+are preserved across historical task boundaries. All external methods use the
+same initial-fit ridge mean. The proposal updates its Bayesian mean online, so
+this remains an end-to-end model comparison rather than an isolated solver claim.
+
+`ERA5Protocol` never exposes hidden stream labels. Actual proposal and OHSVGP
+no-release adapter tests pass on CPU after changing all hidden stream labels and
+future visible labels. The Bui counterpart is included and must pass in its
+isolated TensorFlow environment; ST continuation must match the official prefix
+reference without delayed labels. Each method repeats appropriate qualification
+on its allocated GPU. MGPVAE and ST also run full-initial real-data resource/parity
+gates. No ERA5 comparison is admitted by merely passing a protocol unit test.
+
+Existing COVID/PEMS releases remain immutable. A stale traffic test fixture used
+`_metadata` instead of the production `metadata` attribute; the fixture is corrected.

@@ -258,7 +258,7 @@ def main() -> None:
     parser.add_argument("--protocol-npz", type=Path, required=True)
     parser.add_argument("--protocol-json", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--protocol-kind", choices=("covid", "traffic"), default="covid")
+    parser.add_argument("--protocol-kind", choices=("covid", "traffic", "era5"), default="covid")
     parser.add_argument("--basis-grid-size", type=int, default=0,
                         help="Input-only subsampling for official RFF interpolation; 0 uses all inputs.")
     parser.add_argument("--max-blocks", type=int, default=0)
@@ -305,6 +305,8 @@ def main() -> None:
     protocol = load_protocol(args.protocol_npz, args.protocol_json, protocol_kind=args.protocol_kind)
     if args.protocol_kind == "traffic" and not args.delayed_observations:
         raise ValueError("PEMS requires one-step delayed hidden observations")
+    if args.protocol_kind == "era5" and args.delayed_observations:
+        raise ValueError("ERA5 hidden labels are never released")
     arrays = np.load(args.protocol_npz)
     metadata = json.loads(args.protocol_json.read_text(encoding="utf-8"))
     if int(metadata["split_seed"]) != args.seed:

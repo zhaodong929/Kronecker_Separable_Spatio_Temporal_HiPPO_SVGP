@@ -114,6 +114,10 @@ def main():
         qualification = json.loads(Path(spec["qualification_record"]).read_text())
         if qualification.get("status") != "passed" or qualification.get("method") != spec["method"] or qualification.get("dataset") != spec["dataset"]:
             raise ValueError("Qualification record does not qualify this method/dataset")
+    no_hidden_release = any(json.loads(Path(f).read_text()).get('hidden_label_policy')=='never released'
+        for f in spec.get('input_files',[]) if Path(f).suffix=='.json')
+    if no_hidden_release and ('--delayed-observations' in command or '--delayed-observation-blocks' in command):
+        raise ValueError('A no-release protocol cannot enable delayed hidden observations')
     output = a.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     attempt = uuid.uuid4().hex[:12]
@@ -196,6 +200,8 @@ def main():
     if code == 0 and spec.get("expected_steps") is not None:
         try:
             result = validate_outputs(output, spec["expected_steps"], spec["expected_sites"])
+            if no_hidden_release and result.get('delayed_observation_rows') != 0:
+                raise ValueError('No-release protocol absorbed hidden observations')
             if spec.get("hidden_delay_steps") == 1:
                 expected = (spec["expected_steps"]-1)*spec["expected_sites"]
                 if result.get("delayed_observation_rows") != expected:

@@ -34,7 +34,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--protocol-npz', type=Path, required=True)
     p.add_argument('--protocol-json', type=Path, required=True)
-    p.add_argument('--protocol-kind', choices=['covid', 'traffic'], default='covid')
+    p.add_argument('--protocol-kind', choices=['covid', 'traffic', 'era5'], default='covid')
     p.add_argument('--official-source', type=Path, required=True)
     p.add_argument('--output-dir', type=Path, required=True)
     p.add_argument('--seed', type=int, required=True)

@@ -15,7 +15,7 @@ def synthetic_protocol() -> TrafficProtocolN:
     protocol._hidden = np.asarray([2], dtype=np.int64)
     protocol._chronological = True
     protocol._delayed_target_steps = 1
-    protocol._metadata = {"protocol_id": "pems_bay_protocol_n"}
+    protocol.metadata = {"protocol_id": "pems_bay_protocol_n"}
     return protocol
 
 

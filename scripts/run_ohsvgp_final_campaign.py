@@ -11,7 +11,7 @@ import sys
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--seed',type=int,required=True)
-    p.add_argument('--dataset',choices=['covid','pems'],default='covid')
+    p.add_argument('--dataset',choices=['covid','pems','era5'],default='covid')
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--release',required=True)
     p.add_argument('--compute-root',type=Path,required=True)
@@ -19,11 +19,12 @@ def main():
     a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
     os.environ['HIPPO_TEST_DEVICE']='cuda'
     worker=str(a.compute_root/'env-routeb/bin/python')
-    source=a.compute_root/f"protocol/{'covid-v2' if a.dataset=='covid' else 'pems'}/seed{a.seed}"
-    expected_steps,expected_sites,initial_sites=(143,10,52) if a.dataset=='covid' else (50100,65,260)
-    fold_function='build_fold' if a.dataset=='covid' else 'build_pems_fold'
+    source=a.compute_root/f"protocol/{'covid-v2' if a.dataset=='covid' else a.dataset}/seed{a.seed}"
+    expected_steps,expected_sites,initial_sites={'covid':(143,10,52),'pems':(50100,65,260),'era5':(1674,200,800)}[a.dataset]
+    fold_function={'covid':'build_fold','pems':'build_pems_fold','era5':'build_era5_fold'}[a.dataset]
     tests=['tests/test_ohsvgp_release_boundary.py','tests/test_ohsvgp_lengthscale_learning.py',
            'tests/test_online_budget_fold.py']
+    if a.dataset=='era5':tests += ['tests/test_era5_information_boundary.py','tests/test_era5_adapter_boundary.py::test_actual_era5_no_release_adapter[ohsvgp]']
     with (a.output/'tests.txt').open('w') as f:
         subprocess.run([worker,'-m','pytest','-q',*tests],stdout=f,stderr=subprocess.STDOUT,check=True)
     subprocess.run([worker,'-c','import torch; assert torch.cuda.is_available()'],check=True)
@@ -48,15 +49,16 @@ def main():
             if cached is not None:return cached
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
-                expected_sites=expected_sites,hidden_delay_steps=1,initial_observed_sites=initial_sites,predictive_family='gaussian')
+                expected_sites=expected_sites,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=initial_sites,predictive_family='gaussian')
         (output/'spec.json').write_text(json.dumps(spec,indent=2))
         command=[worker,'scripts/run_covid_ohsvgp_own_theta.py','--protocol-npz',str(protocol/'protocol.npz'),
             '--protocol-json',str(protocol/'protocol.json'),'--output-dir',str(output),'--seed',str(a.seed),
-            '--protocol-kind','covid' if a.dataset=='covid' else 'traffic',
+            '--protocol-kind',{'covid':'covid','pems':'traffic','era5':'era5'}[a.dataset],
             '--kernel','rbf','--inducing-size',str(capacity),'--rff-sample-size','256',
             '--basis-grid-size','1024','--calibration-iterations',str(budget),
             '--task1-min-steps',str(budget),'--task1-check-interval','5',
-            '--calibration-batch-size','256','--update-steps',str(updates),'--delayed-observations','--device','cuda']
+            '--calibration-batch-size','256','--update-steps',str(updates),'--device','cuda']
+        if a.dataset!='era5':command.append('--delayed-observations')
         if calibration_only:command.append('--calibration-only')
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
             '--output',str(output),'--',*command],check=True)

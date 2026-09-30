@@ -22,7 +22,7 @@ def candidates(root):
                 continue
             match = re.fullmatch(
                 r'/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/'
-                r'fair-three-domain-wandb-20260929/(covid|pems)/'
+                r'fair-three-domain-wandb-20260929/(covid|pems|era5)/'
                 r'(kronhippo_svgp|osgpr|ohsvgp|st_svgp|mgpvae)/seed(\d+)/job-(\d+)',
                 row.get('path', ''))
             if not match:
@@ -54,7 +54,7 @@ def main():
             if state.get(root, {}).get('status') == 'synchronized':
                 continue
             now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-            protocol = c+'/protocol/'+('covid-v2' if dataset == 'covid' else 'pems')+'/seed'+seed+'/protocol.npz'
+            protocol = c+'/protocol/'+('covid-v2' if dataset == 'covid' else dataset)+'/seed'+seed+'/protocol.npz'
             # Credentials remain inside the remote process and are never printed.
             code = '\n'.join([
                 'import json,os,pathlib,subprocess',

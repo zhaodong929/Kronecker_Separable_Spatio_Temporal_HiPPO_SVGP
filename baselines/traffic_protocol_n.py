@@ -105,6 +105,9 @@ def load_protocol(
     *,
     protocol_kind: str,
 ) -> COVIDSettingBProtocol:
+    if protocol_kind == "era5":
+        from baselines.era5_protocol import ERA5Protocol
+        return ERA5Protocol(npz_path, metadata_path)
     if protocol_kind == "traffic":
         return TrafficProtocolN(npz_path, metadata_path)
     if protocol_kind == "covid":
