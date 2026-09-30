@@ -47,6 +47,7 @@ def main():
         spec['sitewise_training_filter']=a.dataset!='covid'
         spec['initial_marginals']='reference' if a.dataset=='covid' else 'official_blockwise_bridge'
         spec['initial_bridge_jitter']=1e-8
+        spec['initial_prediction_outer_jit']=False
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
                 expected_sites=expected_sites,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=initial_sites)

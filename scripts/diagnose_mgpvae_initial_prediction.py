@@ -33,7 +33,8 @@ y=jnp.asarray(residual.T[:,:3,None]);q=jnp.asarray(protocol.coordinates[protocol
 source=inspect.getsource(make_initial_predictor)
 source=source.replace('return latent_mean,latent_variance','return latent_mean,latent_variance,fm,fp,mean,variance,mixing,residual,forward,backward,pinf')
 namespace={'np':np};exec(source,namespace)
-compiled=namespace['make_initial_predictor'](model,t,y,q)
+import objax
+compiled=objax.Jit(namespace['make_initial_predictor'](model,t,y,q))
 namespace_eager={'np':np};exec(source.replace('return objax.Jit(predict)','return predict'),namespace_eager)
 eager=namespace_eager['make_initial_predictor'](model,t,y,q)
 keys=['mean','variance','filtered_mean','filtered_cov','bridge_mean','bridge_var','mixing','residual','forward','backward','pinf']

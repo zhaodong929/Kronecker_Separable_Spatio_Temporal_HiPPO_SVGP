@@ -45,7 +45,12 @@ def make_initial_predictor(model,times,training,query_coordinates):
         latent_variance=latent_variance+jnp.diagonal(residual,axis1=-2,axis2=-1).transpose(2,0,1)
         return latent_mean,latent_variance
 
-    return objax.Jit(predict)
+    # Keep the official JAX scan kernels, but do not fuse the encoder, filter,
+    # smoother and spatial projection into one outer executable. On the pinned
+    # CUDA/JAX stack, the outer JIT silently changed some 720-site latent-4
+    # filtered states; eager execution matches CPU and official prediction.
+    # This is a compilation boundary, not a change to the posterior equations.
+    return predict
 
 
 def verify_initial_prefix(model,times,training,query_coordinates):
