@@ -10,14 +10,19 @@ import numpy as np
 
 
 class GaussianSTFilter:
-    def __init__(self, kernel, likelihood, coordinates):
+    def __init__(self, kernel, likelihood, coordinates, *, site_precision=True):
         import jax
         import jax.numpy as jnp
+        from bayesnewton.utils import inv,solve
+        from bayesnewton.utils import temporal_conditional
+        from bayesnewton.ops import rauch_tung_striebel_smoother
         self.kernel=kernel
         self.noise=float(likelihood.variance)
         self.coordinates=np.asarray(coordinates)
         b,c=kernel.spatial_conditional(jnp.array([[0.]]),jnp.asarray(coordinates)[None])
         self.h=b[0]@kernel.measurement_model()
+        self.b=b[0]
+        measurement=kernel.measurement_model()
         self.conditional=jnp.diag(c[0])
         self.pinf=kernel.stationary_covariance()
         self.mean=jnp.zeros((len(self.pinf),1))
@@ -31,14 +36,38 @@ class GaussianSTFilter:
             q=self.pinf-a@self.pinf@a.T
             mean=a@mean
             covariance=a@covariance@a.T+q
-            h=self.h[sites]
+            if site_precision:
+                # Follow BayesNewton.compute_full_pseudo_lik exactly, including
+                # its 1e-12 site-precision regularizer. This also keeps the
+                # innovation solve at inducing-site rather than data-site size.
+                projection=self.b[sites]
+                precision=projection.T@(projection/self.noise)
+                pseudo_cov=inv(precision+1e-12*jnp.eye(precision.shape[0]))
+                observations=pseudo_cov@(projection.T@(values[:,None]/self.noise))
+                h=measurement
+            else:
+                h=self.h[sites]
+                observations=values[:,None]
+                pseudo_cov=self.noise*jnp.eye(len(sites))
             hp=h@covariance
-            innovation=hp@h.T+self.noise*jnp.eye(len(sites))
-            gain=jnp.linalg.solve(innovation,hp).T
-            mean=mean+gain@(values[:,None]-h@mean)
+            innovation=hp@h.T+pseudo_cov
+            gain=solve(innovation,hp).T
+            mean=mean+gain@(observations-h@mean)
             covariance=covariance-gain@hp
             return mean,(covariance+covariance.T)*.5
         self.step=jax.jit(step)
+
+        def endpoint(previous_mean,previous_covariance,mean,covariance,dt):
+            # Official predict() interpolates even at the current observed
+            # endpoint, with a 1e-8 bridge regularizer. Two adjacent states
+            # suffice to reproduce that operation without replaying history.
+            sm,sp,gain=rauch_tung_striebel_smoother(jnp.array([dt,0.]),kernel,
+                jnp.stack([previous_mean,mean]),jnp.stack([previous_covariance,covariance]),
+                return_full=True)
+            pm,pv=temporal_conditional(jnp.array([[-1e10],[-dt],[0.],[1e10]]),
+                jnp.zeros((1,1)),sm,sp,gain,kernel)
+            return pm[0],pv[0]
+        self.endpoint=jax.jit(endpoint)
 
     def advance(self,time,sites,values,*,delayed_time=None,delayed_sites=(),delayed_values=()):
         import jax.numpy as jnp
@@ -70,6 +99,9 @@ class GaussianSTFilter:
     def predict(self,sites):
         import jax.numpy as jnp
         h=self.h[np.asarray(sites,dtype=int)]
-        mean=h@self.mean
-        variance=jnp.sum((h@self.covariance)*h,axis=1)+self.conditional[sites]+self.noise
+        m,p=self.mean,self.covariance
+        if self.previous_dt>0:
+            m,p=self.endpoint(*self.before_previous,m,p,self.previous_dt)
+        mean=h@m
+        variance=jnp.sum((h@p)*h,axis=1)+self.conditional[sites]+self.noise
         return np.asarray(mean).reshape(-1),np.asarray(variance)

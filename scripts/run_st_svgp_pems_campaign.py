@@ -2,6 +2,7 @@
 """Qualify exact continuation on real PEMS before its full final comparison."""
 import argparse
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -34,6 +35,8 @@ def main():
             worker_python=worker,source_commit=a.release,input_files=inputs,
             spatial_inducing=capacity,max_iterations=iterations,online_backend=backend,
             history_window=0,main_table_admitted=False)
+        cpu_reference=stage=='qualification' and backend=='replay'
+        spec['worker_backend']='cpu_reference' if cpu_reference else 'gpu'
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=1674 if a.dataset=='era5' else 50100,
                 expected_sites=200 if a.dataset=='era5' else 65,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=800 if a.dataset=='era5' else 260,predictive_family='gaussian')
@@ -45,8 +48,11 @@ def main():
             '--task1-min-steps',str(iterations),'--task1-check-interval','5',
             '--online-inference-steps','1','--history-window','0','--online-backend',backend,*extra]
         if validation:command.append('--task1-validation-only')
+        environment=os.environ.copy()
+        if cpu_reference:
+            environment.update(JAX_PLATFORMS='cpu',CUDA_VISIBLE_DEVICES='')
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
-            '--output',str(output),'--',*command],check=True)
+            '--output',str(output),'--',*command],check=True,env=environment)
     reference=a.output/'qualification-replay'
     frozen=reference/'task1-frozen.npz'
     run(reference,'qualification',16,1,'replay',extra=['--max-weeks','3','--write-frozen-task1-state',str(frozen)])
@@ -62,14 +68,11 @@ def main():
     (a.output/'continuation-equivalence.json').write_text(json.dumps(errors,indent=2))
     candidates=[]
     for capacity in [16,32]:
-        budget=500
-        output=a.output/f'calibration-ms{capacity}-b{budget}'
-        run(output,'validation',capacity,budget,validation=True)
-        result=json.loads((output/'task1_validation.json').read_text())
-        if result['selected_iteration']>=budget:
-            budget=1000;output=a.output/f'calibration-ms{capacity}-b{budget}'
+        for budget in [500,1000,2000,4000,8000]:
+            output=a.output/f'calibration-ms{capacity}-b{budget}'
             run(output,'validation',capacity,budget,validation=True)
             result=json.loads((output/'task1_validation.json').read_text())
+            if result['selected_iteration']<budget:break
         result['requires_larger_budget']=result['selected_iteration']>=budget
         candidates.append(result)
     selected=min(candidates,key=lambda c:c['metrics']['gaussian_nlpd'])
@@ -78,6 +81,7 @@ def main():
         raise RuntimeError('Selected PEMS initial fit improves at budget boundary; extend qualification')
     qualification=dict(status='passed',method='st_svgp',dataset=a.dataset,source_commit=a.release,
         tests=tests,real_protocol_prefix_max_absolute_error=errors,
+        replay_reference_backend='cpu',continuation_backend='gpu',
         online_budget='One conjugate Gaussian update, equivalent to official legal-prefix replay',
         main_table_admitted=False)
     (a.output/'qualification.json').write_text(json.dumps(qualification,indent=2))

@@ -3,7 +3,8 @@ import pytest
 
 
 @pytest.mark.parametrize("delayed_release",[True,False])
-def test_state_continuation_matches_official_sparse_gaussian_replay(delayed_release):
+@pytest.mark.parametrize("site_precision",[True,False])
+def test_state_continuation_matches_official_sparse_gaussian_replay(delayed_release,site_precision):
     from baselines.covid_long_setting_b.adapters.run_st_svgp import make_model,assign_frozen_hyperparameters,frozen_hyperparameters
     from baselines.st_svgp_filter import GaussianSTFilter
     import bayesnewton
@@ -14,7 +15,7 @@ def test_state_continuation_matches_official_sparse_gaussian_replay(delayed_rele
     initial_sites=np.arange(4) if delayed_release else np.array([0,1])
     base=make_model(times[:2,None],np.repeat(coords[None,initial_sites],2,axis=0),targets[:2,initial_sites],z,trainable_inducing=False)
     kv,lv=frozen_hyperparameters(base)
-    state=GaussianSTFilter(base.kernel,base.likelihood,coords)
+    state=GaussianSTFilter(base.kernel,base.likelihood,coords,site_precision=site_precision)
     x=[];y=[]
     def record(t,sites,values):
         x.extend(np.column_stack([np.full(len(sites),t),coords[sites]]));y.extend(values)
