@@ -28,8 +28,9 @@ final execution remain pending. Main-table admission is a separate review.
 Data readiness: canonical DCRNN PEMS-BAY HDF and geometry are recovered. COVID
 uses the recovered CDC admissions series with initial all-site observation and
 one-week-delayed hidden labels, explicitly documented against the old snapshot.
-ERA5-Land CDS authentication and seven-variable sample retrieval succeeded;
-full January–March 2020 retrieval and all-site alignment are in progress.
+ERA5-Land seven-variable January–March 2020 retrieval, all-site full-period
+alignment, and five protocol splits verified on DoC on September 30. Six legacy
+site series each omitted an hour; the rebuilt inputs restore the common UTC grid.
 Do not substitute the public 372-hour series for the required 1,860 hours.
 The revised ERA5 comparison uses hourly causal interpolation without hidden-label
 release; historical ten-hour-batch results are not directly interchangeable.
