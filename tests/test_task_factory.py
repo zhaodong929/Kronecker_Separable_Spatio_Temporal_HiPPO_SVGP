@@ -36,3 +36,20 @@ def test_feature_time_lookup_and_configuration_reject_silent_changes():
     with pytest.raises(ValueError,match='clocks'): f([99.],[0])
     with pytest.raises(ValueError,match='excluded'): Configuration('gpvae',1,.01)
     with pytest.raises(ValueError,match='integer'): Configuration('mgpvae',1.5,.01)
+
+
+def test_contribution_arms_reuse_actual_fit_and_change_only_declared_update():
+    from benchmarks.task_stream.ablations import ARMS
+    s, features = tiny()
+    config = Configuration('kronhippo_svgp', initial_iterations=1, learning_rate=.001,
+        spatial_inducing=2, temporal_inducing=3, rff=16)
+    fits, predictions = [], []
+    for arm in ARMS:
+        adapter = FittedTaskAdapter(config, s.coordinates, s.visible, features,
+            initial_step=.1, release_previous=True, arm=arm)
+        adapter.initialize(s.initial())
+        fits.append(adapter.fit_sha256)
+        predictions.append(adapter.predict_task(s.task(0))[0])
+    assert len(set(fits)) == 1
+    assert not np.allclose(predictions[0], predictions[1])
+    assert not np.allclose(predictions[0], predictions[2])

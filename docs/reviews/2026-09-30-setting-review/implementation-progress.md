@@ -32,3 +32,13 @@ All five methods completed the A30 qualification array **294564** on source `fcf
 Subsequent changes: ERA calendar columns use physical 24/168-hour cycles (same 133 features, weather transforms unchanged); explicit NVTX acquisition/counter ingestion and profiled-latency exclusion; compact MGP training RTS avoids time-indexed full spatial covariance while matching the corrected objective and every parameter gradient. CPU combined suite **91 passed**; compact-MGP plus Markov factories **7 passed**, in addition to the five earlier Markov reference tests and remote OSGPR test. The changed MGP training path requires a fresh tiny GPU check before real-size domain qualification.
 
 `qualify_domains.sbatch` runs the three representative domains sequentially per method, keeping at most five queued array elements and three GPUs globally. All 15 domain/method shape pilots use two initial fitting steps and two tasks; this is not convergence or a new final result.
+
+### 全13分割の準備・監査完了
+
+`outputs/task-stream-20260930/preparation-summary.json` に全13分割・6,291,293,687 bytesの成果物を記録。SHA256: `a58ba603c203bb9c78162fedbea1b7ab26f77e22e746fff41921e2fe7f577682`。全特徴の有限性、bias=1、fit-only標準化、内部selectionとの完全なprefix一致、ERAの24/168時間周期を検証済み。ERA5は5×64タスク、COVIDは5×143、PEMSは3×672。旧位相版は別ディレクトリへ保存し不使用。全分割をDoCへ転送中。
+
+### 実規模pilotで判明したメモリ問題
+
+`294570` のコンパクトMGP CPU/GPU再照合は成功。`294573` はCOVID全5方式、PEMSのKron/OH/MGP、ERAのKron/OHが実規模2-step/2-task検証を完了。PEMS OSGPRは初期SGPRの128×1,048,320行の中間行列、STは4032×260×260行列の複数保持でA30メモリ不足。両方とも初期学習中で、オンラインタスク開始前。失敗成果物は保存し、成功扱いにしない。ERAの当該2方式は元のworkerが停止したため未実行。独立した後続domain検証は継続し、workerの最終終了コードは失敗を保つようdispatcherを修正。
+
+目的関数・データ量を変えずに、OSGPRの加法的十分統計を行チャンクで計算し、STの反復する空間行列を保持しない実装を検証中。小規模dense参照の損失・全勾配・予測との照合を通すまでは実規模再投入しない。本番65本は依然未開始。

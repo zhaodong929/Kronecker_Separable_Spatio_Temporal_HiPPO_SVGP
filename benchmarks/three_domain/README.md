@@ -1,3 +1,5 @@
+> This is the preserved **legacy observation-wise evaluation campaign**. It is superseded by [task_stream](../task_stream/README.md) and its [plan](../task_stream/plan.json). Old result files and manifests are audit history, not the current launch plan.
+
 # Three-domain comparison rerun
 
 Scope: the ERA5, COVID and PEMS main comparisons only. The 65 candidate final
