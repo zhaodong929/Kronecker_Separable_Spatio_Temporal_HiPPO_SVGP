@@ -415,6 +415,7 @@ class TorchJointSSGPKronHiPPOSVGP:
         no_transfer: bool = False,
         L_t_override: TensorLike | None = None,
         C_observed: TensorLike | None = None,
+        zero_cross: bool = False,
     ) -> TorchStructuredKronState:
         if C_observed is not None and not torch.equal(
             _as_tensor(C_observed, device=self.device, dtype=self.dtype), self.C
@@ -453,6 +454,8 @@ class TorchJointSSGPKronHiPPOSVGP:
         new = self._new_likelihood_stats(y_tensor, phi, t_n)
         r_beta_beta = symmetrize(old["R_beta_beta"] + new["R_beta_beta"])
         r_beta_u = old["R_beta_u"] + new["R_beta_u"]
+        if zero_cross:
+            r_beta_u = torch.zeros_like(r_beta_u)
         h_beta_lik = old["h_beta"] + new["h_beta"]
         b_temporal = symmetrize(old["B_temporal"] + new["B_temporal"])
         h_info = old["H_info"] + new["H_info"]

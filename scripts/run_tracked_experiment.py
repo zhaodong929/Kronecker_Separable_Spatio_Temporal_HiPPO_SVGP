@@ -106,9 +106,9 @@ def main():
         raise ValueError(f"Missing spec fields: {sorted(required-spec.keys())}")
     if spec["method"] not in {"kronhippo_svgp", "osgpr", "ohsvgp", "st_svgp", "mgpvae"}:
         raise ValueError("Method excluded by baseline-selection policy")
-    if spec["stage"] not in {"validation", "qualification", "final", "integration"}:
+    if spec["stage"] not in {"validation", "qualification", "final", "integration", "ablation"}:
         raise ValueError("Unknown experiment stage")
-    if spec["stage"] == "final":
+    if spec["stage"] in {"final", "ablation"}:
         if not spec.get("qualification_record"):
             raise ValueError("Final runs require an explicit qualification record")
         qualification = json.loads(Path(spec["qualification_record"]).read_text())
@@ -136,7 +136,7 @@ def main():
     (record / "provenance.json").write_text(json.dumps(provenance, indent=2))
     (record / "code.diff").write_text(capture(["git", "diff", "HEAD"] ).get("stdout", ""))
     with tarfile.open(record / "code_snapshot.tar.gz", "w:gz") as archive:
-        for folder in ("scripts", "stvgp_kronecker", "benchmarks/three_domain", "baselines", "slurm/fair_three_domain", "tests"):
+        for folder in ("scripts", "stvgp_kronecker", "benchmarks/three_domain", "benchmarks/task_stream", "baselines", "slurm/fair_three_domain", "slurm/task_stream", "tests"):
             for path in sorted((ROOT / folder).rglob("*")):
                 if path.is_file() and not path.is_symlink() and path.suffix in {".py", ".sh", ".sbatch"}:
                     archive.add(path, arcname=str(path.relative_to(ROOT)))

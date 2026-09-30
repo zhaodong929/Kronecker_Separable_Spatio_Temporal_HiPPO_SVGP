@@ -140,12 +140,14 @@ def make_model(
     inducing_locations: np.ndarray,
     *,
     trainable_inducing: bool,
+    theta: dict | None = None,
 ) -> object:
-    temporal_kernel = bayesnewton.kernels.Matern32(variance=1.0, lengthscale=0.2)
+    theta = theta or dict(kernel_variance=1., ell_t=.2, ell_s=(1., 1.), noise_std=np.sqrt(.1))
+    temporal_kernel = bayesnewton.kernels.Matern32(variance=theta['kernel_variance'], lengthscale=theta['ell_t'])
     spatial_kernel = bayesnewton.kernels.Separable(
         [
-            bayesnewton.kernels.Matern32(variance=1.0, lengthscale=1.0),
-            bayesnewton.kernels.Matern32(variance=1.0, lengthscale=1.0),
+            bayesnewton.kernels.Matern32(variance=1.0, lengthscale=theta['ell_s'][0]),
+            bayesnewton.kernels.Matern32(variance=1.0, lengthscale=theta['ell_s'][1]),
         ]
     )
     kernel = bayesnewton.kernels.SpatioTemporalKernel(
@@ -158,7 +160,7 @@ def make_model(
     )
     return bayesnewton.models.MarkovVariationalGP(
         kernel=kernel,
-        likelihood=bayesnewton.likelihoods.Gaussian(variance=0.1),
+        likelihood=bayesnewton.likelihoods.Gaussian(variance=theta['noise_std']**2),
         X=times,
         R=spatial_grid,
         Y=targets,
@@ -693,7 +695,7 @@ def main() -> None:
         "history_window": int(args.history_window),
         "online_backend": args.online_backend,
         "continuation_total_seconds": continuation_total_seconds,
-        "initial_filter_and_prefix_seconds": max(0.,continuation_total_seconds-float(np.sum(online_seconds))),
+        "initial_filter_and_continuation_overhead_seconds": max(0.,continuation_total_seconds-float(np.sum(online_seconds))),
         "online_seconds_total": float(np.sum(online_seconds)),
         "online_seconds_per_week": float(np.mean(online_seconds)),
         "online_update_prediction_seconds": [float(value) for value in online_seconds],

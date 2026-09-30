@@ -111,7 +111,7 @@ class TorchMultiGeometryHiPPOSVGP(TorchJointSSGPKronHiPPOSVGP):
     """Same transported joint likelihood, with multiple spatial Gram factors."""
     def update_block_structured_joint_ssgp_transfer(
         self, *, y_vec, Phi, T_n, Kt_new, state=None, K_on_t=None,
-        C_observed=None, beta_drift=None, no_transfer=False, L_t_override=None,
+        C_observed=None, beta_drift=None, no_transfer=False, L_t_override=None, zero_cross=False,
     ):
         if self.dtype != torch.float64:
             raise ValueError("Multi-geometry qualification requires float64")
@@ -151,6 +151,8 @@ class TorchMultiGeometryHiPPOSVGP(TorchJointSSGPKronHiPPOSVGP):
             if torch.equal(g,gram):
                 terms[i]=(g,symmetrize(b+added));break
         else:terms.append((gram,added))
+        if zero_cross:
+            rbu = torch.zeros_like(rbu)
         prior_cov=self.beta_prior_cov if beta_drift is None else symmetrize(self.beta_prior_cov+to(beta_drift))
         prior_precision=inv_spd(prior_cov,jitter=self.jitter) if d else phi.new_zeros((0,0))
         prior_h=prior_precision@self.beta_prior_mean

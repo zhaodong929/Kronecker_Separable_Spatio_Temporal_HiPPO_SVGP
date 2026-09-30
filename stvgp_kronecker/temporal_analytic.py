@@ -242,9 +242,12 @@ class AnalyticTemporalBuilder(nn.Module):
         if kernel_type in {"matern32", "matern_32", "matern3/2"}:
             # Matern-3/2 in 1D has Student-t spectral density with df=3.
             normal = torch.randn(1, config.rff_sample_size, generator=generator, dtype=config.dtype)
-            chi2 = torch.distributions.Chi2(df=torch.as_tensor(3.0, dtype=config.dtype)).sample(
-                (1, config.rff_sample_size)
-            )
+            # Chi-square(3) is the sum of three independent squared normals.
+            # Both parts of the Student-t draw must use the model's generator:
+            # Distribution.sample() otherwise consumes unrelated global RNG.
+            chi2 = torch.randn(
+                (3, 1, config.rff_sample_size), generator=generator, dtype=config.dtype
+            ).square().sum(dim=0)
             return normal / torch.sqrt(chi2 / 3.0)
         if kernel_type == "spectral_mixture":
             means = torch.as_tensor(config.spectral_mixture_means, dtype=config.dtype)

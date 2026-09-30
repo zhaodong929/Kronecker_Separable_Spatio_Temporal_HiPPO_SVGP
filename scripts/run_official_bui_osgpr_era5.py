@@ -79,6 +79,10 @@ def make_kernel(theta, *, frozen: bool):
     )
     kernel = temporal * latitude * longitude
     gpflow.set_trainable(kernel, not frozen)
+    # A product has one identifiable amplitude. Keep it on the temporal
+    # factor so serialization cannot silently discard learned spatial scales.
+    gpflow.set_trainable(latitude.variance, False)
+    gpflow.set_trainable(longitude.variance, False)
     return kernel
 
 
@@ -142,7 +146,9 @@ def theta_from_model(model) -> dict[str, object]:
     return {
         "ell_t": float(temporal.lengthscales.numpy()),
         "ell_s": [float(latitude.lengthscales.numpy()), float(longitude.lengthscales.numpy())],
-        "kernel_variance": float(temporal.variance.numpy()),
+        "kernel_variance": float(
+            temporal.variance.numpy() * latitude.variance.numpy() * longitude.variance.numpy()
+        ),
         "noise_std": float(np.sqrt(model.likelihood.variance.numpy())),
     }
 

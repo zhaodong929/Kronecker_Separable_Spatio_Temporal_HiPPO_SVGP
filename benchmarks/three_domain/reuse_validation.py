@@ -30,6 +30,7 @@ def original_validation_directory(previous, result_name):
 
 def reuse_ohsvgp(previous, destination, spec, compute_root, source_root, result_name):
     dependencies = [Path('scripts/run_covid_ohsvgp_own_theta.py'), Path('scripts/run_traffic_ohsvgp.py'),
+                    Path('scripts/run_ohsvgp_cached_prediction.py'), Path('baselines/ohsvgp_prediction.py'),
                     Path('baselines/traffic_protocol_n.py'), Path('benchmarks/three_domain/geometry.py'),
                     Path('benchmarks/three_domain/tracking.py'),Path('baselines/era5_protocol.py'),
                     Path('baselines/covid_long_setting_b/archive.py'),Path('baselines/covid_long_setting_b/protocol.py'),
