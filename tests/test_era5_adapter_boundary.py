@@ -17,9 +17,9 @@ def test_actual_era5_no_release_adapter(tmp_path,method):
         common=['--protocol-npz',str(out/'protocol.npz'),'--protocol-json',str(out/'protocol.json'),'--seed','0','--device',os.environ.get('HIPPO_TEST_DEVICE','cpu')]
         artifacts=['--output',str(out/'result.json'),'--blockwise-output',str(out/'blocks.csv'),'--predictions-output',str(out/'predictions.npz')]
         if method=='ohsvgp':
-            command=['scripts/run_covid_ohsvgp_own_theta.py',*common,'--protocol-kind','era5','--output-dir',str(out),'--kernel','rbf','--inducing-size','4','--rff-sample-size','16','--basis-grid-size','32','--calibration-iterations','2','--task1-check-interval','1','--task1-min-steps','2','--calibration-batch-size','64','--update-steps','1']
+            command=['scripts/run_covid_ohsvgp_own_theta.py',*common,'--protocol-kind','era5','--output-dir',str(out),'--kernel','rbf','--inducing-size','4','--rff-sample-size','16','--basis-grid-size','32','--calibration-iterations','2','--task1-check-interval','1','--task1-min-steps','2','--calibration-batch-size','64','--update-steps','1','--online-learning-rate','0.05','--online-batch-size','1024']
         elif method=='osgpr':
-            command=['scripts/run_official_bui_osgpr_era5.py',*common,*artifacts,'--mt','2','--ms','2','--adaptive','--adaptive-calibration-steps','2','--adaptive-online-steps','2','--initial-ell-t','1','--initial-ell-s','2','2']
+            command=['scripts/run_official_bui_osgpr_era5.py',*common,*artifacts,'--mt','2','--ms','2','--adaptive','--adaptive-calibration-steps','2','--adaptive-online-steps','2','--online-optimizer-execution','graph','--initial-ell-t','1','--initial-ell-s','2','2']
         else:
             (out/'theta.json').write_text(json.dumps({'learned_theta':dict(ell_t=1.,ell_s=[1.,1.],kernel_variance=1.,noise_std=.3)}))
             command=['scripts/run_iclr_era5_routeb_strict_online.py',*common,*artifacts,'--theta-json',str(out/'theta.json'),'--representation','analytic_hippo_rff','--mt','3','--ms','2','--rff-sample-size','16','--solver-backend','torch','--dtype','float64','--task1-posterior-init','--temporal-factor-device','cpu','--temporal-bessel-backend','scipy']

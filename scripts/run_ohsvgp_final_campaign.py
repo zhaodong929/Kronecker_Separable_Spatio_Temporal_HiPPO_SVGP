@@ -33,7 +33,7 @@ def main():
     subprocess.run([worker,'-c',
         f'from benchmarks.three_domain.online_validation import {fold_function}; import sys; {fold_function}(sys.argv[1],sys.argv[2])',
         str(source/'protocol.npz'),str(fold)],check=True)
-    def run(output,stage,capacity,budget,updates,protocol,calibration_only=False):
+    def run(output,stage,capacity,budget,updates,protocol,calibration_only=False,online_lr=None):
         output.mkdir(parents=True,exist_ok=True)
         spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',
             dataset=a.dataset,method='ohsvgp',split_seed=a.seed,training_seed=a.seed,stage=stage,
@@ -41,6 +41,7 @@ def main():
             input_files=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')],
             inducing_size=capacity,max_iterations=budget,online_update_steps=updates,
             main_table_admitted=False)
+        if a.dataset!='covid':spec.update(online_learning_rate=online_lr or .001,online_batch_size=1024)
         if a.reuse_validation_root is not None and stage=='validation':
             sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
             from benchmarks.three_domain.reuse_validation import reuse_ohsvgp
@@ -58,6 +59,7 @@ def main():
             '--basis-grid-size','1024','--calibration-iterations',str(budget),
             '--task1-min-steps',str(budget),'--task1-check-interval','5',
             '--calibration-batch-size','256','--update-steps',str(updates),'--device','cuda']
+        if a.dataset!='covid':command += ['--online-learning-rate',str(online_lr or .001),'--online-batch-size','1024']
         if a.dataset!='era5':command.append('--delayed-observations')
         if calibration_only:command.append('--calibration-only')
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
@@ -76,21 +78,23 @@ def main():
     selected=min(candidates,key=lambda c:c['result']['best_validation_nll'])
     capacity,budget=selected['capacity'],selected['budget']
     online=[]
-    for updates in [1,5,20]:
-        result=run(a.output/f'online-budget-u{updates}','validation',capacity,budget,updates,fold)
-        online.append(dict(updates=updates,nlpd=result['overall_current_block']['nll'],
-            update_seconds=result['timing']['mean_block_update_seconds']))
+    rates=[.001] if a.dataset=='covid' else [.001,.01,.05]
+    def trial(updates,rate):
+        label=f'online-budget-u{updates}' if a.dataset=='covid' else f'online-lr{rate:g}-u{updates}'
+        result=run(a.output/label,'validation',capacity,budget,updates,fold,online_lr=rate)
+        row=dict(updates=updates,learning_rate=rate,nlpd=result['overall_current_block']['nll'],update_seconds=result['timing']['mean_block_update_seconds'])
+        online.append(row);return row
+    for rate in rates:
+        for updates in [1,5,20]:trial(updates,rate)
+        if a.dataset!='covid':trial(80,rate)
     best=min(online,key=lambda c:c['nlpd'])
-    for updates in [80,320,1280]:
-        if best['updates'] != online[-1]['updates']:break
+    for updates in ([80,320,1280] if a.dataset=='covid' else [320,1280]):
+        at_rate=[c for c in online if c['learning_rate']==best['learning_rate']]
+        if best['updates'] != max(c['updates'] for c in at_rate):break
         previous_best=best
-        result=run(a.output/f'online-budget-u{updates}','validation',capacity,budget,updates,fold)
-        online.append(dict(updates=updates,nlpd=result['overall_current_block']['nll'],
-            update_seconds=result['timing']['mean_block_update_seconds']))
-        # A materially improving endpoint requires a larger validated search,
-        # rather than silently declaring the largest attempted budget adequate.
+        current=trial(updates,best['learning_rate'])
         best=min(online,key=lambda c:c['nlpd'])
-        if online[-1]['nlpd'] >= previous_best['nlpd']-0.01:break
+        if current['nlpd'] >= previous_best['nlpd']-0.01:break
         if updates==1280:
             (a.output/'online-budget-incomplete.json').write_text(json.dumps(online,indent=2))
             raise RuntimeError('Online budget still improves at maximum; extend qualification')
@@ -102,7 +106,7 @@ def main():
     qualification=dict(status='passed',method='ohsvgp',dataset=a.dataset,source_commit=a.release,
         tests=tests,qualification_test_device='cuda',selection=selection,main_table_admitted=False)
     (a.output/'qualification.json').write_text(json.dumps(qualification,indent=2))
-    run(a.output,'final',capacity,budget,best['updates'],source)
+    run(a.output,'final',capacity,budget,best['updates'],source,online_lr=best['learning_rate'])
 
 
 if __name__=='__main__':main()

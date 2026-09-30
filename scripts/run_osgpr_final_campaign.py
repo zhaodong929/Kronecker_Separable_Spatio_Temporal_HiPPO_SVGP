@@ -42,7 +42,7 @@ def main():
             input_files=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')],
             temporal_inducing=mt,spatial_inducing=ms,calibration_steps_per_block=budget,
             online_steps_per_update=updates,initial_optimizer_execution='eager' if a.dataset=='covid' else 'graph',initial_block_times=10 if a.dataset=='covid' else 256,
-            main_table_admitted=False)
+            online_optimizer_execution='eager' if a.dataset=='covid' else 'graph',main_table_admitted=False)
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
                 expected_sites=expected_sites,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=initial_sites,predictive_family='gaussian')
@@ -55,6 +55,7 @@ def main():
             '--device','cuda','--calibration-block-size',
             '10' if a.dataset=='covid' else '256','--initial-optimizer-execution',
             'eager' if a.dataset=='covid' else 'graph']
+        if a.dataset!='covid':command += ['--online-optimizer-execution','graph']
         if a.dataset!='era5':command.append('--delayed-observations')
         if calibration_only:command.append('--task1-validation-only')
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),

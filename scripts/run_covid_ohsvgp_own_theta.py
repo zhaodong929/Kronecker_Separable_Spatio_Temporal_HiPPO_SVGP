@@ -274,6 +274,8 @@ def main() -> None:
     parser.add_argument("--task1-plateau-checks", type=int, default=10)
     parser.add_argument("--task1-plateau-relative-improvement", type=float, default=1e-3)
     parser.add_argument("--learning-rate", type=float, default=0.001)
+    parser.add_argument("--online-learning-rate", type=float, default=None)
+    parser.add_argument("--online-batch-size", type=int, default=0)
     parser.add_argument("--update-steps", type=int, default=1)
     parser.add_argument("--initial-ell-t", type=float, default=0.05)
     parser.add_argument("--initial-ell-s", type=float, nargs=2, default=[0.35, 0.35])
@@ -289,6 +291,10 @@ def main() -> None:
     parser.add_argument("--dtype", choices=["float32", "float64"], default="float64")
     args = parser.parse_args()
 
+    online_learning_rate = args.learning_rate if args.online_learning_rate is None else args.online_learning_rate
+    online_batch_size = args.calibration_batch_size if args.online_batch_size == 0 else args.online_batch_size
+    if online_learning_rate <= 0 or online_batch_size < 1:
+        raise ValueError('Positive online optimizer settings required')
     mixture = load_spectral_mixture_config(args.spectral_mixture_json)
     if args.kernel == "spectral_mixture_q2" and mixture is None:
         raise ValueError("--spectral-mixture-json is required for spectral_mixture_q2")
@@ -517,8 +523,8 @@ def main() -> None:
             )
             if update_kind == "delayed_hidden":
                 delayed_rows += int(x_train.shape[0])
-            for start in range(0, x_train.shape[0], args.calibration_batch_size):
-                stop = min(x_train.shape[0], start + args.calibration_batch_size)
+            for start in range(0, x_train.shape[0], online_batch_size):
+                stop = min(x_train.shape[0], start + online_batch_size)
                 model = make_model(
                     kernel=refit_model.kernel,
                     likelihood=refit_model.likelihood,
@@ -531,7 +537,7 @@ def main() -> None:
                     device=runtime.device,
                     dtype=runtime.dtype,
                 )
-                optimizer = torch.optim.Adam([model.mv, model.Lv], lr=args.learning_rate)
+                optimizer = torch.optim.Adam([model.mv, model.Lv], lr=online_learning_rate)
                 x_batch = torch.as_tensor(x_train[start:stop], dtype=runtime.dtype, device=runtime.device)
                 y_batch = torch.as_tensor(y_train[start:stop], dtype=runtime.dtype, device=runtime.device)
                 for step in range(args.update_steps):

@@ -235,6 +235,7 @@ def main():
         ),
     )
     parser.add_argument("--adaptive-calibration-steps", type=int, default=25)
+    parser.add_argument("--online-optimizer-execution", choices=["eager","graph"], default="eager")
     parser.add_argument("--initial-optimizer-execution", choices=["eager","graph"], default="eager")
     parser.add_argument("--adaptive-online-steps", type=int, default=5)
     parser.add_argument("--adaptive-learning-rate", type=float, default=0.01)
@@ -482,6 +483,7 @@ def main():
                     model,
                     steps=args.adaptive_online_steps,
                     learning_rate=args.adaptive_learning_rate,
+                    execution=args.online_optimizer_execution,
                 )
                 z = np.asarray(model.inducing_variable.Z)
                 noise_variance = float(model.likelihood.variance.numpy())

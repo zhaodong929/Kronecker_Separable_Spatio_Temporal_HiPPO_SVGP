@@ -5,7 +5,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=60G
-#SBATCH --time=1-00:00:00
+#SBATCH --time=3-00:00:00
 #SBATCH --array=1-3%3
 set -euo pipefail
 C=/vol/bitbucket/nk523/hipposvgp-fair-20260929

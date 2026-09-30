@@ -308,3 +308,24 @@ gates. No ERA5 comparison is admitted by merely passing a protocol unit test.
 
 Existing COVID/PEMS releases remain immutable. A stale traffic test fixture used
 `_metadata` instead of the production `metadata` attribute; the fixture is corrected.
+
+### Long-stream optimizer qualification
+
+COVID OHSVGP Task-1 validation selected 1,280 Adam steps at lr=0.001 for seeds
+5/6 (about 19.5 seconds per delayed-plus-visible update on A30). Blindly applying
+this optimizer setting to 50,100 PEMS steps would take over eleven days. PEMS and
+ERA5 therefore select the online learning rate from 0.001/0.01/0.05 jointly with
+update count using only the initial chronological fold. Initial calibration
+learning rate is unchanged. The official Adam objective and variational parameters
+are retained. Non-COVID updates use an online batch limit of 1,024, keeping each
+current site's set together (260 or 800 sites) instead of splitting it at the
+unrelated initial-calibration minibatch size 256. This batch choice is used in
+both validation and final evaluation, and recorded in the spec. Actual no-release
+OHSVGP mutation tests also pass with lr=0.05 and batch limit 1,024.
+
+PEMS/ERA5 Bui online updates can use the already qualified TensorFlow graph
+optimizer. This is the same official loss and Adam sequence as eager execution;
+eager/graph SGPR and OSGPR parameter/prediction parity passed on CPU and CUDA.
+PEMS OSGPR/OHSVGP allocation time is increased to the partition's 72-hour maximum;
+this is an upper allocation bound, not an assertion that every selected run fits.
+Existing submitted COVID releases and recorded timing remain unchanged.
