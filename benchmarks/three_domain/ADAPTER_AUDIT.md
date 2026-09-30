@@ -264,3 +264,19 @@ The campaign now explicitly points XLA to the installed NVIDIA cuda_nvcc
 libdevice directory and decodes subprocess error logs with replacement so
 future diagnostics remain readable. Model/objective/data are unchanged.
 GPU boundary and graph/eager parity gates must pass on the replacement job.
+
+## OHSVGP validation-budget extension
+
+COVID job 294351 seed5/6 correctly stopped before final evaluation because
+Task-1 chronological validation NLPD continued to improve at 80 updates:
+seed5 20→80: 0.86112→0.75418; seed6: 0.76570→0.62477. Extend the same optimizer
+search to 320, then 1280 only while the endpoint materially improves (>0.01).
+A still-improving 1280 endpoint remains a failed qualification, not admission.
+Selection never accesses the formal stream.
+
+Successful earlier validation trials can be reused only with identical complete
+configuration, input hashes, numerical dependency source hashes, an unchanged
+result artifact hash, and a finished team W&B run with an artifact. Reuse records
+retain the original source and run URL. No final run is reused by this mechanism.
+This path was checked against the actual seed5/u80 artifact; a changed update
+budget was correctly rejected. Numerical model/official source stays unchanged.

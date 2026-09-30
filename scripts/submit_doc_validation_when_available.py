@@ -57,7 +57,7 @@ def main():
                     '--output='+c+'/logs/'+name+'-%A_%a.log']
                 if plan.get('array'): submission.append('--array='+plan['array'])
                 submission += [c+'/releases/'+a.release+'/source/'+plan.get('sbatch',
-                    'slurm/fair_three_domain/baseline_validation.sbatch'),a.release]
+                    'slurm/fair_three_domain/baseline_validation.sbatch'),a.release,*map(str,plan.get('script_args',[]))]
                 receipt = c+'/submissions/'+name+'.jobid'
                 script = ('if test -s '+shlex.quote(receipt)+'; then cat '+shlex.quote(receipt)+
                     '; else '+shlex.join(submission)+' > '+shlex.quote(receipt+'.tmp')+

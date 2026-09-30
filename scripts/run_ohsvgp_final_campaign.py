@@ -15,6 +15,7 @@ def main():
     p.add_argument('--output',type=Path,required=True)
     p.add_argument('--release',required=True)
     p.add_argument('--compute-root',type=Path,required=True)
+    p.add_argument('--reuse-validation-root',type=Path)
     a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
     os.environ['HIPPO_TEST_DEVICE']='cuda'
     worker=str(a.compute_root/'env-routeb/bin/python')
@@ -39,6 +40,12 @@ def main():
             input_files=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')],
             inducing_size=capacity,max_iterations=budget,online_update_steps=updates,
             main_table_admitted=False)
+        if a.reuse_validation_root is not None and stage=='validation':
+            sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+            from benchmarks.three_domain.reuse_validation import reuse_ohsvgp
+            cached=reuse_ohsvgp(a.reuse_validation_root/output.name,output,spec,a.compute_root,
+                Path(__file__).resolve().parents[1],'calibration.json' if calibration_only else 'result.json')
+            if cached is not None:return cached
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
                 expected_sites=expected_sites,hidden_delay_steps=1,initial_observed_sites=initial_sites,predictive_family='gaussian')
@@ -72,16 +79,19 @@ def main():
         online.append(dict(updates=updates,nlpd=result['overall_current_block']['nll'],
             update_seconds=result['timing']['mean_block_update_seconds']))
     best=min(online,key=lambda c:c['nlpd'])
-    if best['updates']==20:
-        result=run(a.output/'online-budget-u80','validation',capacity,budget,80,fold)
-        online.append(dict(updates=80,nlpd=result['overall_current_block']['nll'],
+    for updates in [80,320,1280]:
+        if best['updates'] != online[-1]['updates']:break
+        previous_best=best
+        result=run(a.output/f'online-budget-u{updates}','validation',capacity,budget,updates,fold)
+        online.append(dict(updates=updates,nlpd=result['overall_current_block']['nll'],
             update_seconds=result['timing']['mean_block_update_seconds']))
         # A materially improving endpoint requires a larger validated search,
         # rather than silently declaring the largest attempted budget adequate.
-        if online[-1]['nlpd'] < best['nlpd']-0.01:
+        best=min(online,key=lambda c:c['nlpd'])
+        if online[-1]['nlpd'] >= previous_best['nlpd']-0.01:break
+        if updates==1280:
             (a.output/'online-budget-incomplete.json').write_text(json.dumps(online,indent=2))
             raise RuntimeError('Online budget still improves at maximum; extend qualification')
-        best=min(online,key=lambda c:c['nlpd'])
     selection=dict(initial_candidates=candidates,selected_initial=selected,
         online_candidates=online,selected_online=best,
         selection_scope='Formal Task-1 only: spatial capacity plus chronological online-budget fold; '+a.dataset)

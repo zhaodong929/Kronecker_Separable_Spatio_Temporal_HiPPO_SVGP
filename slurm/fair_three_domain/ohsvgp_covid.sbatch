@@ -9,6 +9,10 @@
 set -euo pipefail
 C=/vol/bitbucket/nk523/hipposvgp-fair-20260929
 RELEASE=${1:?immutable source release}
+EXTRA=()
+if [[ -n "${2:-}" ]]; then
+  EXTRA=(--reuse-validation-root "$C/results/fair-three-domain-wandb-20260929/covid/ohsvgp/seed$SLURM_ARRAY_TASK_ID/job-$2")
+fi
 O="$C/results/fair-three-domain-wandb-20260929/covid/ohsvgp/seed$SLURM_ARRAY_TASK_ID/job-$SLURM_ARRAY_JOB_ID"
 mkdir -p "$O"
 export HIPPO_TEST_DEVICE=cuda
@@ -19,4 +23,4 @@ cd "$C/releases/$RELEASE/source"
 trap 'code=$?; printf "{\"exit_code\":%s,\"main_table_admitted\":false}\n" "$code" > "$O/exit.json"' EXIT
 sha256sum --quiet -c "$C/releases/$RELEASE/source.sha256"
 "$C/env-tracking/bin/python" scripts/run_ohsvgp_final_campaign.py \
-    --seed "$SLURM_ARRAY_TASK_ID" --output "$O" --release "$RELEASE" --compute-root "$C"
+    --seed "$SLURM_ARRAY_TASK_ID" --output "$O" --release "$RELEASE" --compute-root "$C" "${EXTRA[@]}"

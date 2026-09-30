@@ -1,0 +1,59 @@
+"""Reuse an immutable, synchronized validation result without changing its lineage."""
+import hashlib
+import json
+from pathlib import Path
+
+
+def digest(path):
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def reuse_ohsvgp(previous, destination, spec, compute_root, source_root, result_name):
+    previous, destination = Path(previous), Path(destination)
+    if not (previous/result_name).is_file():
+        return None
+    old_spec = json.loads((previous/'spec.json').read_text())
+    ignored = {'source_commit', 'input_files'}
+    if {k:v for k,v in old_spec.items() if k not in ignored} != {k:v for k,v in spec.items() if k not in ignored}:
+        raise ValueError('Cached validation configuration changed')
+    if spec['stage'] != 'validation':
+        raise ValueError('Only validation results may be reused')
+    old_source = Path(compute_root)/'releases'/old_spec['source_commit']/'source'
+    # Include the actual runner, adapters, common numerical package and pinned
+    # official model. Scheduling/selection scripts may change independently.
+    dependencies = [Path('scripts/run_covid_ohsvgp_own_theta.py'), Path('scripts/run_traffic_ohsvgp.py'),
+                    Path('baselines/traffic_protocol_n.py'), Path('benchmarks/three_domain/geometry.py'),
+                    Path('benchmarks/three_domain/tracking.py')]
+    for folder in ['stvgp_kronecker', 'baselines/covid_long_setting_b',
+                   'baselines/external/harrisonzhu508_HIPPOSVGP/hipposvgp']:
+        dependencies += [p.relative_to(source_root) for p in (Path(source_root)/folder).rglob('*.py')]
+    for relative in dependencies:
+        if digest(old_source/relative) != digest(Path(source_root)/relative):
+            raise ValueError('Cached validation numerical source changed: '+str(relative))
+    attempts=[]
+    for marker in (previous/'tracking').glob('*/terminal.json'):
+        terminal=json.loads(marker.read_text())
+        if terminal.get('exit_code') == 0 and terminal.get('status') == 'process_complete' and not terminal.get('tracking_sync_required'):
+            attempts.append(marker.parent)
+    if len(attempts) != 1:
+        raise ValueError('Exactly one successful cached validation attempt is required')
+    attempt=attempts[0]
+    provenance=json.loads((attempt/'provenance.json').read_text())
+    if {Path(k).name:v for k,v in provenance['input_files'].items()} != {Path(k).name:digest(k) for k in spec['input_files']}:
+        raise ValueError('Cached validation inputs changed')
+    manifest=json.loads((attempt/'artifact_manifest.json').read_text())
+    if manifest[result_name]['sha256'] != digest(previous/result_name):
+        raise ValueError('Cached validation result hash changed')
+    import wandb
+    identity=json.loads((attempt/'wandb.json').read_text())
+    run=wandb.Api(timeout=30).run(f"harrisonzhu/KronHiPPO-STGP/{identity['id']}")
+    if run.state != 'finished' or not list(run.logged_artifacts()):
+        raise ValueError('Cached validation has no finished team run and artifact')
+    record=dict(status='verified_validation_reused',source_directory=str(previous),
+                source_commit=old_spec['source_commit'],source_run=run.url,
+                result_sha256=digest(previous/result_name),numerical_source_files=len(dependencies),
+                inputs_and_configuration_verified=True,main_table_admitted=False)
+    destination.mkdir(parents=True,exist_ok=True)
+    (destination/result_name).write_bytes((previous/result_name).read_bytes())
+    (destination/'reused-validation.json').write_text(json.dumps(record,indent=2)+'\n')
+    return json.loads((previous/result_name).read_text())
