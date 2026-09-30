@@ -100,6 +100,17 @@ def main():
     output.mkdir(parents=True, exist_ok=True)
     if any(p.name != 'tracking' for p in output.iterdir()):
         raise FileExistsError('A fresh qualification directory is required')
+    import shutil
+    import socket
+    driver = Path('/proc/driver/nvidia/params')
+    try:
+        lines = driver.read_text().splitlines()
+    except OSError:
+        lines = []
+    restriction = next((line.strip() for line in lines if line.startswith('RmProfilingAdminOnly:')), None)
+    (output / 'profiling-availability.json').write_text(json.dumps(dict(hostname=socket.gethostname(),
+        ncu_path=shutil.which('ncu'), driver_counter_restriction=restriction,
+        counter_acquisition_verified=False), indent=2))
     configuration = json.loads(args.configuration.read_text())
     configuration.update(initial_iterations=min(configuration['initial_iterations'], args.max_fit_steps),
                          online_iterations=min(configuration.get('online_iterations', 5), args.max_fit_steps))
