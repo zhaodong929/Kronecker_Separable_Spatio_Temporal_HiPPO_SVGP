@@ -9,6 +9,25 @@ def digest(path):
 
 
 def reuse_ohsvgp(previous, destination, spec, compute_root, source_root, result_name):
+    dependencies = [Path('scripts/run_covid_ohsvgp_own_theta.py'), Path('scripts/run_traffic_ohsvgp.py'),
+                    Path('baselines/traffic_protocol_n.py'), Path('benchmarks/three_domain/geometry.py'),
+                    Path('benchmarks/three_domain/tracking.py')]
+    for folder in ['stvgp_kronecker', 'baselines/covid_long_setting_b',
+                   'baselines/external/harrisonzhu508_HIPPOSVGP/hipposvgp']:
+        dependencies += [p.relative_to(source_root) for p in (Path(source_root)/folder).rglob('*.py')]
+    return reuse_checked(previous,destination,spec,compute_root,source_root,result_name,dependencies)
+
+
+def reuse_routeb(previous,destination,spec,compute_root,source_root):
+    dependencies=[Path('scripts')/name for name in [
+        'run_iclr_era5_routeb_batch.py','run_routeb_batch_empirical_bayes.py',
+        'run_hipposvgp_era5_routeb.py','run_iclr_era5_routeb_strict_online.py','era5_ncu_ranges.py']]
+    dependencies.append(Path('benchmarks/three_domain/tracking.py'))
+    dependencies += [p.relative_to(source_root) for p in (Path(source_root)/'stvgp_kronecker').rglob('*.py')]
+    return reuse_checked(previous,destination,spec,compute_root,source_root,'result.json',dependencies)
+
+
+def reuse_checked(previous,destination,spec,compute_root,source_root,result_name,dependencies):
     previous, destination = Path(previous), Path(destination)
     if not (previous/result_name).is_file():
         return None
@@ -19,14 +38,6 @@ def reuse_ohsvgp(previous, destination, spec, compute_root, source_root, result_
     if spec['stage'] != 'validation':
         raise ValueError('Only validation results may be reused')
     old_source = Path(compute_root)/'releases'/old_spec['source_commit']/'source'
-    # Include the actual runner, adapters, common numerical package and pinned
-    # official model. Scheduling/selection scripts may change independently.
-    dependencies = [Path('scripts/run_covid_ohsvgp_own_theta.py'), Path('scripts/run_traffic_ohsvgp.py'),
-                    Path('baselines/traffic_protocol_n.py'), Path('benchmarks/three_domain/geometry.py'),
-                    Path('benchmarks/three_domain/tracking.py')]
-    for folder in ['stvgp_kronecker', 'baselines/covid_long_setting_b',
-                   'baselines/external/harrisonzhu508_HIPPOSVGP/hipposvgp']:
-        dependencies += [p.relative_to(source_root) for p in (Path(source_root)/folder).rglob('*.py')]
     for relative in dependencies:
         if digest(old_source/relative) != digest(Path(source_root)/relative):
             raise ValueError('Cached validation numerical source changed: '+str(relative))

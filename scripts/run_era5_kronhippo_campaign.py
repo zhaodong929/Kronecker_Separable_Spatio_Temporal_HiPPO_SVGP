@@ -5,6 +5,7 @@ from pathlib import Path
 
 p=argparse.ArgumentParser();p.add_argument('--seed',type=int,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--release',required=True);p.add_argument('--compute-root',type=Path,required=True);a=p.parse_args();a.output.mkdir(parents=True,exist_ok=True)
 worker=str(a.compute_root/'env-routeb/bin/python');protocol=a.compute_root/f'protocol/era5/seed{a.seed}'
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 inputs=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')];common=['--protocol-npz',inputs[0],'--protocol-json',inputs[1]]
 tests=['tests/test_era5_adapter_boundary.py::test_actual_era5_no_release_adapter[kronhippo_svgp]','tests/test_era5_information_boundary.py','tests/test_strict_online_release_boundary.py','tests/test_multi_geometry.py','tests/test_routeb_torch_backend.py','tests/test_temporal_analytic_gradients.py']
 with (a.output/'tests.txt').open('w') as f:subprocess.run([worker,'-m','pytest','-q',*tests],stdout=f,stderr=subprocess.STDOUT,check=True)
@@ -13,10 +14,15 @@ def run(output,stage,mt,ms,budget,command):
     output.mkdir(parents=True,exist_ok=True)
     spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',dataset='era5',method='kronhippo_svgp',split_seed=a.seed,training_seed=0,stage=stage,source_commit=a.release,worker_python=worker,input_files=inputs,temporal_inducing=mt,spatial_inducing=ms,iterations=budget,hidden_delay_steps=None,initial_observed_sites=800,main_table_admitted=False)
     if stage=='final':spec.update(expected_steps=1674,expected_sites=200,qualification_record=str(a.output/'qualification.json'))
-    (output/'spec.json').write_text(json.dumps(spec,indent=2));subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),'--output',str(output),'--',worker,*command],check=True)
+    (output/'spec.json').write_text(json.dumps(spec,indent=2))
+    if stage=='validation' and a.seed==0:
+        from benchmarks.three_domain.reuse_validation import reuse_routeb
+        prior=a.compute_root/'results/fair-three-domain-wandb-20260929/era5/kronhippo_svgp/seed0/job-294385'/output.name
+        if reuse_routeb(prior,output,spec,a.compute_root,Path.cwd()) is not None:return
+    subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),'--output',str(output),'--',worker,*command],check=True)
 candidates=[]
 for mt,ms in [(32,32),(64,32),(32,64),(64,64)]:
-    for budget in [250,500,1000]:
+    for budget in [250,500,1000,2000,4000,8000]:
         output=a.output/f'calibration-mt{mt}-ms{ms}-b{budget}'
         run(output,'validation',mt,ms,budget,['scripts/run_iclr_era5_routeb_batch.py',*common,'--output-dir',str(output),'--data-part','calibration','--target-mode','joint_xlag','--representation','analytic_hippo_rff','--mt',str(mt),'--ms',str(ms),'--rff-sample-size','256','--training-objective','vfe','--iterations',str(budget),'--learning-rate','0.02','--validation-every','5','--early-stopping-patience-validations','8','--split-seed',str(a.seed),'--model-seed','0','--device','cuda','--dtype','float64','--evaluation-backend','torch','--objective-optimization-version','E3'])
         result=json.loads((output/'result.json').read_text())
