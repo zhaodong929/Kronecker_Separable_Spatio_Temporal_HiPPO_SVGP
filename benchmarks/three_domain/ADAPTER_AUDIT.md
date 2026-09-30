@@ -249,3 +249,10 @@ and warmed JAX in 0.0775s; this is not an A30 benchmark. GPU checks repeat befor
 PEMS execution. Coverage means explicitly reduce in float64 (JAX's boolean
 mean otherwise defaults to float32). Scoring time is logged separately from
 model update/prediction, and the score call synchronizes before the next step.
+
+PEMS Bui OSGPR initial optimization optionally wraps the unchanged official loss
+and Adam steps in a TensorFlow graph (no XLA). Two CPU tests compare SGPR and
+official OSGPR eager/graph parameters and predictions to 1e-9 after eight
+steps; both passed in 36.85s on corgi. The PEMS launch repeats these on CUDA
+before training. Online optimization remains eager. No GPU speedup is claimed
+before measurement. Official source files remain unchanged.
