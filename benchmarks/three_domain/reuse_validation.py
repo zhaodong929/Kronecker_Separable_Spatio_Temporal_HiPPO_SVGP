@@ -8,6 +8,26 @@ def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def original_validation_directory(previous, result_name):
+    """Follow verified copies to their original tracked attempt, checking each copy."""
+    previous = Path(previous)
+    seen = set()
+    while (previous/'reused-validation.json').exists():
+        identity = previous.resolve()
+        if identity in seen:
+            raise ValueError('Cached validation provenance cycle')
+        seen.add(identity)
+        record = json.loads((previous/'reused-validation.json').read_text())
+        if (record.get('status') != 'verified_validation_reused'
+                or digest(previous/result_name) != record['result_sha256']):
+            raise ValueError('Cached validation copy changed')
+        original = Path(record['source_directory'])
+        if digest(original/result_name) != record['result_sha256']:
+            raise ValueError('Cached validation source changed')
+        previous = original
+    return previous
+
+
 def reuse_ohsvgp(previous, destination, spec, compute_root, source_root, result_name):
     dependencies = [Path('scripts/run_covid_ohsvgp_own_theta.py'), Path('scripts/run_traffic_ohsvgp.py'),
                     Path('baselines/traffic_protocol_n.py'), Path('benchmarks/three_domain/geometry.py'),
@@ -33,6 +53,7 @@ def reuse_checked(previous,destination,spec,compute_root,source_root,result_name
     previous, destination = Path(previous), Path(destination)
     if not (previous/result_name).is_file():
         return None
+    previous = original_validation_directory(previous, result_name)
     old_spec = json.loads((previous/'spec.json').read_text())
     ignored = {'source_commit', 'input_files'}
     if {k:v for k,v in old_spec.items() if k not in ignored} != {k:v for k,v in spec.items() if k not in ignored}:
