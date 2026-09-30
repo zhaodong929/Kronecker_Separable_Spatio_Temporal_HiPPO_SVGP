@@ -32,7 +32,7 @@ def main():
         (a.output/'terminal.json').write_text(json.dumps(record, indent=2))
         with a.vault_note.open('a') as note:
             note.write(f'\n## 自動投入の未完了 {record["time"]}\n\n{record["status"]}。記録: `{a.output}/terminal.json`。投入完了とは扱わない。\n')
-    for _ in range(288):
+    for _ in range(1008):
         record = dict(time=datetime.datetime.now(datetime.timezone.utc).isoformat())
         dependencies=plan.get('wait_for_submissions',[])
         if any(not Path(path).is_file() for path in dependencies):
@@ -93,7 +93,7 @@ def main():
             return subprocess.call([sys.executable, str(Path(__file__).with_name('watch_doc_tracked_job.py')),
                 '--job', str(job), '--result-template', template.replace('{job}',str(job)),
                 '--seeds', *map(str,plan.get('seeds',[0])), '--output', str(a.output/'monitor'), '--vault-note', str(a.vault_note),
-                '--kind', plan.get('kind','baseline-validation'), '--methods', *plan.get('methods',['ohsvgp','osgpr','st_svgp','mgpvae']), '--max-polls', '433'])
+                '--kind', plan.get('kind','baseline-validation'), '--methods', *plan.get('methods',['ohsvgp','osgpr','st_svgp','mgpvae']), '--max-polls', '1008'])
         time.sleep(600)
     record['status'] = 'submission_timeout_unverified'
     record_failure(record)
