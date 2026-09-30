@@ -2,7 +2,7 @@
   "campaign": "fair-three-domain-wandb-20260929",
   "entity": "harrisonzhu",
   "project": "KronHiPPO-STGP",
-  "as_of": "2026-09-30T00:51:46.367327+00:00",
+  "as_of": "2026-09-30T01:03:40.958759+00:00",
   "rows": [
     {
       "dataset": "era5",
@@ -386,22 +386,22 @@
       "method": "ohsvgp",
       "split_seed": 7,
       "stage": "final",
-      "submission_status": "submitted_with_per_split_validation_gate",
+      "submission_status": "failed_requires_review",
       "job_id": 294351,
       "run_url": null,
-      "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-ohsvgp-covid-dispatch-v2.service"
+      "pending_requirement": "Inspect terminal records and recover before counting this comparison complete",
+      "dispatch_unit": "hippo-ohsvgp-covid-budget-retry-tail.service"
     },
     {
       "dataset": "covid",
       "method": "ohsvgp",
       "split_seed": 8,
       "stage": "final",
-      "submission_status": "submitted_with_per_split_validation_gate",
+      "submission_status": "failed_requires_review",
       "job_id": 294351,
       "run_url": null,
-      "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-ohsvgp-covid-dispatch-v2.service"
+      "pending_requirement": "Inspect terminal records and recover before counting this comparison complete",
+      "dispatch_unit": "hippo-ohsvgp-covid-budget-retry-tail.service"
     },
     {
       "dataset": "covid",
@@ -719,6 +719,19 @@
       "status": "validation_budget_incomplete",
       "reason": "Task-1-only NLPD improves materially at 80 updates; final evaluation did not start",
       "replacement_job": 294357,
+      "replacement_release": "5ea6e26197f7c27d332b983fac80c213bfab6973"
+    },
+    {
+      "job_id": 294351,
+      "method": "ohsvgp",
+      "dataset": "covid",
+      "seeds": [
+        7,
+        8
+      ],
+      "status": "validation_budget_incomplete",
+      "reason": "Task-1 NLPD improves materially at 80 updates; extension dispatcher waits for OSGPR retry receipt",
+      "replacement_dispatch_unit": "hippo-ohsvgp-covid-budget-retry-tail.service",
       "replacement_release": "5ea6e26197f7c27d332b983fac80c213bfab6973"
     }
   ]
