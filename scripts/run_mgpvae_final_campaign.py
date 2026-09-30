@@ -42,7 +42,8 @@ def main():
             max_iterations=budget,decoder_samples=512,metric_backend='numpy' if a.dataset=='covid' else 'jax',predictive_family='Gaussian decoder mixture',
             covariance_pushforward_corrected=True,main_table_admitted=False)
         spec['scan_rematerialization']=a.dataset!='covid'
-        spec['initial_marginals']='reference' if a.dataset=='covid' else 'direct'
+        spec['initial_marginals']='reference' if a.dataset=='covid' else 'official_blockwise_bridge'
+        spec['initial_bridge_jitter']=1e-8
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
                 expected_sites=expected_sites,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=initial_sites)
@@ -61,7 +62,7 @@ def main():
                 'qualification',capacity,1,qualification=True)
     candidates=[]
     for capacity in [2,4]:
-        for budget in [500,1000]:
+        for budget in ([500,1000] if a.dataset=='covid' else [500,1000,2000,4000,8000]):
             output=a.output/f'calibration-latent{capacity}-budget{budget}'
             run(output,'validation',capacity,budget)
             result=json.loads((output/'calibration.json').read_text())

@@ -67,11 +67,9 @@ def main():
         return json.loads((output/('calibration.json' if calibration_only else 'result.json')).read_text())
     candidates=[]
     for capacity in [32,64]:
-        budget=500
-        result=run(a.output/f'calibration-m{capacity}-b{budget}','validation',capacity,budget,1,source,True)
-        if result['best_validation_iteration']>=budget:
-            budget=1000
+        for budget in [500,1000,2000,4000,8000]:
             result=run(a.output/f'calibration-m{capacity}-b{budget}','validation',capacity,budget,1,source,True)
+            if result['best_validation_iteration']<budget:break
         if result['best_validation_iteration']>=budget:
             raise RuntimeError('Initial validation best checkpoint remains at budget boundary')
         candidates.append(dict(capacity=capacity,budget=budget,result=result))

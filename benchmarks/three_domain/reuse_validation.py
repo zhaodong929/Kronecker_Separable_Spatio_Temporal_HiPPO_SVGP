@@ -11,8 +11,10 @@ def digest(path):
 def reuse_ohsvgp(previous, destination, spec, compute_root, source_root, result_name):
     dependencies = [Path('scripts/run_covid_ohsvgp_own_theta.py'), Path('scripts/run_traffic_ohsvgp.py'),
                     Path('baselines/traffic_protocol_n.py'), Path('benchmarks/three_domain/geometry.py'),
-                    Path('benchmarks/three_domain/tracking.py')]
-    for folder in ['stvgp_kronecker', 'baselines/covid_long_setting_b',
+                    Path('benchmarks/three_domain/tracking.py'),Path('baselines/era5_protocol.py'),
+                    Path('baselines/covid_long_setting_b/archive.py'),Path('baselines/covid_long_setting_b/protocol.py'),
+                    Path('scripts/run_official_ohsvgp_era5.py'),Path('scripts/era5_ncu_ranges.py')]
+    for folder in ['stvgp_kronecker',
                    'baselines/external/harrisonzhu508_HIPPOSVGP/hipposvgp']:
         dependencies += [p.relative_to(source_root) for p in (Path(source_root)/folder).rglob('*.py')]
     return reuse_checked(previous,destination,spec,compute_root,source_root,result_name,dependencies)

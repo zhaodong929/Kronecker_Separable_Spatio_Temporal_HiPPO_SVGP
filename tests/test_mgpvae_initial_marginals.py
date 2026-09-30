@@ -4,7 +4,8 @@ import numpy as np
 import pytest
 
 
-def test_initial_marginals_match_official_full_state_prediction():
+@pytest.mark.parametrize('time_scale',[1.,.005])
+def test_initial_marginals_match_official_full_state_prediction(time_scale):
     source=os.environ.get('MGPVAE_SOURCE')
     if not source:pytest.skip('set MGPVAE_SOURCE')
     from baselines.mgpvae.official import make_model
@@ -13,7 +14,7 @@ def test_initial_marginals_match_official_full_state_prediction():
     import objax
     model=make_model(source,np.array([[0.,0.],[.4,.3],[.9,.6]]),seed=19,
         correct_spatial_covariance=True)
-    times=jnp.array([0.,.2,.7,1.1,1.8,2.5])[:,None]
+    times=time_scale*jnp.array([0.,.2,.7,1.1,1.8,2.5])[:,None]
     values=jnp.asarray(np.random.default_rng(2).normal(size=(3,6,1)))
     queries=jnp.array([[.1,.2],[.8,.5]])
     predict=make_initial_predictor(model,times,values,queries)
