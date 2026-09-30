@@ -5,9 +5,11 @@ from pathlib import Path
 import subprocess
 import sys
 import numpy as np
+import pytest
 
 
-def test_ohsvgp_current_hidden_is_used_only_after_its_release(tmp_path):
+@pytest.mark.parametrize('prediction_entry',['run_covid_ohsvgp_own_theta.py','run_ohsvgp_cached_prediction.py'])
+def test_ohsvgp_current_hidden_is_used_only_after_its_release(tmp_path,prediction_entry):
     root = Path(__file__).resolve().parents[1]
     rng = np.random.default_rng(42)
     arrays = dict(calibration_y=rng.normal(size=(52,52)),stream_y=rng.normal(size=(143,52)),
@@ -22,7 +24,7 @@ def test_ohsvgp_current_hidden_is_used_only_after_its_release(tmp_path):
         path = tmp_path/name;path.mkdir()
         np.savez(path/'protocol.npz',**data)
         (path/'protocol.json').write_text(json.dumps(meta))
-        command = [sys.executable,str(root/'scripts/run_covid_ohsvgp_own_theta.py'),
+        command = [sys.executable,str(root/'scripts'/prediction_entry),
             '--protocol-npz',str(path/'protocol.npz'),'--protocol-json',str(path/'protocol.json'),
             '--output-dir',str(path/'run'),'--kernel','rbf','--inducing-size','4',
             '--rff-sample-size','16','--basis-grid-size','32','--calibration-iterations','2',

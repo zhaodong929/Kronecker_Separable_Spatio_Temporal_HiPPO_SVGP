@@ -24,6 +24,7 @@ def main():
     fold_function={'covid':'build_fold','pems':'build_pems_fold','era5':'build_era5_fold'}[a.dataset]
     tests=['tests/test_ohsvgp_release_boundary.py','tests/test_ohsvgp_lengthscale_learning.py',
            'tests/test_online_budget_fold.py']
+    if a.dataset!='covid':tests.append('tests/test_ohsvgp_prediction_cache.py')
     if a.dataset=='era5':tests += ['tests/test_era5_information_boundary.py','tests/test_era5_adapter_boundary.py::test_actual_era5_no_release_adapter[ohsvgp]']
     with (a.output/'tests.txt').open('w') as f:
         subprocess.run([worker,'-m','pytest','-q',*tests],stdout=f,stderr=subprocess.STDOUT,check=True)
@@ -52,7 +53,8 @@ def main():
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
                 expected_sites=expected_sites,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=initial_sites,predictive_family='gaussian')
         (output/'spec.json').write_text(json.dumps(spec,indent=2))
-        command=[worker,'scripts/run_covid_ohsvgp_own_theta.py','--protocol-npz',str(protocol/'protocol.npz'),
+        entry='scripts/run_covid_ohsvgp_own_theta.py' if a.dataset=='covid' else 'scripts/run_ohsvgp_cached_prediction.py'
+        command=[worker,entry,'--protocol-npz',str(protocol/'protocol.npz'),
             '--protocol-json',str(protocol/'protocol.json'),'--output-dir',str(output),'--seed',str(a.seed),
             '--protocol-kind',{'covid':'covid','pems':'traffic','era5':'era5'}[a.dataset],
             '--kernel','rbf','--inducing-size',str(capacity),'--rff-sample-size','256',
@@ -102,7 +104,8 @@ def main():
     selection['projected_stream_update_seconds']=best['update_seconds']*expected_steps
     (a.output/'selection.json').write_text(json.dumps(selection,indent=2))
     qualification=dict(status='passed',method='ohsvgp',dataset=a.dataset,source_commit=a.release,
-        tests=tests,qualification_test_device='cuda',selection=selection,main_table_admitted=False)
+        tests=tests,qualification_test_device='cuda',selection=selection,
+        scoped_deterministic_prediction_basis_cache=a.dataset!='covid',main_table_admitted=False)
     (a.output/'qualification.json').write_text(json.dumps(qualification,indent=2))
     run(a.output,'final',capacity,budget,best['updates'],source,online_lr=best['learning_rate'])
 
