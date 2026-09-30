@@ -71,7 +71,7 @@ def main():
         return json.loads((output/('calibration.json' if calibration_only else 'result.json')).read_text())
     candidates=[]
     for capacity in [32,64]:
-        for budget in [500,1000,2000,4000,8000]:
+        for budget in [500,1000,2000,4000,8000,16000,32000]:
             result=run(a.output/f'calibration-m{capacity}-b{budget}','validation',capacity,budget,1,source,True)
             resolved=initial_budget_resolved(result['best_validation_iteration'],budget,result['convergence_status'])
             if resolved:break
