@@ -11,11 +11,14 @@ from baselines.causal_mean import get_mean,select_initial_targets
 from benchmarks.three_domain.metrics import gaussian_mixture_metrics
 p=argparse.ArgumentParser()
 p.add_argument('--compute-root',type=Path,required=True)
+p.add_argument('--dataset',choices=['pems','era5'],required=True)
 p.add_argument('--run',type=Path,required=True)
 p.add_argument('--output',type=Path,required=True)
 a=p.parse_args();selection=json.loads((a.run/'selection.json').read_text())
 first=selection['candidates'][0]['result'];seed=first['split_seed']
-protocol=load_protocol(a.compute_root/f'protocol/pems/seed{seed}/protocol.npz',a.compute_root/f'protocol/pems/seed{seed}/protocol.json',protocol_kind='traffic')
+protocol_root=a.compute_root/f'protocol/{a.dataset}/seed{seed}'
+protocol=load_protocol(protocol_root/'protocol.npz',protocol_root/'protocol.json',
+    protocol_kind={'pems':'traffic','era5':'era5'}[a.dataset])
 mean=get_mean(protocol);sites=protocol.fit_locations;times=protocol.calibration_times
 residual=select_initial_targets(protocol.task1(),sites)-np.stack([mean.at(t,sites) for t in times])
 offsets=np.stack([mean.at(t,protocol.validation_locations) for t in times])

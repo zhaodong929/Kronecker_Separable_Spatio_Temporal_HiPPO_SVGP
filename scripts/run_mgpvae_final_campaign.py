@@ -86,6 +86,18 @@ def main():
         candidates.append(dict(result=result,path=str(output/'calibration.json')))
     selected=min(candidates,key=lambda r:r['result']['selected']['validation']['nlpd'])
     (a.output/'selection.json').write_text(json.dumps(dict(candidates=candidates,selected=selected),indent=2))
+    if a.dataset!='covid':
+        frozen=a.output/'frozen-validation-cpu-audit';frozen.mkdir(parents=True,exist_ok=True)
+        spec=dict(entity='harrisonzhu',project='KronHiPPO-STGP',campaign='fair-three-domain-wandb-20260929',
+            dataset=a.dataset,method='mgpvae',split_seed=a.seed,training_seed=a.seed,stage='qualification',
+            source_commit=a.release,worker_python=worker,input_files=inputs,main_table_admitted=False,
+            purpose='Recompute both selected candidate validation scores on CPU before final refit')
+        (frozen/'spec.json').write_text(json.dumps(spec,indent=2))
+        subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(frozen/'spec.json'),
+            '--output',str(frozen),'--','env','CUDA_VISIBLE_DEVICES=','JAX_PLATFORMS=cpu',
+            'OMP_NUM_THREADS=2','OPENBLAS_NUM_THREADS=2','MKL_NUM_THREADS=2',worker,
+            'scripts/audit_mgpvae_frozen_validation.py','--dataset',a.dataset,
+            '--compute-root',str(a.compute_root),'--run',str(a.output),'--output',str(frozen/'result.json')],check=True)
     (a.output/'qualification.json').write_text(json.dumps(dict(status='passed',method='mgpvae',dataset=a.dataset,
         source_commit=a.release,tests=tests,online_parameters='frozen',
         covariance_pushforward_corrected=True,main_table_admitted=False),indent=2))

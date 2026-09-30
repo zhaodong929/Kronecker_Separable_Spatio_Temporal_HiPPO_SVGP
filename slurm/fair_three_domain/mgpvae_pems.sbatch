@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=hippo-mgpvae-pems
 #SBATCH --partition=a30
-#SBATCH --nice=1000
+#SBATCH --nice=500
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=60G
