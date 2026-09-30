@@ -182,9 +182,12 @@ def train_task1(
     seed: int,
     spatial_inducing: int,
     validation_probe=None,
+    fit_clock=None,
 ) -> dict[str, object]:
-    """Fit Task 1 until the predeclared objective-plateau gate is met."""
+    """Fit Task 1 under the optional common clock, otherwise the legacy plateau gate."""
 
+    if fit_clock is not None:
+        fit_clock.start()
     optimizer = objax.optimizer.Adam(model.vars())
     energy = objax.GradValues(model.energy, model.vars())
 
@@ -202,13 +205,17 @@ def train_task1(
     while completed < int(iterations):
         steps = min(1 if completed == 0 else int(check_interval)-completed % int(check_interval), int(iterations) - completed)
         values = []
+        budget_exhausted = False
         for i in range(steps):
             value = float(np.asarray(train_op()))
             values.append(value)
             emit("train", completed+i+1, {"negative_elbo": value})
+            if fit_clock is not None and fit_clock.should_stop(completed+i+1):
+                budget_exhausted = True
+                break
         if not np.isfinite(values).all():
             raise FloatingPointError("ST-SVGP Task-1 objective became non-finite")
-        completed += steps
+        completed += len(values)
         row: dict[str, object] = {
             "steps_completed": completed,
             "chunk_objective_median": float(np.median(values)),
@@ -234,7 +241,11 @@ def train_task1(
             row["checkpoint"] = str(checkpoint_path)
         emit("train", completed, row)
         window = int(plateau_checks)
-        if completed >= int(min_steps) and len(trace) >= 2 * window - 1:
+        if budget_exhausted:
+            status = "time_budget_exhausted"
+            trace.append(row)
+            break
+        if fit_clock is None and completed >= int(min_steps) and len(trace) >= 2 * window - 1:
             combined_trace = trace + [row]
             prior = float(
                 np.median([entry["chunk_objective_median"] for entry in combined_trace[-2 * window : -window]])
@@ -247,6 +258,10 @@ def train_task1(
                 trace.append(row)
                 break
         trace.append(row)
+    if fit_clock is not None:
+        if status != "time_budget_exhausted":
+            status = "safety_cap_reached"
+        fit_clock.finish(completed)
     return {
         "status": status,
         "steps_completed": completed,

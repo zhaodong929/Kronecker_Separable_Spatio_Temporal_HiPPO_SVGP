@@ -27,6 +27,15 @@ class Mixture:
         return dict(step=self.step, weights=np.array([1., 2.]), rng={'seed': 42})
 
 
+def test_completed_fit_budget_is_saved_in_hashed_artifacts(tmp_path):
+    adapter = Mixture()
+    adapter.fit_budget_record = dict(completed_steps=17, max_seconds=60.)
+    result = run(stream(), adapter, output=tmp_path)
+    assert result['fit_budget'] == adapter.fit_budget_record
+    assert json.loads((tmp_path/'fit-budget.json').read_text()) == adapter.fit_budget_record
+    assert 'fit-budget.json' in json.loads((tmp_path/'artifacts.json').read_text())
+
+
 def test_mixture_journal_artifacts_allow_exact_rescoring_short_task(tmp_path, monkeypatch):
     monkeypatch.delenv('HIPPO_EVENT_PATH', raising=False)
     result = run(stream(), Mixture(), output=tmp_path, provenance={'git_commit': 'test'})

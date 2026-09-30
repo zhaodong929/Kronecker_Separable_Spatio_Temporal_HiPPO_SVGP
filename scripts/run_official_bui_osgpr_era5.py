@@ -86,13 +86,15 @@ def make_kernel(theta, *, frozen: bool):
     return kernel
 
 
-def adapt_model(model, *, steps: int, learning_rate: float, execution: str = 'eager', graph_cache=None) -> int:
+def adapt_model(model, *, steps: int, learning_rate: float, execution: str = 'eager', graph_cache=None, fit_clock=None) -> int:
     """Run a bounded, causal Adam update for the official GPflow model."""
 
     global _OPTIMIZER_STEP
     if steps <= 0:
         return 0
     if execution=='graph' and graph_cache is not None and isinstance(model,OSGPR_VFE):
+        if fit_clock is not None:
+            raise ValueError('Initial fitting clock cannot govern cached online OSGPR updates')
         from baselines.osgpr_graph import optimizer_entry
         cached,step=optimizer_entry(model,learning_rate,graph_cache)
         for _ in range(int(steps)):
@@ -103,6 +105,8 @@ def adapt_model(model, *, steps: int, learning_rate: float, execution: str = 'ea
             for destination,source in zip(model.trainable_variables,cached.trainable_variables):
                 destination.assign(source)
         return int(steps)
+    if fit_clock is not None:
+        fit_clock.start()
     optimizer = tf.optimizers.Adam(float(learning_rate), jit_compile=False)
     if execution not in {'eager','graph'}:
         raise ValueError('Unknown TensorFlow optimizer execution mode')
@@ -118,11 +122,17 @@ def adapt_model(model, *, steps: int, learning_rate: float, execution: str = 'ea
             gradients=[tf.debugging.check_numerics(g,'Nonfinite Bui gradient') for g in gradients]
             optimizer.apply_gradients(zip(gradients,variables))
             return loss
+        completed = 0
         for _ in range(int(steps)):
             loss=graph_step()
             emit('train',_OPTIMIZER_STEP+1,dict(negative_elbo=float(loss),requested_steps=steps,execution='graph'))
             _OPTIMIZER_STEP+=1
-        return int(steps)
+            completed += 1
+            if fit_clock is not None and fit_clock.should_stop(completed):
+                break
+        if fit_clock is not None:
+            fit_clock.finish(completed)
+        return completed
     completed = 0
     for _ in range(int(steps)):
         with tf.GradientTape() as tape:
@@ -138,6 +148,10 @@ def adapt_model(model, *, steps: int, learning_rate: float, execution: str = 'ea
         optimizer.apply_gradients(zip(gradients, variables))
         completed += 1
         _OPTIMIZER_STEP += 1
+        if fit_clock is not None and fit_clock.should_stop(completed):
+            break
+    if fit_clock is not None:
+        fit_clock.finish(completed)
     return completed
 
 

@@ -14,6 +14,7 @@ MANIFEST=${3:?reviewed validation manifest}
 CAMPAIGN=${4:?campaign name}
 STATE=${5:?durable worker state directory}
 MAX_SECONDS=${6:-165600}
+POLICY=${7:-}
 CODE="$C/releases/$RELEASE/source"
 export OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 MKL_NUM_THREADS=4
 export TF_NUM_INTEROP_THREADS=4 TF_NUM_INTRAOP_THREADS=4
@@ -24,7 +25,13 @@ export WANDB_DATA_DIR="$C/wandb-staging/$CAMPAIGN/worker-$SLURM_ARRAY_TASK_ID-$S
 cd "$CODE"
 sha256sum --quiet -c "$C/releases/$RELEASE/source.sha256"
 [[ "$(cat SOURCE_COMMIT)" == "$RELEASE" ]] || { echo 'Source commit mismatch' >&2; exit 2; }
-exec "$C/env-tracking/bin/python" scripts/run_task_budget_campaign.py \
+STATUS=0
+"$C/env-tracking/bin/python" scripts/run_task_budget_campaign.py \
   --manifest "$MANIFEST" --worker-index "$SLURM_ARRAY_TASK_ID" --state-dir "$STATE" \
   --campaign "$CAMPAIGN" --compute-root "$C" --source-commit "$RELEASE" \
-  --source-sha256 "$SOURCE_HASH" --max-seconds "$MAX_SECONDS"
+  --source-sha256 "$SOURCE_HASH" --max-seconds "$MAX_SECONDS" || STATUS=$?
+if [[ -n "$POLICY" ]]; then
+  "$C/env-tracking/bin/python" scripts/task_budget_study.py collect \
+    --manifest "$MANIFEST" --policy "$POLICY" --output "$STATE/selection" || STATUS=1
+fi
+exit "$STATUS"

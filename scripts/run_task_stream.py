@@ -37,6 +37,8 @@ def main():
     source_commit = source_revision(ROOT)
     source_sha256 = source_identity(ROOT)
     selection_features_sha256 = feature_identity(prepared.selection_stream.times, prepared.selection_features)
+    refit_iterations = None
+    refit_plan = None
     if args.arm != 'joint_transfer' and args.stage != 'ablation':
         parser.error('Ablation arms must be separate from the main comparison')
     if args.stage in ('final', 'ablation'):
@@ -49,6 +51,18 @@ def main():
                 or selected.get('source_sha256') != source_sha256
                 or selected.get('selection_features_sha256') != selection_features_sha256):
             raise ValueError('Selection is stale or belongs to another method, configuration, or split')
+        if config.initial_max_seconds is not None:
+            from benchmarks.task_stream.refit_budget import validate_refit_plan
+            winner = Path(selected['winner']['path'])
+            if file_hash(winner/'result.json') != selected['winner']['result_sha256']:
+                raise ValueError('Selected validation result changed')
+            artifacts = json.loads((winner/'artifacts.json').read_text())
+            if file_hash(winner/'fit-budget.json') != artifacts['fit-budget.json']['sha256']:
+                raise ValueError('Selected training budget artifact changed')
+            fit_record = json.loads((winner/'fit-budget.json').read_text())
+            refit_plan = validate_refit_plan(selected['refit_budget'], asdict(config), fit_record,
+                prepared.selection_stream.initial().values.size, prepared.stream.initial().values.size)
+            refit_iterations = refit_plan['effective_iterations']
     elif args.selection is not None:
         parser.error('A selection record is used only for final/ablation runs')
     if args.output.exists() and any(args.output.iterdir()):
@@ -68,7 +82,7 @@ def main():
         values = values[:end]
     adapter = FittedTaskAdapter(config, stream.coordinates, stream.visible, FeatureTable(stream.times, values),
         initial_step=float(stream.times[1]-stream.times[0]), release_previous=stream.release_previous,
-        arm=next(a for a in ARMS if a.name == args.arm))
+        arm=next(a for a in ARMS if a.name == args.arm), refit_iterations=refit_iterations)
     # Every prediction is materialized on host inside the adapter. Explicitly
     # synchronize the entire method device at phase boundaries as well.
     if config.method in ('kronhippo_svgp', 'ohsvgp'):
@@ -88,6 +102,7 @@ def main():
         configure_tensorflow(tf, device=config.device, dtype='float64')
         synchronize = lambda: tf.constant(0.).numpy()
     provenance = dict(source_commit=source_commit, source_sha256=source_sha256, stage=args.stage,
+        refit_budget=refit_plan,
         selection_features_sha256=selection_features_sha256, selection_protocol_sha256=selection_identity,
         configuration_sha256=config_hash,
         input_files={str(p): file_hash(p) for p in [args.configuration, args.prepared/'stream.npz',

@@ -66,6 +66,8 @@ def adapter_snapshot(fitted):
         coordinates=fitted.coordinates, visible=fitted.visible, beta=fitted.beta,
         inverse_site_order=fitted.inverse, initial_step=fitted.initial_step,
         release_previous=fitted.release_previous,
+        training_budget=getattr(fitted, 'training_budget', None),
+        fit_budget_record=getattr(fitted, 'fit_budget_record', None),
         restoration=dict(auto_resume=False, restoration_tested=False, boundary='after completed initial fit or task',
             required_external_inputs=['exact feature table', 'protocol and future arriving observations', 'pinned sources'],
             optimizer_state='not retained: optimizers are discarded/reset between fitting/update calls; not a mid-fit checkpoint'))

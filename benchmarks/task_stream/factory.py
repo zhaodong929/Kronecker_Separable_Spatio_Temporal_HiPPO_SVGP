@@ -42,6 +42,7 @@ class Configuration:
     noise_std: float = .2
     official_source: str = ''
     initial_expected_passes: float | None = None
+    initial_max_seconds: float | None = None
 
     def __post_init__(self):
         if self.method not in METHODS:
@@ -60,6 +61,14 @@ class Configuration:
             raise ValueError('Finite positive scales and learning rate required')
         if self.latent < 2 or self.prediction_samples < 2:
             raise ValueError('Pinned MGPVAE requires at least two latents and decoder samples')
+        if self.initial_max_seconds is not None:
+            seconds = self.initial_max_seconds
+            if (isinstance(seconds, (bool, np.bool_))
+                    or not isinstance(seconds, (int, float, np.integer, np.floating))
+                    or not np.isfinite(seconds) or seconds <= 0):
+                raise ValueError('Initial optimizer time budget must be finite and positive')
+            if self.initial_expected_passes is not None:
+                raise ValueError('Wall-time and expected-pass budgets are mutually exclusive')
         if self.initial_expected_passes is not None:
             passes = self.initial_expected_passes
             if self.method != 'ohsvgp':
@@ -86,18 +95,21 @@ class Configuration:
         rows = int(observation_rows)
         batch_rows = min(self.batch_rows, rows) if self.method == 'ohsvgp' else rows
         effective = self.initial_iterations
-        policy = 'fixed_steps_v1'
+        policy = 'wall_time_with_iteration_safety_cap_v1' if self.initial_max_seconds is not None else 'fixed_steps_v1'
         if self.initial_expected_passes is not None:
             expected_steps = float(self.initial_expected_passes)*(rows/batch_rows)
             if not math.isfinite(expected_steps):
                 raise ValueError('Expected-pass policy must resolve to a finite step count')
             effective = max(effective, math.ceil(expected_steps))
             policy = 'expected_row_exposures_v1'
-        return dict(policy=policy, method=self.method, observation_rows=rows,
-            rows_per_step=batch_rows, minimum_iterations=int(self.initial_iterations),
+        return dict(policy=policy, method=self.method, max_seconds=self.initial_max_seconds,
+            observation_rows=rows,
+            rows_per_step=batch_rows, minimum_iterations=1 if self.initial_max_seconds is not None else int(self.initial_iterations),
+            iteration_count_role='safety_cap' if self.initial_max_seconds is not None else 'fixed_budget',
             requested_expected_passes=self.initial_expected_passes,
-            effective_iterations=int(effective), sampled_rows=int(effective)*batch_rows,
-            expected_row_exposures=int(effective)*batch_rows/rows,
+            effective_iterations=int(effective),
+            sampled_rows=None if self.initial_max_seconds is not None else int(effective)*batch_rows,
+            expected_row_exposures=None if self.initial_max_seconds is not None else int(effective)*batch_rows/rows,
             sampling=('independent_minibatches_without_replacement_within_each_step'
                       if self.method == 'ohsvgp' else 'full_data_per_step'))
 
@@ -121,8 +133,16 @@ class FittedTaskAdapter:
     initialization_phase = 'initial_refit'
 
     def __init__(self, config, coordinates, visible, features, *, initial_step, release_previous=False,
-                 arm=Arm('joint_transfer')):
+                 arm=Arm('joint_transfer'), refit_iterations=None):
         self.config = config if isinstance(config, Configuration) else Configuration(**config)
+        if refit_iterations is not None:
+            if (isinstance(refit_iterations, (bool, np.bool_))
+                    or not isinstance(refit_iterations, (int, np.integer)) or refit_iterations < 1):
+                raise ValueError('Selected refit iterations must be a positive integer')
+            if self.config.initial_max_seconds is None:
+                raise ValueError('Selected refit mapping requires a wall-time search configuration')
+        self.refit_iterations = None if refit_iterations is None else int(refit_iterations)
+        self.fit_budget_record = None
         self.coordinates, self.visible = np.asarray(coordinates), np.asarray(visible)
         self.features, self.initial_step, self.arm = features, float(initial_step), arm
         self.release_previous = bool(release_previous)
@@ -148,8 +168,20 @@ class FittedTaskAdapter:
     def initialize(self, initial):
         if self.adapter is not None:
             raise ValueError('A fitted run may only be initialized once')
+        from .training_budget import FitClock
         c = self.config
+        self.fit_clock = None
+        def fit_clock(synchronize):
+            self.fit_clock = FitClock(c.initial_max_seconds, synchronize) if c.initial_max_seconds is not None and self.refit_iterations is None else None
+            return self.fit_clock
         self.training_budget = c.resolve_initial_budget(initial.values.size)
+        if self.refit_iterations is not None:
+            self.training_budget.update(policy='selected_fixed_refit',
+                effective_iterations=self.refit_iterations, iteration_count_role='selected_fixed_budget',
+                minimum_iterations=self.refit_iterations,
+                sampled_rows=self.refit_iterations*self.training_budget['rows_per_step'],
+                expected_row_exposures=self.refit_iterations*self.training_budget['rows_per_step']/initial.values.size,
+                reason='frozen iteration mapping from selected completed wall-time validation artifact')
         initial_iterations = self.training_budget['effective_iterations']
         emit('training_budget', 0, self.training_budget)
         coordinates = self.coordinates
@@ -179,6 +211,8 @@ class FittedTaskAdapter:
             tensor = lambda x: torch.as_tensor(np.array(x), dtype=torch.float64, device=c.device)
             phi = self.features(initial.times, initial.sites).reshape(len(initial.times), len(initial.sites), -1)
             yy, pp, xx = tensor(initial.values.T), tensor(phi.transpose(1, 0, 2)), tensor(coordinates[initial.sites])
+            clock = fit_clock((lambda: torch.cuda.synchronize(c.device)) if c.device.startswith('cuda') else lambda: None)
+            if clock is not None: clock.start()
             optimizer = torch.optim.Adam(model.parameters(), lr=c.learning_rate)
             for iteration in range(initial_iterations):
                 optimizer.zero_grad(set_to_none=True)
@@ -192,6 +226,8 @@ class FittedTaskAdapter:
                 optimizer.step(); model.clamp_parameters()
                 emit('train', iteration+1, dict(negative_elbo_per_observation=float(loss.detach()),
                      gradient_norm=float(norm), theta=model.theta()))
+                if clock is not None and clock.should_stop(iteration+1): break
+            if clock is not None: clock.finish(iteration+1)
             theta = model.theta()
             self.adapter = KronTaskAdapter(coordinates, self.visible, inducing, theta,
                 initial_step=self.initial_step, features=self.features, feature_dimension=phi.shape[-1],
@@ -200,9 +236,12 @@ class FittedTaskAdapter:
                 arm=self.arm, beta_prior_variance=c.beta_prior_variance)
         elif c.method == 'osgpr':
             from scripts.run_official_bui_osgpr_era5 import product_inducing
+            from tensorflow.python.eager import context as tf_context
+            clock = fit_clock(tf_context.async_wait)
             self.adapter = OSGPRTaskAdapter(coordinates, theta,
                 product_inducing(initial.times, inducing, c.temporal_inducing),
-                initial_steps=initial_iterations, update_steps=c.online_iterations, learning_rate=c.learning_rate)
+                initial_steps=initial_iterations, update_steps=c.online_iterations, learning_rate=c.learning_rate,
+                fit_clock=clock)
         elif c.method == 'ohsvgp':
             import torch
             from scripts.run_covid_ohsvgp_own_theta import SE_kernel, GaussianLikelihood
@@ -211,19 +250,23 @@ class FittedTaskAdapter:
                 kernel.log_ls.copy_(torch.tensor([c.ell_t, *c.ell_s], dtype=torch.float64, device=c.device).log())
                 kernel.log_sf.fill_(np.log(c.kernel_variance))
             likelihood = GaussianLikelihood(c.noise_std**2).to(dtype=torch.float64, device=c.device)
+            clock = fit_clock((lambda: torch.cuda.synchronize(c.device)) if c.device.startswith('cuda') else lambda: None)
             self.adapter = OHSVGPTaskAdapter(coordinates, kernel, likelihood, inducing_size=c.inducing_size,
                 rff=c.rff, initial_steps=initial_iterations, update_steps=c.online_iterations,
-                batch_rows=c.batch_rows, grid_rows=c.grid_rows, learning_rate=c.learning_rate, seed=c.seed, device=c.device)
+                batch_rows=c.batch_rows, grid_rows=c.grid_rows, learning_rate=c.learning_rate, seed=c.seed, device=c.device,
+                fit_clock=clock)
         elif c.method == 'st_svgp':
             from baselines.covid_long_setting_b.adapters.run_st_svgp import train_task1
             from baselines.st_svgp_task_training import make_compact_model as make_model
             from .markov import STTaskAdapter
             model = make_model(batch.times[:, None], np.repeat(coordinates[None, batch.sites], len(batch.times), axis=0),
                 batch.values, inducing, trainable_inducing=False, theta=theta)
+            import jax
+            clock = fit_clock(lambda: jax.block_until_ready(model.vars().tensors()))
             train_task1(model, iterations=initial_iterations, check_interval=initial_iterations,
                 min_steps=initial_iterations, plateau_checks=10, plateau_relative_improvement=0.,
                 adam_lr=c.learning_rate, newton_lr=1., checkpoint_directory=None,
-                seed=c.seed, spatial_inducing=c.spatial_inducing)
+                seed=c.seed, spatial_inducing=c.spatial_inducing, fit_clock=clock)
             self.adapter = STTaskAdapter(model, coordinates)
         else:
             from baselines.mgpvae.official import make_model
@@ -237,6 +280,10 @@ class FittedTaskAdapter:
                     sitewise_training_filter=True, compact_task_training=True)
             fitted = create(coordinates[initial.sites])
             training = jnp.asarray(batch.values.T[..., None])
+            optimizer = None
+            clock = fit_clock(lambda: jax.block_until_ready(fitted.vars().tensors()
+                + ([] if optimizer is None else optimizer.vars().tensors())))
+            if clock is not None: clock.start()
             optimizer = objax.optimizer.Adam(fitted.vars())
             gradient = objax.GradValues(fitted.energy, fitted.vars())
             @objax.Function.with_vars(fitted.vars()+optimizer.vars())
@@ -252,6 +299,8 @@ class FittedTaskAdapter:
                     raise FloatingPointError('Nonfinite MGPVAE initial objective')
                 emit('train', iteration+1, dict(negative_elbo=float(values[0]),
                     negative_expected_log_likelihood=float(values[1]), kl=float(values[2])))
+                if clock is not None and clock.should_stop(iteration+1): break
+            if clock is not None: clock.finish(iteration+1)
             ordering = np.concatenate([initial.sites, np.setdiff1d(np.arange(len(coordinates)), initial.sites)])
             self.inverse = np.empty(len(coordinates), dtype=int)
             self.inverse[ordering] = np.arange(len(coordinates))
@@ -259,6 +308,20 @@ class FittedTaskAdapter:
             self.adapter = MGPTaskAdapter(full, coordinates[ordering], samples=c.prediction_samples, seed=c.seed)
             batch = self._batch(initial)
         self.adapter.initialize(batch)
+        if self.fit_clock is not None:
+            if self.fit_clock.record is None:
+                raise RuntimeError('Timed initial optimizer did not finalize its budget record')
+            self.fit_budget_record = dict(self.fit_clock.record)
+        else:
+            self.fit_budget_record = dict(policy='selected_fixed_refit' if self.refit_iterations is not None else self.training_budget['policy'],
+                completed_steps=initial_iterations, max_seconds=c.initial_max_seconds, elapsed_seconds=None,
+                stop_reason='selected_iteration_budget_completed' if self.refit_iterations is not None else 'fixed_iteration_budget_completed',
+                convergence_claimed=False)
+        self.fit_budget_record.update(observation_rows=int(initial.values.size),
+            rows_per_step=self.training_budget['rows_per_step'],
+            sampled_rows=self.fit_budget_record['completed_steps']*self.training_budget['rows_per_step'])
+        self.fit_budget_record['expected_row_exposures'] = self.fit_budget_record['sampled_rows']/initial.values.size
+        emit('fit_budget', self.fit_budget_record['completed_steps'], self.fit_budget_record)
         if c.method == 'kronhippo_svgp':
             # Fingerprint the actual common fit, excluding the intentionally
             # intervened posterior and arm label. Both data and random features
@@ -274,7 +337,8 @@ class FittedTaskAdapter:
             emit('fit_identity', 0, dict(fit_sha256=self.fit_sha256, arm=self.arm.name,
                  interpretation='fitted hyperparameters, training inputs/features and base spectral draws'))
         emit('fit_configuration', 0, dict(configuration=asdict(c), arm=asdict(self.arm),
-             initial_sites=initial.sites.tolist(), initial_training_budget=self.training_budget, learned_theta=self.adapter.theta if c.method == 'osgpr' else theta if c.method == 'kronhippo_svgp' else None,
+             initial_sites=initial.sites.tolist(), initial_training_budget=self.training_budget,
+             initial_optimizer_timing=self.fit_budget_record, learned_theta=self.adapter.theta if c.method == 'osgpr' else theta if c.method == 'kronhippo_svgp' else None,
              mgp_initial_parameters=dict(spatial_lengthscale=2., latent_temporal_lengthscale=5.,
                 latent_variance=1., decoder_noise_variance=1.) if c.method == 'mgpvae' else None))
 

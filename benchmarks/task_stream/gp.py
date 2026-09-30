@@ -11,17 +11,18 @@ def inputs(batch, coordinates):
 
 class OSGPRTaskAdapter:
     initialization_phase = 'initial_refit'
-    def __init__(self, coordinates, theta, inducing, *, initial_steps, update_steps, learning_rate=.01):
+    def __init__(self, coordinates, theta, inducing, *, initial_steps, update_steps, learning_rate=.01, fit_clock=None):
         from scripts import run_official_bui_osgpr_era5 as official
         self.official = official
         self.coordinates, self.theta, self.inducing = np.asarray(coordinates), dict(theta), np.asarray(inducing)
         self.initial_steps, self.update_steps = int(initial_steps), int(update_steps)
         self.learning_rate = float(learning_rate)
+        self.fit_clock = fit_clock
         self.old = None
         self.model = None
         self.cache = {}
 
-    def _update(self, batch, steps):
+    def _update(self, batch, steps, *, fit_clock=None):
         import gpflow
         o = self.official
         x, y = inputs(batch, self.coordinates), batch.values.reshape(-1, 1)
@@ -36,7 +37,7 @@ class OSGPRTaskAdapter:
                 Kaa_old=old_kernel, Z_old=old_z, Z=self.inducing)
             model.likelihood.variance.assign(self.theta['noise_std'] ** 2)
         o.adapt_model(model, steps=steps, learning_rate=self.learning_rate,
-                      execution='graph', graph_cache=self.cache)
+                      execution='graph', graph_cache=self.cache, fit_clock=fit_clock)
         self.inducing = np.asarray(model.inducing_variable.Z)
         self.theta = o.theta_from_model(model)
         mean, covariance = o.posterior_at_z(model, self.inducing)
@@ -44,7 +45,7 @@ class OSGPRTaskAdapter:
         self.model = model
 
     def initialize(self, initial):
-        self._update(initial, self.initial_steps)
+        self._update(initial, self.initial_steps, fit_clock=self.fit_clock)
 
     def predict_task(self, task):
         if task.delayed is not None:
@@ -64,7 +65,7 @@ class OHSVGPTaskAdapter:
     """
     def __init__(self, coordinates, kernel, likelihood, *, inducing_size=32, rff=256,
                  initial_steps=500, update_steps=5, batch_rows=1024, grid_rows=1024,
-                 learning_rate=.001, seed=0, device='cpu', train_initial_kernel=True):
+                 learning_rate=.001, seed=0, device='cpu', train_initial_kernel=True, fit_clock=None):
         import torch
         from scripts import run_covid_ohsvgp_own_theta as o
         self.o, self.torch = o, torch
@@ -78,6 +79,7 @@ class OHSVGPTaskAdapter:
             raise ValueError('Positive OHSVGP sizes and budgets required')
         self.rate = float(learning_rate)
         self.train_initial_kernel = bool(train_initial_kernel)
+        self.fit_clock = fit_clock
         self.training_iteration = 0
         self.seed = int(seed)
         generator = torch.Generator(device='cpu').manual_seed(seed)
@@ -94,10 +96,13 @@ class OHSVGPTaskAdapter:
             hippo=self.hippo, inducing_size=self.size, old_state=self.state,
             device=self.device, dtype=self.dtype)
 
-    def _fit(self, model, x, y, steps, *, minibatches=False, learn_kernel=False):
+    def _fit(self, model, x, y, steps, *, minibatches=False, learn_kernel=False, fit_clock=None):
         torch = self.torch
         parameters = list(model.parameters()) if learn_kernel else [model.mv, model.Lv]
+        if fit_clock is not None:
+            fit_clock.start()
         optimizer = torch.optim.Adam(parameters, lr=self.rate)
+        completed = 0
         for iteration in range(steps):
             select = self.rng.choice(len(x), min(self.batch_rows, len(x)), replace=False) if minibatches else slice(None)
             xx = torch.as_tensor(x[select], device=self.device, dtype=self.dtype)
@@ -122,6 +127,12 @@ class OHSVGPTaskAdapter:
             self.training_iteration += 1
             emit('train', self.training_iteration, dict(negative_elbo=float(loss.detach()),
                 gradient_norm=float(norm), rows=len(x), learn_kernel=learn_kernel))
+            completed += 1
+            if fit_clock is not None and fit_clock.should_stop(completed):
+                break
+        if fit_clock is not None:
+            fit_clock.finish(completed)
+        return completed
 
     initialization_phase = 'initial_refit'
 
@@ -129,7 +140,7 @@ class OHSVGPTaskAdapter:
         x, y = self.o.sorted_xy(inputs(initial, self.coordinates), initial.values.reshape(-1, 1))
         grid = x[np.linspace(0, len(x)-1, min(self.grid_rows, len(x)), dtype=int)]
         model = self._model(grid)
-        self._fit(model, x, y, self.initial_steps, minibatches=True, learn_kernel=self.train_initial_kernel)
+        self._fit(model, x, y, self.initial_steps, minibatches=True, learn_kernel=self.train_initial_kernel, fit_clock=self.fit_clock)
         self.kernel, self.likelihood = model.kernel, model.likelihood
         self.kernel.requires_grad_(False)
         self.likelihood.requires_grad_(False)

@@ -173,6 +173,9 @@ def run(stream, adapter, *, output=None, synchronize=lambda: None, score=None,
         event('configuration', 0, config)
         with measurement.phase(getattr(adapter, 'initialization_phase', 'initial_state')):
             adapter.initialize(stream.initial())
+        fit_budget = getattr(adapter, 'fit_budget_record', None)
+        if output is not None and fit_budget is not None:
+            _json(output / 'fit-budget.json', fit_budget)
         if output is not None and checkpoints:
             with measurement.phase('serialization'):
                 _json(output / 'initial-checkpoint-status.json', _checkpoint(adapter, output / 'initial', -1))
@@ -247,6 +250,8 @@ def run(stream, adapter, *, output=None, synchronize=lambda: None, score=None,
             ordinary_latency_valid=not profiler.enabled, profiled_task_ids=list(profiler.tasks),
             main_table_admitted=False, timing=timing_summary(measurement.rows),
             predictive_family=config['predictive_family'], provenance=provenance or {})
+        if fit_budget is not None:
+            result['fit_budget'] = fit_budget
         weights = np.asarray([s['queries'] for s in scores], dtype=float)
         weights /= weights.sum()
         coverage = sum(w * np.asarray(s['coverage']) for w, s in zip(weights, scores))

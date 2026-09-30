@@ -20,6 +20,16 @@ The ERA5 calendar basis now uses explicit 24-hour and 168-hour cycles rather tha
 
 `run_task_stream.py` runs a fully specified candidate. Each method learns its own initial parameters using its own objective; GP baselines use a fixed initial ridge mean while the proposed method learns a joint trend/residual posterior. `select_task_configuration.py` chooses query-weighted validation observation NLPD, refuses final/integration scores, and binds the selected configuration to source contents, protocol, features and result provenance. Initial optimizer budget/capacity candidates still require resource and convergence qualification; two-step integration runs are not selected scientific models.
 
+### Common-time initial-budget study
+
+The subsequent user correction rejects arbitrary method-specific iteration ladders. `task_budget_study.py` declares **60/180/540 seconds of initial optimizer work for every method and spatial split**, with the same three complete initial-period validation opportunities: 195 candidates for 65 groups. All three are evaluated; a noisy intermediate plateau does not eliminate a candidate. Base capacities are fixed, learning rate is 0.001, online adaptive iterations are fixed at 5, and training seeds are the split seeds. This is a limited, predeclared duration study, not a capacity/learning-rate search or a convergence guarantee.
+
+The synchronized clock begins before optimizer construction and includes compilation and completed optimizer updates. At least one update completes, so one update may exceed the budget; overshoot and actual steps are explicit. Earlier mean/feature preparation and later posterior initialization, validation prediction, scoring and serialization are measured separately and are **not** equalized by this cap. Equal optimizer budget does not mean equal total tuning cost. A common one-million-iteration safety limit is separately identified.
+
+Three durable DoC workers process the declared candidates, retain failed attempts, and verify completed outputs before reuse. Group selection requires all three declared budgets to finish; failed baselines cannot silently disappear. The minimum validation NLPD wins. The last-two-score difference (0.01 nats/query) is a descriptive stability diagnostic only. The complete time/quality curve and unresolved boundary behavior remain available; a capped fit is never automatically called converged.
+
+The selected actual iteration count is frozen for final refits and matched ablations. Full-batch methods retain that count; OH preserves expected sampled-row exposure when its legal initial dataset grows. This mapping is hash-bound to the selected budget artifact and data geometry. Final refit therefore does not run a new clock race, and its total computation need not equal the selection time cap. No final run is automatically admitted to the paper table.
+
 ## Inference and corrections
 
 - Kron: fixed geometry uses Schur–Sylvester; differing initial/released geometries use a sum of Kronecker terms. Each old geometry's sufficient statistics are retained with its own spatial factor. Matérn spectral draws now exclusively use the model generator; the former chi-square global RNG dependency broke paired reproducibility.

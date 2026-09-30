@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "name": "common-initial-optimizer-time-v1",
+  "split_seeds": {
+    "era5": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "covid": [
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "pems": [
+      1,
+      2,
+      3
+    ]
+  },
+  "methods": [
+    "kronhippo_svgp",
+    "osgpr",
+    "ohsvgp",
+    "st_svgp",
+    "mgpvae"
+  ],
+  "seconds": [
+    60.0,
+    180.0,
+    540.0
+  ],
+  "initial_iteration_safety_cap": 1000000,
+  "learning_rate": 0.001,
+  "online_iterations": 5,
+  "model_capacity": "fixed tested base capacity; no capacity search",
+  "criterion": "query_weighted_validation_observation_nlpd",
+  "candidate_count_per_method_split": 3,
+  "early_stopping": false,
+  "stopping": "first completed synchronized update reaching declared time; at least one update",
+  "scope": "initial_optimizer_setup_compilation_and_completed_updates",
+  "excluded_from_equal_time_cap": [
+    "shared feature/ridge preparation",
+    "initial filtering/posterior construction",
+    "validation updates and prediction",
+    "scoring",
+    "serialization and W&B"
+  ],
+  "validation": "entire initial-period selection stream; no final-stream scoring",
+  "randomization": "same split-derived training seed for all budget candidates; wall clock can change actual steps",
+  "convergence_claimed": false,
+  "stability_diagnostic": "absolute last-two NLPD difference <= 0.01; descriptive only",
+  "failure_policy": "retain failures; incomplete group has no selected configuration; no baseline omission",
+  "refit": "freeze selected actual steps; OH preserves expected row exposures on the larger initial dataset",
+  "main_table_admitted": false
+}

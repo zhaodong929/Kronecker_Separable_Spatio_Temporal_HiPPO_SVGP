@@ -78,3 +78,56 @@ def test_oh_exposure_policy_drives_actual_fit_and_logs_resolution(monkeypatch):
     assert configuration['configuration'] == original
     assert configuration['initial_training_budget'] == adapter.training_budget
     assert asdict(config) == original
+
+
+@pytest.mark.parametrize('method', ['kronhippo_svgp', 'ohsvgp'])
+def test_common_time_budget_and_deterministic_selected_refit(method, monkeypatch):
+    import benchmarks.task_stream.training_budget as budgets
+    from dataclasses import asdict
+    s, features = tiny()
+    original_clock = budgets.FitClock
+    def fake_clock(limit, synchronize):
+        ticks = iter([0., limit+1., limit+1.])
+        return original_clock(limit, synchronize, monotonic=lambda: next(ticks))
+    monkeypatch.setattr(budgets, 'FitClock', fake_clock)
+    config = Configuration(method, initial_iterations=1000000, learning_rate=.001,
+        initial_max_seconds=60., spatial_inducing=2, temporal_inducing=3,
+        inducing_size=3, rff=16, grid_rows=4, batch_rows=4, online_iterations=1)
+    original_config = asdict(config)
+    timed = FittedTaskAdapter(config, s.coordinates, s.visible, features,
+        initial_step=.1, release_previous=True)
+    timed.initialize(s.initial())
+    assert timed.fit_budget_record['completed_steps'] == 1
+    assert timed.fit_budget_record['stop_reason'] == 'wall_time_budget_reached'
+    assert timed.fit_budget_record['overshoot_seconds'] == 1.
+    assert np.isfinite(timed.predict_task(s.task(0))[0]).all()
+    def forbidden_clock(*args, **kwargs):
+        raise AssertionError('Frozen selected refits must not use a wall clock')
+    monkeypatch.setattr(budgets, 'FitClock', forbidden_clock)
+    predictions = []
+    for _ in range(2):
+        fixed = FittedTaskAdapter(config, s.coordinates, s.visible, features,
+            initial_step=.1, release_previous=True, refit_iterations=2)
+        fixed.initialize(s.initial())
+        assert fixed.fit_budget_record['completed_steps'] == 2
+        assert fixed.fit_budget_record['policy'] == 'selected_fixed_refit'
+        assert fixed.fit_budget_record['elapsed_seconds'] is None
+        assert fixed.training_budget['effective_iterations'] == 2
+        predictions.append(fixed.predict_task(s.task(0))[0])
+    np.testing.assert_array_equal(*predictions)
+    assert asdict(config) == original_config
+
+
+@pytest.mark.parametrize('iterations', [0, -1, True, 2.5])
+def test_selected_refit_rejects_invalid_count(iterations):
+    s, f = tiny()
+    config = Configuration('ohsvgp', 1000000, .001, initial_max_seconds=60.)
+    with pytest.raises(ValueError, match='positive integer'):
+        FittedTaskAdapter(config, s.coordinates, s.visible, f, initial_step=.1, refit_iterations=iterations)
+
+
+def test_selected_refit_requires_a_time_search_configuration():
+    s, f = tiny()
+    with pytest.raises(ValueError, match='wall-time search'):
+        FittedTaskAdapter(Configuration('ohsvgp', 5, .001), s.coordinates, s.visible, f,
+            initial_step=.1, refit_iterations=2)
