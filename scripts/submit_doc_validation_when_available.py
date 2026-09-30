@@ -42,6 +42,15 @@ def main():
             with (a.output/'attempts.jsonl').open('a') as log:log.write(json.dumps(record)+'\n')
             time.sleep(600)
             continue
+        pilot_monitors=plan.get('wait_for_successful_monitors',[])
+        if any(not Path(path).is_file() or json.loads(Path(path).read_text()).get('status')!='completed_and_verified'
+               for path in pilot_monitors):
+            record['status']='waiting_for_verified_head'
+            record['dependencies']=pilot_monitors
+            (a.output/'latest.json').write_text(json.dumps(record,indent=2))
+            with (a.output/'attempts.jsonl').open('a') as log:log.write(json.dumps(record)+'\n')
+            time.sleep(600)
+            continue
         try:
             # Reconcile first: an SSH timeout can follow a successful sbatch.
             q = ssh(['squeue', '-h', '-u', 'nk523', '-n', name, '-o', '%A'])
