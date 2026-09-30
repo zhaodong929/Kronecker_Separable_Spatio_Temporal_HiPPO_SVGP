@@ -14,7 +14,7 @@ def test_scoped_basis_cache_is_exact_and_refreshes(monkeypatch):
     device=torch.device(os.environ.get('HIPPO_TEST_DEVICE','cpu'))
     torch.manual_seed(48)
     x=np.random.default_rng(2).normal(size=(32,3));x[:,0]=np.arange(32)/32
-    model=worker.make_model(kernel=SE_kernel(3).to(device=device,dtype=torch.float64),
+    model=worker.make_model(kernel=SE_kernel(3,device=device).to(device=device,dtype=torch.float64),
         likelihood=GaussianLikelihood(.2).to(device=device,dtype=torch.float64),
         z_interpolate=x,rff_sample_size=16,previous_steps=0,
         hippo=LazyHiPPOLegS(4,device,torch.float64),inducing_size=4,old_state=None,
