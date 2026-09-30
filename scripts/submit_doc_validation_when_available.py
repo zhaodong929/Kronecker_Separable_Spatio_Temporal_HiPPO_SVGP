@@ -52,6 +52,19 @@ def main():
             time.sleep(600)
             continue
         try:
+            qualifications=plan.get('wait_for_qualifications',[])
+            if qualifications:
+                code=('import json; from pathlib import Path; expected='+repr(qualifications)+
+                    '; states=[json.loads(Path(x["path"]).read_text()) if Path(x["path"]).is_file() else {} for x in expected]; '
+                    'print(json.dumps(all(d.get("status")=="passed" and d.get("source_commit")==x["source_commit"] and d.get("method")==x["method"] for x,d in zip(expected,states))))')
+                readiness=ssh(['/usr/bin/python3','-c',code])
+                if readiness.returncode or readiness.stdout.strip()!='true':
+                    record['status']='waiting_for_head_qualification'
+                    record['dependencies']=qualifications
+                    (a.output/'latest.json').write_text(json.dumps(record,indent=2))
+                    with (a.output/'attempts.jsonl').open('a') as log:log.write(json.dumps(record)+'\n')
+                    time.sleep(600)
+                    continue
             # Reconcile first: an SSH timeout can follow a successful sbatch.
             q = ssh(['squeue', '-h', '-u', 'nk523', '-n', name, '-o', '%A'])
             if q.returncode:
