@@ -24,3 +24,11 @@ New GPU qualification uses an immutable source release, one A30 GPU per method a
 ## Remaining scientific admission requirements
 
 Device qualification and real-size validation/refit resource/convergence checks; a frozen declared candidate budget and selected configurations for all splits; all 65 main runs; paired native-scale summaries; and independently measured computation/profiling. No full-run completion or performance ranking is claimed. Checkpoint files are inspectable but automatic restoration has not been qualified. The existing full-size MGP GPU concerns remain a gate until tested under the new source and geometry.
+
+## Device results and follow-up
+
+All five methods completed the A30 qualification array **294564** on source `fcff705`. Four independently fitted deterministic/reference-compatible trajectories matched CPU; OH matched a common fixed learned posterior (its independent stochastic optimizer paths are not an equivalence criterion). Every W&B supervisor exited zero. Exact errors and links: [device-qualification.json](device-qualification.json).
+
+Subsequent changes: ERA calendar columns use physical 24/168-hour cycles (same 133 features, weather transforms unchanged); explicit NVTX acquisition/counter ingestion and profiled-latency exclusion; compact MGP training RTS avoids time-indexed full spatial covariance while matching the corrected objective and every parameter gradient. CPU combined suite **91 passed**; compact-MGP plus Markov factories **7 passed**, in addition to the five earlier Markov reference tests and remote OSGPR test. The changed MGP training path requires a fresh tiny GPU check before real-size domain qualification.
+
+`qualify_domains.sbatch` runs the three representative domains sequentially per method, keeping at most five queued array elements and three GPUs globally. All 15 domain/method shape pilots use two initial fitting steps and two tasks; this is not convergence or a new final result.

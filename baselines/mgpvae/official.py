@@ -21,7 +21,7 @@ def import_official(source):
     return STMarkovGaussianProcessVAEExternal
 
 
-def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spatial_covariance=False, compact_spatial_marginals=False, sitewise_training_filter=False):
+def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spatial_covariance=False, compact_spatial_marginals=False, sitewise_training_filter=False, compact_task_training=False):
     cls = import_official(source)
     if compact_spatial_marginals and not correct_spatial_covariance:
         raise ValueError('Compact training requires the explicit covariance correction')
@@ -35,6 +35,13 @@ def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spati
         class SitewiseMGPVAE(cls):
             filter = staticmethod(sitewise_official_filter)
         cls = SitewiseMGPVAE
+    if compact_task_training:
+        if not correct_spatial_covariance:
+            raise ValueError('Compact task training requires the explicit spatial covariance correction')
+        from .task_training import compact_training_energy, validate_compact_training_model
+        class CompactTaskTrainingMGPVAE(cls):
+            energy = compact_training_energy
+        cls = CompactTaskTrainingMGPVAE
     import jax.numpy as jnp
     import objax
     from mgpvae.kernels import SpatiotemporalMatern32
@@ -53,9 +60,12 @@ def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spati
         h=np.asarray(kernel.measurement_model())
         if not np.array_equal(h,np.broadcast_to(expected,h.shape)):
             raise ValueError("Compact training requires the pinned identity measurement")
-    return cls(kernel=kernel,
+    model = cls(kernel=kernel,
         likelihood=DecoderGaussian(decoder, variance=1., num_latent=latent, y_dim=1),
         encoder=encoder, num_hidden=width,
         hidden_to_mu=objax.nn.Sequential([Linear(width, latent)]),
         hidden_to_var=objax.nn.Sequential([Linear(width, latent)]),
         num_latent=latent, dt=None, minibatch_size=1, num_sequences=1, parallel=False)
+    if compact_task_training:
+        validate_compact_training_model(model)
+    return model

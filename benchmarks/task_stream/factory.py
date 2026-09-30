@@ -48,8 +48,10 @@ class Configuration:
                      'rff', 'online_iterations', 'batch_rows', 'grid_rows', 'latent', 'width',
                      'training_samples', 'prediction_samples'):
             value = getattr(self, name)
-            if isinstance(value, bool) or int(value) != value or value < 1:
+            if isinstance(value, bool) or not isinstance(value, (int, np.integer)) or value < 1:
                 raise ValueError(f'Positive integer required: {name}')
+        if isinstance(self.seed, bool) or not isinstance(self.seed, (int, np.integer)) or self.seed < 0:
+            raise ValueError('A nonnegative integer seed is required')
         if len(self.ell_s) != 2 or any(not np.isfinite(v) or v <= 0 for v in
             (*self.ell_s, self.learning_rate, self.ell_t, self.kernel_variance,
              self.noise_std, self.ridge, self.beta_prior_variance)):
@@ -188,7 +190,8 @@ class FittedTaskAdapter:
             import objax
             def create(coords):
                 return make_model(c.official_source, coords, seed=c.seed, latent=c.latent, width=c.width,
-                    correct_spatial_covariance=True, compact_spatial_marginals=True, sitewise_training_filter=True)
+                    correct_spatial_covariance=True, compact_spatial_marginals=True,
+                    sitewise_training_filter=True, compact_task_training=True)
             fitted = create(coordinates[initial.sites])
             training = jnp.asarray(batch.values.T[..., None])
             optimizer = objax.optimizer.Adam(fitted.vars())

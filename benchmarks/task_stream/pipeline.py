@@ -19,6 +19,7 @@ from benchmarks.three_domain.evaluation import gaussian_scores, LEVELS
 from benchmarks.three_domain.metrics import gaussian_mixture_metrics, gaussian_mixture_calibration
 from benchmarks.three_domain.tracking import emit
 from .measurement import Measurements, timing_summary
+from .profiling import TaskProfiler
 
 
 def _json_value(value):
@@ -154,6 +155,7 @@ def run(stream, adapter, *, output=None, synchronize=lambda: None, score=None,
                 os.close(fd)
     try:
         protocol_identity = stream.identity()
+        profiler = TaskProfiler(len(stream.bounds))
         target_center, target_scale, native_units = native_target_transform(stream.metadata)
         transform_record = dict(mean=target_center, scale=target_scale, native_units=native_units)
         config = dict(protocol_sha256=protocol_identity, tasks=len(stream.bounds),
@@ -162,6 +164,7 @@ def run(stream, adapter, *, output=None, synchronize=lambda: None, score=None,
             target_standardization=transform_record,
             adapter=f'{type(adapter).__module__}.{type(adapter).__qualname__}',
             predictive_family=getattr(adapter, 'predictive_family', 'gaussian'),
+            ordinary_latency_valid=not profiler.enabled, profiled_task_ids=list(profiler.tasks),
             runtime=_runtime(), provenance=provenance or {}, configuration=configuration or {},
             checkpoint_policy='explicit adapter serialization; no implicit resume',
             evaluation_policy='task-end hidden-site observation distribution; scoring excluded from online timer')
@@ -175,7 +178,7 @@ def run(stream, adapter, *, output=None, synchronize=lambda: None, score=None,
                 _json(output / 'initial-checkpoint-status.json', _checkpoint(adapter, output / 'initial', -1))
         for index in range(len(stream.bounds)):
             start, stop = stream.bounds[index]
-            with measurement.phase('online', task=index, queries=(stop-start)*len(stream.hidden)):
+            with measurement.phase('online', task=index, queries=(stop-start)*len(stream.hidden)), profiler.range(index, synchronize):
                 task = stream.task(index)
                 mean, variance = adapter.predict_task(task)
                 mean, variance = np.asarray(mean), np.asarray(variance)
@@ -241,6 +244,7 @@ def run(stream, adapter, *, output=None, synchronize=lambda: None, score=None,
             means.append(mean); variances.append(variance); truths.append(truth); times.append(task.times)
         mean, variance, truth = map(np.concatenate, [means, variances, truths])
         result = dict(status='completed', protocol_sha256=protocol_identity,
+            ordinary_latency_valid=not profiler.enabled, profiled_task_ids=list(profiler.tasks),
             main_table_admitted=False, timing=timing_summary(measurement.rows),
             predictive_family=config['predictive_family'], provenance=provenance or {})
         weights = np.asarray([s['queries'] for s in scores], dtype=float)

@@ -31,7 +31,7 @@ def table_rows(records):
         paired_ids = proof.get('paired_run_ids', [])
         paired = [identities.get(identity) for identity in paired_ids]
         gates = proof.get('gates', {})
-        admitted = (result.get('status') == 'completed' and bool(paired) and
+        admitted = (result.get('status') == 'completed' and result.get('ordinary_latency_valid', True) and bool(paired) and
             all(isinstance(gates.get(g), dict) and gates[g].get('passed') is True
                 and bool(gates[g].get('evidence_sha256')) for g in GATES) and
             bool(record.get('hardware_id')) and bool(result.get('protocol_sha256')) and

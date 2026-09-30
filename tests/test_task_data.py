@@ -76,3 +76,8 @@ def test_long_settings_preserve_tasks_and_fit_only_scaling(dataset,total,initial
     assert a.stream.bounds[-1][1] == total
     assert a.stream.initial_sites.tolist() == [0,1,2,3]
     assert a.selection_stream.coordinates.shape == (4,2)
+    if dataset == 'era5':
+        np.testing.assert_allclose(a.features[:-24, :, 1:3], a.features[24:, :, 1:3], atol=1e-12)
+        np.testing.assert_allclose(a.features[:-168, :, 3:5], a.features[168:, :, 3:5], atol=1e-12)
+        assert a.metadata['feature_phase']['periods'] == [24,168]
+        assert a.metadata['time_divisor'] == 335

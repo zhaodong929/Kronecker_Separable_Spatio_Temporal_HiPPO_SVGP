@@ -195,8 +195,16 @@ def prepare(dataset, targets, coordinates, visible, hidden, fit, validation, *,
             raise ValueError('ERA5 requires aligned six-variable contemporaneous weather')
         from benchmarks.three_domain.era5_features import features
         phi, feature_stats = features(weather, coordinates, fit, initial=fit_steps)
+        # Real calendar periods, independent of fit-window length or GP time scaling.
+        hours = np.arange(total, dtype=float)
+        phi[..., 1:5] = np.stack([np.sin(2*np.pi*hours/24.), np.cos(2*np.pi*hours/24.),
+            np.sin(2*np.pi*hours/168.), np.cos(2*np.pi*hours/168.)], axis=-1)[:, None, :]
+        feature_stats.pop('time_scale_hours', None)
+        feature_stats['calendar_periods_hours'] = [24, 168]
         inner_phi = phi[:initial, visible].copy()
-        metadata['feature_family'] = 'official_133_weather_L10_with_prefix_time_phase'
+        metadata['feature_family'] = '133_calendar_daily_weekly_weather_L10'
+        metadata['feature_phase'] = dict(unit='hour', periods=[24, 168],
+                                        columns=['daily_sin', 'daily_cos', 'weekly_sin', 'weekly_cos'])
     elif dataset == 'covid':
         # Selection scalers must not see extra initially observed COVID sites.
         inner_raw = label_features(selection, inner_fit)
