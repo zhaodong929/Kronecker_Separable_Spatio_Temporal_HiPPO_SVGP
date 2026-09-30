@@ -13,7 +13,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-kronhippo_svgp-era5-head-dispatch-v2.service",
+      "dispatch_unit": "hippo-kronhippo_svgp-era5-budget-head-dispatch.service",
       "training_seed_actual": 0
     },
     {
@@ -25,7 +25,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-kronhippo_svgp-era5-tail12-dispatch-v2.service",
+      "dispatch_unit": "hippo-kronhippo_svgp-era5-budget-tail12-dispatch.service",
       "training_seed_actual": 0
     },
     {
@@ -37,7 +37,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-kronhippo_svgp-era5-tail12-dispatch-v2.service",
+      "dispatch_unit": "hippo-kronhippo_svgp-era5-budget-tail12-dispatch.service",
       "training_seed_actual": 0
     },
     {
@@ -49,7 +49,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-kronhippo_svgp-era5-tail34-dispatch-v2.service",
+      "dispatch_unit": "hippo-kronhippo_svgp-era5-budget-tail34-dispatch.service",
       "training_seed_actual": 0
     },
     {
@@ -61,7 +61,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-kronhippo_svgp-era5-tail34-dispatch-v2.service",
+      "dispatch_unit": "hippo-kronhippo_svgp-era5-budget-tail34-dispatch.service",
       "training_seed_actual": 0
     },
     {
@@ -253,7 +253,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-mgpvae-era5-memory-head-dispatch.service",
+      "dispatch_unit": "hippo-mgpvae-era5-marginals-head-dispatch.service",
       "training_seed_actual": 0
     },
     {
@@ -265,7 +265,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-mgpvae-era5-memory-tail12-dispatch.service",
+      "dispatch_unit": "hippo-mgpvae-era5-marginals-tail12-dispatch.service",
       "training_seed_actual": 1
     },
     {
@@ -277,7 +277,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-mgpvae-era5-memory-tail12-dispatch.service",
+      "dispatch_unit": "hippo-mgpvae-era5-marginals-tail12-dispatch.service",
       "training_seed_actual": 2
     },
     {
@@ -289,7 +289,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-mgpvae-era5-memory-tail34-dispatch.service",
+      "dispatch_unit": "hippo-mgpvae-era5-marginals-tail34-dispatch.service",
       "training_seed_actual": 3
     },
     {
@@ -301,7 +301,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-mgpvae-era5-memory-tail34-dispatch.service",
+      "dispatch_unit": "hippo-mgpvae-era5-marginals-tail34-dispatch.service",
       "training_seed_actual": 4
     },
     {
@@ -739,7 +739,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "Waiting for COVID submission receipts and quota; GPU qualification and full-initial resource gate precede final execution",
-      "dispatch_unit": "hippo-mgpvae-pems-memory-head-dispatch.service",
+      "dispatch_unit": "hippo-mgpvae-pems-marginals-head-dispatch.service",
       "training_seed_actual": 1
     },
     {
@@ -751,7 +751,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "Waiting for COVID submission receipts and quota; GPU qualification and full-initial resource gate precede final execution",
-      "dispatch_unit": "hippo-mgpvae-pems-memory-tail-dispatch.service",
+      "dispatch_unit": "hippo-mgpvae-pems-marginals-tail-dispatch.service",
       "training_seed_actual": 2
     },
     {
@@ -763,7 +763,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "Waiting for COVID submission receipts and quota; GPU qualification and full-initial resource gate precede final execution",
-      "dispatch_unit": "hippo-mgpvae-pems-memory-tail-dispatch.service",
+      "dispatch_unit": "hippo-mgpvae-pems-marginals-tail-dispatch.service",
       "training_seed_actual": 3
     }
   ],
@@ -944,6 +944,51 @@
       "status": "cancelled_before_final_for_graph_reuse",
       "reason": "Repeated tracing ~7.9 s per time projects beyond 72 h; reuse official graph with fresh Adam state, CPU parity and causal tests passed",
       "replacement_release": "6a952dc2a1012592c0b74d1f9b01d9a1c8c898dc"
+    },
+    {
+      "job_id": 294385,
+      "dataset": "era5",
+      "method": "kronhippo_svgp",
+      "seeds": [
+        0
+      ],
+      "status": "qualification_recovery_before_final",
+      "reason": "Initial capacity64x64 remains at 1000-step optimum; extend budget, reuse only verified validation",
+      "replacement_release": "e9b07ccc51b341e9fcea28aa0b3471098bafaf4d"
+    },
+    {
+      "job_id": 294391,
+      "dataset": "era5",
+      "method": "kronhippo_svgp",
+      "seeds": [
+        3,
+        4
+      ],
+      "status": "qualification_recovery_before_final",
+      "reason": "Cancelled pending array for extended qualification",
+      "replacement_release": "e9b07ccc51b341e9fcea28aa0b3471098bafaf4d"
+    },
+    {
+      "job_id": 294389,
+      "dataset": "era5",
+      "method": "mgpvae",
+      "seeds": [
+        0
+      ],
+      "status": "qualification_recovery_before_final",
+      "reason": "Rematerialized training passed; full-state initial validation covariance OOM, direct marginals independently verified",
+      "replacement_release": "1cfda2ea4ac8d074161fdaef30e6e54fe7dbb9d8"
+    },
+    {
+      "job_id": 294394,
+      "dataset": "pems",
+      "method": "mgpvae",
+      "seeds": [
+        1
+      ],
+      "status": "qualification_recovery_before_final",
+      "reason": "Cancelled old validation path before repeating full-state memory issue",
+      "replacement_release": "1cfda2ea4ac8d074161fdaef30e6e54fe7dbb9d8"
     }
   ]
 }
