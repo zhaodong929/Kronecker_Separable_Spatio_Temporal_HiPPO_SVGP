@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PY="${PY:-${ROOT}/.venv/bin/python}"
+PROTOCOL_ROOT="${PROTOCOL_ROOT:-${ROOT}/data/epidemiology/protocol/covid}"
+RESULT_ROOT="${RESULT_ROOT:-${ROOT}/results/diagnostics/covid_optimization/mt32_ms32_rff64_1000}"
+SEEDS="${SEEDS:-0 1 2 3 4}"
+DEVICE="${DEVICE:-cuda}"
+
+cd "${ROOT}"
+for seed in ${SEEDS}; do
+  output="${RESULT_ROOT}/seed${seed}"
+  mkdir -p "${output}"
+  "${PY}" scripts/run_epidemiology_pilot.py \
+    --protocol-npz "${PROTOCOL_ROOT}/seed${seed}/protocol.npz" \
+    --protocol-json "${PROTOCOL_ROOT}/seed${seed}/protocol.json" \
+    --output-root "${output}" \
+    --mt 32 \
+    --ms 32 \
+    --iterations 1000 \
+    --learning-rate 0.02 \
+    --rff-sample-size 64 \
+    --validation-every 5 \
+    --early-stopping-patience-validations 20 \
+    --device "${DEVICE}" \
+    >"${output}/run.log" 2>&1
+done
+
+"${PY}" scripts/summarize_epidemiology_pilot.py \
+  --input-root "${RESULT_ROOT}" \
+  --dataset covid \
+  --expected-seeds 0 1 2 3 4

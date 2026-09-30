@@ -1,0 +1,81 @@
+{
+  "status": "current_table_complete",
+  "archived_aggregate_source": "/home/zd929/projects/stvgp_kronecker/baselines/covid_long_setting_b/reports/formal_gaussian_task1_selected_strict/aggregate_metrics.csv",
+  "latest_4090_aggregate_source": "/home/zd929/projects/stvgp_kronecker/baselines/covid_long_setting_b/reports/exploratory_gpu_4090_s5_s7/aggregate_metrics.csv",
+  "latest_4090_source_commit": "341e05332f72d9edcbbde95c4e656b275c8ef048",
+  "excluded_methods": [
+    "ohsvgp_rbf",
+    "task1_lag_ridge"
+  ],
+  "superseded_archived_methods": [
+    "fsde_svi",
+    "imc_svgp",
+    "lmc_svgp"
+  ],
+  "policy": "Use latest_4090_aggregate for LMC-SVGP, ICM-SVGP (underlying archive id imc_svgp) and FSDE-SVI; retain audited archived values for all other rows.",
+  "method_sources": [
+    {
+      "method": "persistence",
+      "label": "Last-value persistence",
+      "source_kind": "retained_audited_archive_aggregate",
+      "replications": 5
+    },
+    {
+      "method": "routeb_ordinary",
+      "label": "Kron-STGP (point-inducing temporal control)",
+      "source_kind": "retained_audited_archive_aggregate",
+      "replications": 5
+    },
+    {
+      "method": "routeb_cumulative_hippo",
+      "label": "KronHiPPO-STGP (cumulative HiPPO)",
+      "source_kind": "retained_audited_archive_aggregate",
+      "replications": 5
+    },
+    {
+      "method": "bui_controlled",
+      "label": "Streaming sparse GP (Bui et al.; controlled transfer)",
+      "source_kind": "retained_audited_archive_aggregate",
+      "replications": 5
+    },
+    {
+      "method": "bui_adaptive",
+      "label": "Streaming sparse GP (Bui et al.; adaptive update, CPU)",
+      "source_kind": "retained_audited_archive_aggregate",
+      "replications": 5
+    },
+    {
+      "method": "st_svgp",
+      "label": "ST-SVGP",
+      "source_kind": "retained_audited_archive_aggregate",
+      "replications": 5
+    },
+    {
+      "method": "lmc_svgp",
+      "label": "LMC-SVGP",
+      "source_kind": "latest_4090_aggregate",
+      "replications": 3
+    },
+    {
+      "method": "imc_svgp",
+      "label": "ICM-SVGP",
+      "source_kind": "latest_4090_aggregate",
+      "replications": 3
+    },
+    {
+      "method": "fsde_svi",
+      "label": "FSDE-SVI",
+      "source_kind": "latest_4090_aggregate",
+      "replications": 3
+    }
+  ],
+  "output_files": [
+    "README.md",
+    "formal_results_table.csv",
+    "formal_results_table.md",
+    "formal_results_table.tex",
+    "source_manifest.json",
+    "superseded_rows_audit.csv",
+    "superseded_rows_audit.md"
+  ]
+}

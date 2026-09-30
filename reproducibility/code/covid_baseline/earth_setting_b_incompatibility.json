@@ -1,0 +1,31 @@
+{
+  "status": "protocol_incompatible_without_upstream_core_rewrite",
+  "method": "EARTH",
+  "source": "GuanchengWan/EARTH",
+  "source_commit": "aeff23fcec2c138a9c859f6bf8897321d9babdbf",
+  "setting_b_requirement": "At week t the method must condition on all arrived labels through t-1 and only 42 of 52 current outputs, then predict the 10 current hidden outputs with a predictive distribution.",
+  "evidence": [
+    {
+      "source_file": "src/models.py",
+      "lines": "11",
+      "finding": "The official model imports vmamba.CrossMambaFusionBlock and vmamba.ConcatMambaFusionBlock, but no vmamba source file or declared vmamba dependency exists in the pinned 27-file repository snapshot."
+    },
+    {
+      "source_file": "src/data.py",
+      "lines": "109-139",
+      "finding": "The official batchifier constructs X with every node in the history window and an entire-node target vector Y at each forecast index; it accepts no current-week observation mask."
+    },
+    {
+      "source_file": "src/train.py",
+      "lines": "162-172, 250-270",
+      "finding": "Official evaluation and training consume the full target Y and apply an L1 loss to the full output vector."
+    },
+    {
+      "source_file": "src/models.py",
+      "lines": "232-266",
+      "finding": "The forward interface consumes complete spline coefficients and a complete input window, returning deterministic outputs only."
+    }
+  ],
+  "decision": "Do not write a Setting B adapter or fill in the missing vmamba implementation. Supporting 42 observed and 10 unobserved current outputs would require a masked-input/data interface, a masked training loss, and a predictive uncertainty mechanism absent from the official core.",
+  "reporting_rule": "EARTH remains in the unified catalogue as a documented protocol-incompatible candidate and receives no formal Gaussian Setting B metric row."
+}

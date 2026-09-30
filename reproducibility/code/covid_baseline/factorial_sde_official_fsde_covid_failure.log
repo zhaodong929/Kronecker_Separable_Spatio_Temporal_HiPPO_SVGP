@@ -1,0 +1,182 @@
+WARNING:absl:No GPU/TPU found, falling back to CPU. (Set TF_CPP_MIN_LOG_LEVEL=0 and rerun for more info.)
+Running FSDE-SVI on COVID (NGD=True).
+Traceback (most recent call last):
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_fsde_svi.py", line 188, in <module>
+    main(**vars(args))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_fsde_svi.py", line 178, in main
+    natgrad_results = run_experiment(data_id, use_natgrad=True)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_fsde_svi.py", line 145, in run_experiment
+    elbos, preds, maes, nlpds = train_FSDE_SVI(data, data_id, use_natgrad=use_natgrad)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_fsde_svi.py", line 103, in train_FSDE_SVI
+    exp_metrics = model.fit(train_dataset=train_data,
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 2013, in fit
+    (model_params, v_params, _, _), metrics = lax.scan(step, init_state, (step_idxs, keys))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/traceback_util.py", line 162, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/control_flow/loops.py", line 259, in scan
+    init_flat, carry_avals, carry_avals_out, init_tree, *rest = _create_jaxpr(init)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/control_flow/loops.py", line 245, in _create_jaxpr
+    jaxpr, consts, out_tree = _initial_style_jaxpr(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/util.py", line 273, in wrapped
+    result = call(weak_arg, *args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/control_flow/common.py", line 57, in _initial_style_jaxpr
+    jaxpr, consts, out_tree = _initial_style_open_jaxpr(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/util.py", line 273, in wrapped
+    result = call(weak_arg, *args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/control_flow/common.py", line 51, in _initial_style_open_jaxpr
+    jaxpr, _, consts = pe.trace_to_jaxpr_dynamic(wrapped_fun, in_avals, debug)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/profiler.py", line 294, in wrapper
+    return func(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 2092, in trace_to_jaxpr_dynamic
+    jaxpr, out_avals, consts = trace_to_subjaxpr_dynamic(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 2109, in trace_to_subjaxpr_dynamic
+    ans = fun.call_wrapped(*in_tracers_)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/linear_util.py", line 168, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/core/model_utils.py", line 277, in wrapper_progress_bar
+    result = func(carry, x)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 1942, in step
+    out, grads = jit(value_and_grad(self.loss, argnums=(0,1), has_aux=True))(model_params, 
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/traceback_util.py", line 162, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/api.py", line 527, in cache_miss
+    out_flat = xla.xla_call(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/core.py", line 1937, in bind
+    return call_bind(self, fun, *args, **params)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/core.py", line 1953, in call_bind
+    outs = top_trace.process_call(primitive, fun_, tracers, params)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 1843, in process_call
+    jaxpr, out_type, consts = trace_to_subjaxpr_dynamic2(f, self.main, debug_info=dbg)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 2138, in trace_to_subjaxpr_dynamic2
+    ans = fun.call_wrapped(*in_tracers_)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/linear_util.py", line 168, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/traceback_util.py", line 162, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/api.py", line 1073, in value_and_grad_f
+    ans, vjp_py, aux = _vjp(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/api.py", line 2521, in _vjp
+    out_primal, out_vjp, aux = ad.vjp(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/ad.py", line 135, in vjp
+    out_primals, pvals, jaxpr, consts, aux = linearize(traceable, *primals, has_aux=True)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/ad.py", line 122, in linearize
+    jaxpr, out_pvals, consts = pe.trace_to_jaxpr_nounits(jvpfun_flat, in_pvals)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/profiler.py", line 294, in wrapper
+    return func(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 802, in trace_to_jaxpr_nounits
+    jaxpr, (out_pvals, consts, env) = fun.call_wrapped(pvals)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/linear_util.py", line 168, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 1891, in loss
+    elbo, exp_loglik, kl = self.compute_ELBO(model_params, v_params, batch)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 1856, in compute_ELBO
+    approx_mean, approx_cov = self.predict(batch.times, 
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 2204, in predict
+    approx_mean, approx_cov = jit(self.approx_moments)(*args)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/traceback_util.py", line 162, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/api.py", line 527, in cache_miss
+    out_flat = xla.xla_call(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/core.py", line 1937, in bind
+    return call_bind(self, fun, *args, **params)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/core.py", line 1953, in call_bind
+    outs = top_trace.process_call(primitive, fun_, tracers, params)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/ad.py", line 339, in process_call
+    result = call_primitive.bind(_update_annotation(f_jvp, f.in_type, which_nz),
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/core.py", line 1937, in bind
+    return call_bind(self, fun, *args, **params)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/core.py", line 1953, in call_bind
+    outs = top_trace.process_call(primitive, fun_, tracers, params)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 267, in process_call
+    out = primitive.bind(_update_annotation_known(f_, f.in_type, in_knowns),
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/core.py", line 1937, in bind
+    return call_bind(self, fun, *args, **params)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/core.py", line 1953, in call_bind
+    outs = top_trace.process_call(primitive, fun_, tracers, params)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 1843, in process_call
+    jaxpr, out_type, consts = trace_to_subjaxpr_dynamic2(f, self.main, debug_info=dbg)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 2138, in trace_to_subjaxpr_dynamic2
+    ans = fun.call_wrapped(*in_tracers_)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/linear_util.py", line 168, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/traceback_util.py", line 162, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/api.py", line 1566, in vmap_f
+    out_flat = batching.batch(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/linear_util.py", line 168, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/traceback_util.py", line 162, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/api.py", line 1566, in vmap_f
+    out_flat = batching.batch(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/linear_util.py", line 168, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 2174, in approx_moments
+    return lax.switch(mode, [self.past_moments, self.smooth_moments, self.forecast_moments], args)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/traceback_util.py", line 162, in reraise_with_filtered_traceback
+    return fun(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/control_flow/conditionals.py", line 131, in switch
+    jaxprs, consts, out_trees = _initial_style_jaxprs_with_common_consts(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/util.py", line 220, in wrapper
+    return cached(config._trace_context(), *args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/util.py", line 213, in cached
+    return f(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/control_flow/common.py", line 73, in _initial_style_jaxprs_with_common_consts
+    unzip3(_initial_style_open_jaxpr(fun, in_tree, in_avals, primitive_name)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/util.py", line 67, in unzip3
+    for x, y, z in xyzs:
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/control_flow/common.py", line 73, in <genexpr>
+    unzip3(_initial_style_open_jaxpr(fun, in_tree, in_avals, primitive_name)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/util.py", line 273, in wrapped
+    result = call(weak_arg, *args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/control_flow/common.py", line 51, in _initial_style_open_jaxpr
+    jaxpr, _, consts = pe.trace_to_jaxpr_dynamic(wrapped_fun, in_avals, debug)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/profiler.py", line 294, in wrapper
+    return func(*args, **kwargs)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 2092, in trace_to_jaxpr_dynamic
+    jaxpr, out_avals, consts = trace_to_subjaxpr_dynamic(
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/interpreters/partial_eval.py", line 2109, in trace_to_subjaxpr_dynamic
+    ans = fun.call_wrapped(*in_tracers_)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/linear_util.py", line 168, in call_wrapped
+    ans = self.f(*args, **dict(self.params, **kwargs))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 2075, in smooth_moments
+    lower = lax.dynamic_slice(self.ind_times, (lower_idx,), (1,)).squeeze()
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/slicing.py", line 104, in dynamic_slice
+    start_indices = _dynamic_slice_indices(operand, start_indices)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_fsde/lib/python3.9/site-packages/jax/_src/lax/slicing.py", line 2034, in _dynamic_slice_indices
+    raise ValueError(msg.format(len(start_indices), operand.shape))
+jax._src.traceback_util.UnfilteredStackTrace: ValueError: Length of slice indices must match number of operand dimensions (1 vs (50, 1))
+
+The stack trace below excludes JAX-internal frames.
+The preceding is the original exception that occurred, unmodified.
+
+--------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_fsde_svi.py", line 188, in <module>
+    main(**vars(args))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_fsde_svi.py", line 178, in main
+    natgrad_results = run_experiment(data_id, use_natgrad=True)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_fsde_svi.py", line 145, in run_experiment
+    elbos, preds, maes, nlpds = train_FSDE_SVI(data, data_id, use_natgrad=use_natgrad)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_fsde_svi.py", line 103, in train_FSDE_SVI
+    exp_metrics = model.fit(train_dataset=train_data,
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 2013, in fit
+    (model_params, v_params, _, _), metrics = lax.scan(step, init_state, (step_idxs, keys))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/core/model_utils.py", line 277, in wrapper_progress_bar
+    result = func(carry, x)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 1942, in step
+    out, grads = jit(value_and_grad(self.loss, argnums=(0,1), has_aux=True))(model_params, 
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 1891, in loss
+    elbo, exp_loglik, kl = self.compute_ELBO(model_params, v_params, batch)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 1856, in compute_ELBO
+    approx_mean, approx_cov = self.predict(batch.times, 
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 2204, in predict
+    approx_mean, approx_cov = jit(self.approx_moments)(*args)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 2174, in approx_moments
+    return lax.switch(mode, [self.past_moments, self.smooth_moments, self.forecast_moments], args)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/models/models.py", line 2075, in smooth_moments
+    lower = lax.dynamic_slice(self.ind_times, (lower_idx,), (1,)).squeeze()
+ValueError: Length of slice indices must match number of operand dimensions (1 vs (50, 1))

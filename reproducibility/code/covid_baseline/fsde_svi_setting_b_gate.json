@@ -1,0 +1,41 @@
+{
+  "status": "causal_adapter_gate_passed_formal_runtime_limited",
+  "source": "SeyoungKimLab/FactorialSDE",
+  "source_commit": "6e9ad8fb904e8d94e0325b21429111f26d8b6e69",
+  "environment": {
+    "python": "3.9.25",
+    "jax": "0.4.18",
+    "jaxlib": "0.4.18 CPU",
+    "tensorflow_probability": "0.20.1",
+    "note": "The authors' JAX 0.3.16 wheel was unavailable from the configured package index; the earliest available compatible CPU stack was used without modifying the official FSDE source."
+  },
+  "protocol": "Task 1 complete posterior initialization; at online week t, only complete labels through t-1 train the official FSDE-SVI model; the official 52-output Gaussian predictive distribution is then analytically conditioned on the 42 legal current visible labels before predicting the ten hidden locations.",
+  "capacity": {
+    "temporal_inducing": 4,
+    "latent_rank": 2,
+    "selection": "shared LMC/IMC choice, validated by the same chronological Task-1 48-week history plus four held-out Setting B weeks"
+  },
+  "seed0_smoke": {
+    "result": "baselines/covid_long_setting_b/results/_diagnostic_fsde_svi_seed0_m4q2_5weeks/result.json",
+    "weeks": 5,
+    "current_hidden_labels_read": 0,
+    "delayed_hidden_labels": 40,
+    "current_visible_labels": 210,
+    "hidden_predictions": 50,
+    "finite_archive": true
+  },
+  "task1_validation": {
+    "result": "baselines/covid_long_setting_b/results/task1_capacity_selection_factorial/fsde_svi/temporal_inducing4_latent_rank2/task1_chronological_validation.json",
+    "rmse_standardized": 1.131716782695614,
+    "gaussian_nlpd_standardized": 5.625659767044054,
+    "coverage90": 0.175
+  },
+  "runtime": {
+    "five_week_online_seconds": 167.94243534000088,
+    "actual_posterior_updates": 4,
+    "seconds_per_actual_update": 41.98560883500022,
+    "projected_full_seed_minutes": 100.4,
+    "projected_five_seed_cpu_hours": 8.37
+  },
+  "reporting_rule": "No partial archive is inserted into the formal five-seed Gaussian table. A full FSDE-SVI result requires a dedicated long-running CPU or compatible GPU allocation."
+}

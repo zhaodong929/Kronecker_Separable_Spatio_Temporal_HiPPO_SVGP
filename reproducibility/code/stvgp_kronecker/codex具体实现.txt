@@ -1,0 +1,679 @@
+你是这个项目的代码实现助手。请在不修改原 baseline 方法的前提下，新增一套脚本和模块，实现新版：
+
+Joint Online Gaussian Process with Linear Mean Model
++ SSGP-style old-likelihood-ratio transfer
++ Kronecker-preserving temporal HiPPO changing-basis update
++ Sylvester-compatible structured posterior solve.
+
+原项目已经按照早期草稿实现了 baseline，请不要破坏、重命名或删除任何 baseline 代码。新增代码应放在新的模块/脚本中，并提供清晰 CLI、pytest 验证、实验脚本和 README 说明。
+
+============================================================
+1. 总体目标
+============================================================
+
+新增实现以下新版方法：
+
+Observation model:
+    y_n = Phi_n beta + A_n u_n + eps_n,
+    eps_n ~ N(0, sigma^2 I).
+
+Sparse Kronecker projection:
+    A_n = T_n \otimes C.
+
+其中：
+    T_n = K_fu,n^(t) (K_uu,n^(t))^{-1},
+    C   = K_XZ^(s) (K_ZZ^(s))^{-1}.
+
+Changing-basis SSGP-style transfer:
+    old inducing variable: u_o
+    new inducing variable: u_n
+
+Old posterior and old prior:
+    q_{n-1}(u_o) = N(m_o, S_o),
+    p(u_o)       = N(0, K_oo).
+
+Old likelihood ratio:
+    log q_{n-1}(u_o) / p(u_o)
+    = -1/2 u_o^T R_o u_o + u_o^T r_o + const,
+
+where:
+    R_o = S_o^{-1} - K_oo^{-1},
+    r_o = S_o^{-1} m_o.
+
+But for the scalable implementation, DO NOT recover R_o from a dense S_o.
+Instead, maintain old likelihood natural precision as a Kronecker statistic:
+    R_o = B_o \otimes G,
+    G = C^T C.
+
+Because only the temporal HiPPO basis changes and spatial inducing geometry is fixed:
+    L_on = K_on K_nn^{-1}
+         = L_on^(t) \otimes I_s,
+
+where:
+    L_on^(t) = K_on^(t) (K_nn^(t))^{-1}.
+
+Then:
+    Lambda_{o->n}
+    = L_on^T R_o L_on
+    = [(L_on^(t))^T B_o L_on^(t)] \otimes G.
+
+Define:
+    B_{o->n} = (L_on^(t))^T B_o L_on^(t).
+
+The new block likelihood contributes:
+    (1/sigma^2) A_n^T A_n
+    = (1/sigma^2) (T_n^T T_n) \otimes G.
+
+Therefore:
+    B_n = B_{o->n} + (1/sigma^2) T_n^T T_n.
+
+The GP posterior precision keeps the Sylvester-compatible form:
+    Lambda_{u,n}
+    = (K_nn^(t))^{-1} \otimes K_s^{-1} + B_n \otimes G.
+
+Information vector transfer should also be structured.
+Use vectorization convention:
+    u = vec(U),
+    U has shape (M_s, M_t),
+    vec is column-major / Fortran ordering, so
+    (T \otimes C) vec(U) = vec(C U T^T).
+
+Maintain the old likelihood information vector in matrix form:
+    h_o = vec(H_o),
+    H_o has shape (M_s, M_t_old).
+
+Under L_on = L_t \otimes I_s:
+    h_{o->n} = L_on^T h_o
+             = vec(H_o L_t).
+
+New data information contribution:
+    h_new = (1/sigma^2) A_n^T (y_n - Phi_n m_beta)
+          = vec( (1/sigma^2) C^T R_n T_n ),
+
+where R_n is the residual matrix with shape (N_s, N_t):
+    R_n = reshape(y_n - Phi_n m_beta, (N_s, N_t), order="F").
+
+So update information matrix:
+    H_n = H_o L_t + (1/sigma^2) C^T R_n T_n.
+
+The posterior mean M_u solves:
+    [(K_t_new^{-1}) \otimes K_s^{-1} + B_n \otimes G] vec(M_u) = vec(H_n).
+
+Use the existing Sylvester solver if available. If no solver exists, implement:
+    K_s^{-1} M_u K_t_new^{-1} + G M_u B_n = H_n.
+
+Do not redo the dense-vs-Sylvester validation as a main experiment because it has already been done, but ensure the solver is callable.
+
+============================================================
+2. 新增文件建议
+============================================================
+
+Please inspect the current repository structure first. Match the existing code style and dependency stack.
+
+Add new files without modifying baseline:
+
+    src/joint_ssgp_kron/__init__.py
+    src/joint_ssgp_kron/kron_utils.py
+    src/joint_ssgp_kron/ssgp_transfer.py
+    src/joint_ssgp_kron/structured_state.py
+    src/joint_ssgp_kron/model.py
+    src/joint_ssgp_kron/synthetic.py
+    scripts/run_joint_ssgp_kron.py
+    scripts/verify_joint_ssgp_kron_derivations.py
+    scripts/run_joint_ssgp_kron_experiments.py
+    tests/test_joint_ssgp_kron_derivations.py
+    tests/test_joint_ssgp_kron_model.py
+    docs/joint_ssgp_kron_readme.md
+
+If the project uses a different layout, adapt these paths but keep the baseline untouched.
+
+============================================================
+3. 必须实现的核心函数
+============================================================
+
+In src/joint_ssgp_kron/kron_utils.py implement:
+
+1. kron_mv(T, C, U)
+   Purpose:
+       Compute (T \otimes C) vec(U) without materializing A.
+   Convention:
+       U shape = (M_s, M_t)
+       result matrix = C @ U @ T.T
+       return vec(result, order="F") or matrix depending on argument.
+
+2. kron_t_mv(T, C, R)
+   Purpose:
+       Compute (T \otimes C)^T vec(R).
+   Convention:
+       R shape = (N_s, N_t)
+       output matrix = C.T @ R @ T
+       shape = (M_s, M_t).
+
+3. dense_A_from_factors(T, C)
+   Purpose:
+       Return np.kron(T, C).
+       Used only in tests for small sizes.
+
+4. make_spd_matrix(dim, jitter=1e-4, seed=None)
+   Purpose:
+       Generate stable SPD matrices for tests.
+
+5. relative_fro_error(A, B)
+   Purpose:
+       norm(A-B)/max(1,norm(B)).
+
+6. solve_sylvester_precision(Kt_inv, Ks_inv, B, G, H)
+   Purpose:
+       Solve:
+           Ks_inv M Kt_inv + G M B = H.
+       Use scipy.linalg.solve_sylvester if directly transformable, or use eigendecomposition/linear solve.
+       The function should be robust and tested on small cases.
+       This solver is required for model implementation, but do not make Sylvester-vs-dense solve the main new verification because that has already been done.
+
+In src/joint_ssgp_kron/ssgp_transfer.py implement:
+
+1. compute_Lt(K_on_t, K_nn_t, jitter=1e-6)
+   Formula:
+       L_t = K_on_t @ inv(K_nn_t).
+   Use Cholesky solve, never explicit inverse.
+
+2. transfer_temporal_precision(B_old, L_t)
+   Formula:
+       B_trans = L_t.T @ B_old @ L_t.
+
+3. transfer_information_matrix(H_old, L_t)
+   Formula:
+       H_trans = H_old @ L_t.
+   H_old shape = (M_s, M_t_old).
+   L_t shape = (M_t_old, M_t_new).
+   H_trans shape = (M_s, M_t_new).
+
+4. update_temporal_likelihood_stat(B_trans, T_n, sigma2)
+   Formula:
+       B_new = B_trans + (T_n.T @ T_n) / sigma2.
+
+5. update_information_matrix(H_trans, C, residual_matrix, T_n, sigma2)
+   Formula:
+       H_new = H_trans + (C.T @ residual_matrix @ T_n) / sigma2.
+
+6. projected_prior_transfer_dense(...)
+   Implement the projected-prior baseline:
+       m_proj = K_no K_oo^{-1} m_old
+       S_proj = K_nn + K_no K_oo^{-1} (S_old - K_oo) K_oo^{-1} K_on.
+   Use only for ablation and tests. This is not the main method.
+
+7. old_likelihood_transfer_dense_for_test(...)
+   Dense reference implementation:
+       R_o = S_old^{-1} - K_oo^{-1}
+       r_o = S_old^{-1} m_old
+       L = K_on K_nn^{-1}
+       Lambda_old = L.T @ R_o @ L
+       h_old = L.T @ r_o
+   Use only in small-size tests to check the structured implementation.
+
+In src/joint_ssgp_kron/structured_state.py implement a dataclass:
+
+    StructuredKronState:
+        beta_mean: np.ndarray, shape (d,)
+        beta_cov: np.ndarray, shape (d,d)
+        M_u: np.ndarray, shape (M_s, M_t)
+        B_temporal: np.ndarray, shape (M_t,M_t)
+        H_info: np.ndarray, shape (M_s,M_t)
+        Kt_current: np.ndarray, shape (M_t,M_t)
+        Ks: np.ndarray, shape (M_s,M_s)
+        G: np.ndarray, shape (M_s,M_s)
+        sigma2: float
+        metadata: dict
+
+Notes:
+    B_temporal is the old likelihood natural precision statistic.
+    H_info is the old likelihood information matrix.
+    M_u is posterior mean matrix.
+
+Do not store dense S_u for the scalable method. If required for tests on small problems, provide a method to materialize dense precision:
+    Lambda_dense = kron(Kt_inv, Ks_inv) + kron(B_temporal, G).
+
+In src/joint_ssgp_kron/model.py implement:
+
+Class JointSSGPKronHiPPOSVGP
+
+Required methods:
+
+1. __init__(...)
+   Inputs:
+       Ks, C, sigma2, beta_prior_mean, beta_prior_cov, jitter.
+   Store fixed spatial factors:
+       Ks = K_ZZ^(s)
+       C = K_XZ^(s) (K_ZZ^(s))^{-1}
+       G = C.T @ C.
+
+2. initialize_state(Kt0, M_t, M_s, d)
+   Initialize:
+       B_temporal = zeros(M_t,M_t)
+       H_info = zeros(M_s,M_t)
+       M_u = zeros(M_s,M_t)
+       beta posterior from prior.
+
+3. update_block_ssgp_transfer(...)
+   Inputs:
+       y_vec, Phi, T_n, Kt_new, optional K_on_t, previous state, beta_drift Q_beta, inner_iters.
+   Required:
+       - If previous temporal basis differs, compute L_t = K_on_t @ inv(Kt_new).
+         Important dimensions:
+             K_on_t shape = (M_t_old, M_t_new)
+             Kt_new shape = (M_t_new,M_t_new)
+             L_t shape = (M_t_old,M_t_new)
+       - Transfer:
+             B_trans = L_t.T @ B_old @ L_t
+             H_trans = H_old @ L_t
+       - If fixed basis, L_t = identity and transfer is no-op.
+       - For each inner iteration:
+             a) compute GP mean contribution:
+                    pred_gp_matrix = C @ M_u @ T_n.T
+                    pred_gp_vec = vec(pred_gp_matrix, order="F")
+             b) beta update:
+                    S_beta_inv = S_beta_prior_inv + Phi.T @ Phi / sigma2
+                    rhs_beta = S_beta_prior_inv @ beta_prior_mean
+                               + Phi.T @ (y_vec - pred_gp_vec) / sigma2
+                    beta_mean = solve(S_beta_inv, rhs_beta)
+                    beta_cov = inv_or_cholesky_solve(S_beta_inv)
+             c) residual:
+                    residual_vec = y_vec - Phi @ beta_mean
+                    residual_matrix = reshape(residual_vec, (N_s,N_t), order="F")
+             d) update temporal likelihood stats:
+                    B_new = B_trans + T_n.T @ T_n / sigma2
+                    H_new = H_trans + C.T @ residual_matrix @ T_n / sigma2
+             e) solve posterior mean M_u:
+                    Solve Ks_inv M_u Kt_new_inv + G M_u B_new = H_new.
+       - Save B_temporal = B_new, H_info = H_new, Kt_current=Kt_new, beta posterior, M_u.
+
+4. update_block_projected_prior(...)
+   Implement projected-prior approximation for ablation.
+   It may materialize dense matrices for small/medium cases or use structured approximation if straightforward.
+   Mark clearly as baseline/ablation.
+
+5. predict(...)
+   Inputs:
+       phi_star, t_proj_star, c_proj_star, state.
+   Here:
+       a_star = t_proj_star \otimes c_proj_star.
+   Mean:
+       mean = phi_star.T @ beta_mean + c_proj_star.T @ M_u @ t_proj_star.
+   Variance:
+       Implement at least mean and optionally variance.
+       For variance, use existing Sylvester quadratic-form solver if available:
+           q_star = vec(Q_star), Q_star = outer(c_proj_star, t_proj_star)
+           q^T Lambda^{-1} q = <Q_star, Z>.
+       Include:
+           sigma2 + phi_star.T beta_cov phi_star
+           + GP prior/conditioning variance terms if available from existing baseline.
+       If full GP variance components are not available from baseline, return a structured approximate variance and clearly document it.
+
+6. materialize_dense_for_test(state)
+   Small-size only:
+       Lambda = kron(inv(Kt), inv(Ks)) + kron(B_temporal, G)
+       h = vec(H_info)
+       mean_dense = solve(Lambda, h)
+       Used in tests only.
+
+============================================================
+4. 需要验证的推导检查清单
+============================================================
+
+Do NOT make Sylvester-vs-dense solve the main new check, because that has already been done. Implement the remaining checks below in:
+
+    scripts/verify_joint_ssgp_kron_derivations.py
+    tests/test_joint_ssgp_kron_derivations.py
+
+The script should print a human-readable report and save JSON to:
+    results/verification/joint_ssgp_kron_verification.json
+
+Use small matrix sizes, e.g.:
+    M_t_old=3, M_t_new=4, M_s=2, N_t=5, N_s=3, d=2.
+Use deterministic seeds.
+
+------------------------------------------------------------
+Check 1: Dense vs Kronecker transfer operator L_on
+------------------------------------------------------------
+
+Goal:
+    Verify:
+        L_on = K_on K_nn^{-1}
+             = L_t \otimes I_s.
+
+Construct:
+    K_on = K_on_t \otimes K_s
+    K_nn = K_nn_t \otimes K_s
+
+Compute:
+    L_dense = K_on @ solve(K_nn, I)
+    L_kron  = kron(L_t, I_s)
+
+Expected:
+    relative_fro_error(L_dense, L_kron) < 1e-8.
+
+This check validates that L_on = L_on^(t) \otimes I_s is a consequence of:
+    separable kernel + fixed spatial inducing locations + temporal-only basis change.
+
+------------------------------------------------------------
+Check 2: Dense vs Kronecker old-likelihood transfer
+------------------------------------------------------------
+
+Goal:
+    Verify:
+        L_on.T @ (B_old \otimes G) @ L_on
+        =
+        (L_t.T @ B_old @ L_t) \otimes G.
+
+Construct:
+    B_old SPD or PSD, shape (M_t_old,M_t_old)
+    G = C.T @ C, shape (M_s,M_s)
+
+Compute:
+    Lambda_dense = L_dense.T @ kron(B_old,G) @ L_dense
+    Lambda_kron  = kron(L_t.T @ B_old @ L_t, G)
+
+Expected:
+    relative_fro_error(Lambda_dense, Lambda_kron) < 1e-8.
+
+This validates the Kronecker preservation of SSGP-style old-likelihood-ratio transfer.
+
+------------------------------------------------------------
+Check 3: SKIP main dense-vs-Sylvester solve
+------------------------------------------------------------
+
+The user already performed Sylvester-vs-dense solve. Do not duplicate as a main experiment.
+Still ensure solve_sylvester_precision is callable and used by the model.
+
+------------------------------------------------------------
+Check 4: Fixed-basis streaming update vs batch update
+------------------------------------------------------------
+
+Goal:
+    In fixed inducing coordinates, sequential Gaussian updates should equal batch Gaussian posterior.
+
+Construct:
+    z = [beta; u] small dense state.
+    Generate several blocks:
+        y_j = H_j z_true + noise.
+    Prior:
+        z ~ N(m0,S0).
+
+Streaming:
+    Lambda_stream = S0^{-1}
+    h_stream = S0^{-1} m0
+    For each block:
+        Lambda_stream += H_j.T @ H_j / sigma2
+        h_stream += H_j.T @ y_j / sigma2
+    m_stream = solve(Lambda_stream,h_stream)
+
+Batch:
+    H_all = stack H_j
+    y_all = concat y_j
+    Lambda_batch = S0^{-1} + H_all.T @ H_all / sigma2
+    h_batch = S0^{-1}m0 + H_all.T @ y_all / sigma2
+    m_batch = solve(Lambda_batch,h_batch)
+
+Expected:
+    relative error in mean < 1e-8
+    relative error in precision < 1e-8.
+
+This verifies the fixed-basis exact joint Gaussian baseline.
+
+------------------------------------------------------------
+Check 5: No linear mean case
+------------------------------------------------------------
+
+Goal:
+    If Phi=0 or d=0, the joint update should reduce to the GP-only update.
+
+Construct:
+    Use Phi = zeros(N,d).
+    Run one update with beta present but Phi=0.
+    Run GP-only update using:
+        B_new = B_trans + T.T @ T / sigma2
+        H_new = H_trans + C.T @ Y @ T / sigma2
+
+Expected:
+    beta posterior remains equal to prior, up to numerical tolerance.
+    GP B_new and H_new match GP-only formulas.
+    GP posterior mean M_u matches within tolerance.
+
+------------------------------------------------------------
+Check 6: No old data case
+------------------------------------------------------------
+
+Goal:
+    If there is no old likelihood information, old transfer should vanish.
+
+Set:
+    B_old = zeros(M_t_old,M_t_old)
+    H_old = zeros(M_s,M_t_old)
+
+Then:
+    B_trans = L_t.T @ B_old @ L_t = 0
+    H_trans = H_old @ L_t = 0.
+
+Expected:
+    Lambda_old transfer is zero.
+    h_old transfer is zero.
+    New posterior is determined only by current prior and new block likelihood:
+        B_new = T.T @ T / sigma2
+        H_new = C.T @ residual @ T / sigma2.
+
+------------------------------------------------------------
+Check 7: Projected-prior vs old-likelihood-ratio transfer
+------------------------------------------------------------
+
+Goal:
+    Demonstrate that these are different approximations and both are implemented correctly.
+
+Do not assert equality.
+
+Subchecks:
+    7a. Projected-prior formula matches dense Gaussian marginalization:
+        p_proj(u_n) = int p(u_n|u_o) q_old(u_o) du_o.
+        Compare implemented m_proj, S_proj against dense closed-form Gaussian marginalization.
+
+    7b. Old-likelihood-ratio dense implementation matches structured natural transfer:
+        Lambda_old_dense = L_dense.T @ R_old @ L_dense
+        h_old_dense      = L_dense.T @ r_old
+        where R_old = B_old \otimes G and h_old=vec(H_old).
+        Compare against:
+            Lambda_old_kron = kron(L_t.T @ B_old @ L_t, G)
+            h_old_kron = vec(H_old @ L_t).
+
+    7c. Report norm difference between projected-prior posterior and old-likelihood-ratio posterior on a toy example, but do not fail if they differ. They are expected to differ.
+
+------------------------------------------------------------
+Check 8: Synthetic feasibility and calibration
+------------------------------------------------------------
+
+Goal:
+    Verify the new method is numerically feasible and produces reasonable RMSE/NLL/calibration on synthetic data.
+
+Generate synthetic separable spatio-temporal data:
+    beta_true sampled fixed.
+    f ~ GP with separable kernel K_t \otimes K_s on a small grid.
+    y = Phi beta_true + f + noise.
+
+Streaming blocks:
+    Split time axis into blocks.
+    Keep spatial inducing geometry fixed.
+    Temporal basis may be fixed or changing.
+    For initial feasibility, use simple temporal SPD matrices or RBF inducing matrices. Do not require exact HiPPO-RFF integrals if baseline functions are unavailable.
+
+Compare:
+    A. no-transfer joint mean-field
+    B. projected-prior transfer
+    C. SSGP-style old-likelihood-ratio transfer
+    D. fixed-basis exact joint Gaussian on a small problem, if applicable
+
+Metrics:
+    RMSE
+    MAE
+    Gaussian NLL
+    50%, 90%, 95% predictive interval coverage
+    runtime per block
+    peak memory if easy
+
+Expected:
+    - All methods run without NaN/Inf.
+    - SSGP-style transfer should be competitive with, and usually better than, no-transfer.
+    - Calibration should be reasonable on synthetic Gaussian data.
+    - Do not make overly brittle assertions on RMSE/NLL across random seeds; instead generate a report and use broad sanity thresholds:
+        no NaN;
+        RMSE finite;
+        NLL finite;
+        90% coverage between roughly 0.75 and 0.99 for small synthetic runs.
+    - Save plots and CSV.
+
+Output:
+    results/experiments/joint_ssgp_kron_synthetic_metrics.csv
+    results/experiments/joint_ssgp_kron_synthetic_report.json
+    results/experiments/coverage_plot.png
+    results/experiments/rmse_over_blocks.png
+    results/experiments/nll_over_blocks.png
+
+============================================================
+5. 实验脚本设计
+============================================================
+
+Create scripts/run_joint_ssgp_kron_experiments.py with CLI:
+
+    python scripts/run_joint_ssgp_kron_experiments.py \
+        --dataset synthetic \
+        --num-seeds 10 \
+        --num-time 60 \
+        --num-space 8 \
+        --block-size 5 \
+        --mt 6 \
+        --ms 5 \
+        --noise 0.05 \
+        --methods no_transfer projected_prior ssgp_transfer fixed_basis_exact \
+        --outdir results/experiments
+
+Synthetic generator:
+    Use separable RBF kernels:
+        k_t(t,t') = var_t exp(-0.5 (t-t')^2/ell_t^2)
+        k_s(s,s') = var_s exp(-0.5 ||s-s'||^2/ell_s^2)
+    K = K_t \otimes K_s.
+    Sample f using Cholesky.
+    Construct Phi with:
+        intercept,
+        time trend,
+        spatial coordinate features,
+        optional sinusoidal time feature.
+    y = Phi beta_true + f + noise.
+
+Temporal inducing/test implementation:
+    For verification, it is acceptable to use RBF inducing matrices instead of full HiPPO-RFF integrals, as long as:
+        K_uu_t,
+        K_fu_t,
+        K_on_t
+    are consistent SPD/cross-covariance matrices.
+    If existing project already has HiPPO-RFF functions, use them via adapter functions.
+
+Methods:
+    no_transfer:
+        Ignore old B/H transfer when basis changes.
+    projected_prior:
+        Use projected-prior approximation.
+    ssgp_transfer:
+        Use B/H old-likelihood-ratio transfer.
+    fixed_basis_exact:
+        Only for fixed-basis small problem; use dense exact joint Gaussian update.
+
+============================================================
+6. 数值稳定性要求
+============================================================
+
+Use:
+    - Cholesky solves instead of explicit inverse.
+    - jitter on all SPD matrices:
+        jitter = 1e-6 * mean(diag(K)) or configurable.
+    - symmetrize precision matrices:
+        M = 0.5 * (M + M.T)
+    - PSD checks for B_temporal and G.
+    - If tiny negative eigenvalues arise from numerical error, clip eigenvalues only in test utilities or add jitter, and log a warning.
+
+Do not compute:
+    R_o = S_o^{-1} - K_oo^{-1}
+in the main scalable implementation.
+Only do this in dense reference tests.
+
+Main scalable implementation must maintain:
+    B_temporal
+    H_info
+directly.
+
+============================================================
+7. 单元测试要求
+============================================================
+
+Add pytest tests:
+
+1. test_Lon_kron_identity()
+2. test_old_likelihood_transfer_kron_identity()
+3. test_fixed_basis_streaming_equals_batch()
+4. test_no_linear_mean_reduces_to_gp_only()
+5. test_no_old_data_transfer_zero()
+6. test_projected_prior_dense_marginalization()
+7. test_old_likelihood_dense_vs_structured_information_vector()
+8. test_model_one_block_no_nan()
+9. test_model_multi_block_no_nan()
+10. test_baseline_imports_still_work()
+
+Do not require GPU.
+
+All tests should pass with:
+    pytest tests/test_joint_ssgp_kron_derivations.py -q
+    pytest tests/test_joint_ssgp_kron_model.py -q
+
+============================================================
+8. README 内容
+============================================================
+
+Create docs/joint_ssgp_kron_readme.md explaining:
+
+1. What was added.
+2. Why baseline is untouched.
+3. Main formulas:
+    L_on = L_t \otimes I_s
+    R_o = B_o \otimes G
+    Lambda_old = (L_t.T B_o L_t) \otimes G
+    B_n = L_t.T B_o L_t + T_n.T T_n / sigma2
+    H_n = H_o L_t + C.T residual T_n / sigma2
+4. Difference between:
+    - SSGP-style old-likelihood-ratio transfer
+    - Gaussian projected-prior transfer
+5. How to run verification:
+    python scripts/verify_joint_ssgp_kron_derivations.py
+6. How to run experiments:
+    python scripts/run_joint_ssgp_kron_experiments.py ...
+7. Known limitations:
+    - If spatial observation pattern changes per block, G_j changes and R_o becomes sum_j B_j \otimes G_j, not single B_o \otimes G.
+    - If spatial inducing locations move online, L_on may not equal L_t \otimes I_s.
+    - If using dense unrestricted posterior S_o and computing R_o = S_o^{-1} - K_oo^{-1}, R_o may not be single Kronecker.
+    - Non-Gaussian likelihoods may break A.T A / sigma2 likelihood precision structure.
+
+============================================================
+9. 验收标准
+============================================================
+
+Implementation is complete if:
+
+1. Baseline code remains untouched and existing baseline tests still pass.
+2. New unit tests pass.
+3. Verification script produces JSON report with checks 1,2,4,5,6,7,8.
+4. Synthetic experiment runs end-to-end and saves metrics.
+5. New method does not materialize full A_n or full Lambda_u in the main path, except in small dense tests.
+6. SSGP-style transfer is the default method in the new CLI.
+7. Projected-prior transfer is implemented only as approximation / ablation.
+8. README clearly states assumptions required for Sylvester-compatible Kronecker structure.
+
+After implementation, print:
+    - files added/modified
+    - how to run verification
+    - how to run synthetic experiments
+    - any assumptions made because of missing existing project utilities.

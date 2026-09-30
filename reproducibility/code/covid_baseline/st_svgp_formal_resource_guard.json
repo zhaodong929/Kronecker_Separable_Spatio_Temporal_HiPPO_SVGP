@@ -1,0 +1,51 @@
+{
+  "status": "formal_run_resource_limited_local_cpu",
+  "method": "ST-SVGP causal refit",
+  "source": "AaltoML/spatio-temporal-GPs",
+  "source_commit": "c5b929e1fc07b14ff9671dd1d66b3b8041e2a2ce",
+  "protocol": "COVID long-stream Setting B, Gaussian likelihood, 143 online weeks",
+  "official_reproduction": "passed; see st_svgp_official_run.json",
+  "seed0_gates": "passed; see st_svgp_covid_seed0_gates.json",
+  "capacity": {
+    "spatial_inducing": 32,
+    "task1_iterations": 300,
+    "online_inference_steps": 5
+  },
+  "attempts": [
+    {
+      "mode": "causal_refit",
+      "seeds": [5, 6],
+      "result_root": "baselines/covid_long_setting_b/results/formal_selected_st_svgp",
+      "observation": "Two concurrent formal attempts reached about 7.6 GB RSS each after roughly ten minutes, exhausting host memory before either archive was written.",
+      "action": "Stopped before host OOM; no predictions.npz was produced."
+    },
+    {
+      "mode": "causal_refit",
+      "seeds": [5],
+      "result_root": "baselines/covid_long_setting_b/results/formal_selected_st_svgp",
+      "observation": "A single formal attempt reached about 8.4 GB RSS after roughly ten minutes, with memory continuing to grow as new week-specific JAX executables accumulated.",
+      "action": "Stopped under the local memory guard; no predictions.npz was produced."
+    },
+    {
+      "mode": "fixed_complete_grid_missing_labels",
+      "seeds": [0],
+      "result_root": "baselines/covid_long_setting_b/results/fixed_grid_seed0_diagnostic39",
+      "observation": "The official sparse state-space implementation reached about 15.3 GB RSS during a 39-week diagnostic when supplied a fixed 195-week NaN-masked grid.",
+      "action": "Stopped under the local memory guard; no predictions.npz was produced. This experimental adapter mode was removed."
+    },
+    {
+      "mode": "segmented_causal_refit",
+      "seeds": [0],
+      "result_root": "baselines/covid_long_setting_b/results/formal_selected_st_svgp_segmented",
+      "configuration": {
+        "segment_weeks": 16,
+        "spatial_inducing": 32,
+        "task1_iterations": 300,
+        "online_inference_steps": 5
+      },
+      "observation": "Each child process reconstructed only legally arrived history before its assigned segment, but the first 16-week child was terminated by the local WSL host before writing predictions.npz. A 4-week probe with deliberately reduced 20 Task-1 iterations and one online inference step was also terminated before producing predictions.",
+      "action": "Segment isolation did not make the selected official configuration runnable within the 15 GB local WSL memory limit. No partial segment is reported as a formal result."
+    }
+  ],
+  "reporting_rule": "Do not substitute a refit, reduced horizon, reduced inference-step, or synthetic metric for ST-SVGP. It may be rerun on a larger-memory CPU or GPU worker using the same selected capacity and protocol."
+}

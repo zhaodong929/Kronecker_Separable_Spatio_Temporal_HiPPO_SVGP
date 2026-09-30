@@ -1,0 +1,30 @@
+{
+  "status": "resource_guard_triggered",
+  "method": "OVC-SVGP exact fantasy continuation",
+  "source": "wjmaddox/online_vargp",
+  "source_commit": "7bd3da50eac32d70ca323309e3f3d80a2ae7c419",
+  "protocol": "COVID long-stream Setting B, Gaussian likelihood",
+  "capacity": {
+    "temporal_inducing": 8,
+    "spatial_inducing": 32,
+    "joint_inducing": 256
+  },
+  "formal_seed": 5,
+  "command": [
+    "baselines/.venvs/ovc_svgp/bin/python",
+    "baselines/covid_long_setting_b/adapters/run_ovc_svgp.py",
+    "--protocol-npz", "data/epidemiology/protocol/covid_long_2020_2024_mandatory/seed5/protocol.npz",
+    "--output-dir", "baselines/covid_long_setting_b/results/formal_selected_bui_ovc_shared_m8/seed5/ovc_svgp",
+    "--seed", "5",
+    "--temporal-inducing", "8",
+    "--spatial-inducing", "32",
+    "--task1-iterations", "300",
+    "--dtype", "float32"
+  ],
+  "elapsed_seconds_at_guard": 1731,
+  "rss_kib_at_guard": 10969264,
+  "available_memory_mib_at_guard": 1761,
+  "prediction_archive_written": false,
+  "action": "The process was stopped before host OOM. No partial predictions are scored or reported.",
+  "interpretation": "The exact-fantasy state grew beyond the local shared-memory budget before completing one 143-week formal archive. The previous 4x32 OVC result remains preserved but is not substituted into the shared-grid primary benchmark."
+}

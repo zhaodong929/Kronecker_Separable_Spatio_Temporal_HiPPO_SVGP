@@ -1,0 +1,77 @@
+2026-08-19 01:15:55.278407: E external/local_xla/xla/stream_executor/cuda/cuda_fft.cc:479] Unable to register cuFFT factory: Attempting to register factory for plugin cuFFT when one has already been registered
+2026-08-19 01:15:55.297043: E external/local_xla/xla/stream_executor/cuda/cuda_dnn.cc:10575] Unable to register cuDNN factory: Attempting to register factory for plugin cuDNN when one has already been registered
+2026-08-19 01:15:55.297086: E external/local_xla/xla/stream_executor/cuda/cuda_blas.cc:1442] Unable to register cuBLAS factory: Attempting to register factory for plugin cuBLAS when one has already been registered
+2026-08-19 01:15:55.902079: W tensorflow/compiler/tf2tensorrt/utils/py_utils.cc:38] TF-TRT Warning: Could not find TensorRT
+/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/gpflow/versions.py:1: UserWarning: pkg_resources is deprecated as an API. See https://setuptools.pypa.io/en/latest/pkg_resources.html. The pkg_resources package is slated for removal as early as 2025-11-30. Refrain from using this package or pin to Setuptools<81.
+  import pkg_resources
+Running LMC on COVID (NGD=True).
+2026-08-19 01:16:00.215764: W tensorflow/core/common_runtime/gpu/gpu_device.cc:2343] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+2026-08-19 01:16:00.218453: W tensorflow/core/common_runtime/gpu/gpu_device.cc:2343] TensorFlow was not built with CUDA kernel binaries compatible with compute capability 12.0. CUDA kernels will be jit-compiled from PTX, which could take 30 minutes or longer.
+2026-08-19 01:16:00.580788: W tensorflow/compiler/mlir/tools/kernel_gen/tf_gpu_runtime_wrappers.cc:40] 'cuModuleLoadData(&module, data)' failed with 'CUDA_ERROR_INVALID_PTX'
+
+2026-08-19 01:16:00.580838: W tensorflow/compiler/mlir/tools/kernel_gen/tf_gpu_runtime_wrappers.cc:40] 'cuModuleGetFunction(&function, module, kernel_name)' failed with 'CUDA_ERROR_INVALID_HANDLE'
+
+2026-08-19 01:16:00.580856: W tensorflow/core/framework/op_kernel.cc:1827] INTERNAL: 'cuLaunchKernel(function, gridX, gridY, gridZ, blockX, blockY, blockZ, 0, reinterpret_cast<CUstream>(stream), params, nullptr)' failed with 'CUDA_ERROR_INVALID_HANDLE'
+2026-08-19 01:16:00.580878: W tensorflow/core/framework/local_rendezvous.cc:404] Local rendezvous is aborting with status: INTERNAL: 'cuLaunchKernel(function, gridX, gridY, gridZ, blockX, blockY, blockZ, 0, reinterpret_cast<CUstream>(stream), params, nullptr)' failed with 'CUDA_ERROR_INVALID_HANDLE'
+Traceback (most recent call last):
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_lmc.py", line 173, in <module>
+    main(**vars(args))
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_lmc.py", line 163, in main
+    natgrad_results = run_experiment(data_id, use_natgrad=True)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_lmc.py", line 130, in run_experiment
+    elbos, preds, maes, nlpds = train_LMC_SVGP(data, data_id, use_natgrad=use_natgrad)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/real_lmc.py", line 85, in train_LMC_SVGP
+    model, elbos = train_lmc_svgp(train_params, 
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/baselines/gpflow_lmc_svgp.py", line 378, in train_lmc_svgp
+    model = get_lmc_svgp(lmc_params, train_times, fix_ind=fix_ind, random_init=random_init, seed=seed,
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/external/SeyoungKimLab_FactorialSDE/fsde/real_exps/../../fsde/baselines/gpflow_lmc_svgp.py", line 135, in get_lmc_svgp
+    kernel_list = [Matern32() for _ in range(L)]
+                   ^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/check_shapes/integration/tf.py", line 76, in wrapped_method
+    return wrapped_function(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/gpflow/kernels/stationaries.py", line 61, in __init__
+    self.variance = Parameter(variance, transform=positive())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/gpflow/base.py", line 175, in __init__
+    _validate_unconstrained_value(tensor_value, transform, dtype)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/gpflow/base.py", line 318, in _validate_unconstrained_value
+    unconstrained_value = _to_unconstrained(value, transform)
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/gpflow/base.py", line 337, in _to_unconstrained
+    return transform.inverse(value)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow_probability/python/bijectors/bijector.py", line 1389, in inverse
+    return self._call_inverse(y, name, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow_probability/python/bijectors/bijector.py", line 1369, in _call_inverse
+    return self._cache.inverse(y, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow_probability/python/internal/cache_util.py", line 347, in inverse
+    return self._lookup(y, self._inverse_name, self._forward_name, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow_probability/python/internal/cache_util.py", line 493, in _lookup
+    self._invoke(input, forward_name, kwargs, attrs))
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow_probability/python/internal/cache_util.py", line 532, in _invoke
+    return getattr(self.bijector, fn_name)(input, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow_probability/python/bijectors/softplus.py", line 150, in _inverse
+    return generic_math.softplus_inverse(y)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow_probability/python/math/generic.py", line 572, in softplus_inverse
+    is_too_small = x < np.exp(threshold)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow/python/ops/tensor_math_operator_overrides.py", line 150, in wrapper
+    return fn(x, y, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow/python/ops/gen_math_ops.py", line 5315, in less
+    _ops.raise_from_not_ok_status(e, name)
+  File "/home/zd929/projects/stvgp_kronecker/baselines/.venvs/factorial_sde_tf216_cuda/lib/python3.12/site-packages/tensorflow/python/framework/ops.py", line 5983, in raise_from_not_ok_status
+    raise core._status_to_exception(e) from None  # pylint: disable=protected-access
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tensorflow.python.framework.errors_impl.InternalError: {{function_node __wrapped__Less_device_/job:localhost/replica:0/task:0/device:GPU:0}} 'cuLaunchKernel(function, gridX, gridY, gridZ, blockX, blockY, blockZ, 0, reinterpret_cast<CUstream>(stream), params, nullptr)' failed with 'CUDA_ERROR_INVALID_HANDLE' [Op:Less] name: 

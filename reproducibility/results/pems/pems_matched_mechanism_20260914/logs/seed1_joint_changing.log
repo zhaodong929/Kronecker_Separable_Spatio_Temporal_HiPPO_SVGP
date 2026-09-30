@@ -1,0 +1,19 @@
+Traceback (most recent call last):
+  File "/home/zd929/projects/stvgp_kronecker/scripts/run_traffic_routeb.py", line 1119, in <module>
+    main()
+  File "/home/zd929/projects/stvgp_kronecker/scripts/run_traffic_routeb.py", line 1066, in main
+    result = run.run_nowcast(mode=args.mechanism_mode) if args.protocol == "nowcast" else run.run_forecast(mode=args.mechanism_mode, horizons=args.forecast_horizons)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/scripts/run_traffic_routeb.py", line 698, in run_nowcast
+    mean, variance = self._predict_gp_from_t(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/scripts/run_traffic_routeb.py", line 641, in _predict_gp_from_t
+    mean, variance, _ = model.predict_with_C(
+                        ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/stvgp_kronecker/joint_ssgp_kron/torch_backend.py", line 702, in predict_with_C
+    right_values, q = generalized_eigh(
+                      ^^^^^^^^^^^^^^^^^
+  File "/home/zd929/projects/stvgp_kronecker/stvgp_kronecker/joint_ssgp_kron/torch_backend.py", line 166, in generalized_eigh
+    values, vectors_white = torch.linalg.eigh(symmetrize(whitened))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt

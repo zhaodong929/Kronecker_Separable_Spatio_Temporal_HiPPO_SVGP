@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "protocol_name": "paired_spatial_streaming",
+  "datasets": {
+    "pems_bay": {
+      "expected_sensors": 325,
+      "visible_sensors": 260,
+      "heldout_sensors": 65,
+      "role": "primary"
+    },
+    "metr_la": {
+      "expected_sensors": 207,
+      "visible_sensors": 166,
+      "heldout_sensors": 41,
+      "role": "replication"
+    }
+  },
+  "cadence_minutes": 5,
+  "task1_steps": 2016,
+  "formal_split_seeds": [0, 1, 2, 3, 4],
+  "visible_validation_fraction": 0.1,
+  "target_standardisation": "global Task-1 mean and standard deviation",
+  "coordinates": "latitude/longitude, independently standardised",
+  "mean_features": [
+    "1",
+    "sin(time-of-day)",
+    "cos(time-of-day)",
+    "sin(day-of-week)",
+    "cos(day-of-week)",
+    "latitude",
+    "longitude"
+  ],
+  "temporal_kernel": "Matern-3/2",
+  "objective": "VFE",
+  "online_temporal_evaluator": "scipy_frozen exact analytic HiPPO/RFF formula after Task-1 parameter freeze",
+  "default_capacity": {
+    "mt": 32,
+    "ms": 32,
+    "hippo_rff": 256
+  },
+  "protocol_n": "absorb y_H,t-1 once, condition on y_V,t, predict y_H,t, then reveal y_H,t",
+  "protocol_f_horizons_steps": [3, 6, 12],
+  "formal_gate": [
+    "Task-1 theta.json selected on visible-validation Gaussian NLPD then RMSE",
+    "finite predictive means and positive variances",
+    "zero current-hidden reads before prediction",
+    "one delayed absorption per eligible held-out label"
+  ]
+}

@@ -1,0 +1,711 @@
+#!/usr/bin/env python3
+"""Controlled batch empirical-Bayes Route B on the shared ERA5 protocol."""
+
+from __future__ import annotations
+
+import argparse
+import copy
+from dataclasses import dataclass
+import json
+from pathlib import Path
+import sys
+import time
+
+import numpy as np
+import torch
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.run_routeb_batch_empirical_bayes import (
+    GridData,
+    evaluate,
+    object_array_bytes,
+    serialized_training_state_bytes,
+    tensor_training_data,
+    write_csv,
+)
+from scripts.run_hipposvgp_era5_routeb import augment_dataset_phi
+from scripts.run_iclr_era5_routeb_strict_online import TaskPhiCache
+from stvgp_kronecker.benchmark_runtime import (
+    SynchronizedTimer,
+    host_snapshot,
+    resolve_torch_runtime,
+)
+from scripts.era5_ncu_ranges import pop_range, profile_this_index, push_range
+from stvgp_kronecker.data.hipposvgp_era5 import load_hipposvgp_era5
+from stvgp_kronecker.routeb_empirical_bayes import (
+    BatchRouteBEmpiricalBayes,
+    joint_sufficient_statistics,
+)
+from stvgp_kronecker.temporal_kernel_config import (
+    load_spectral_mixture_config,
+    temporal_kernel_metadata,
+)
+
+
+@dataclass
+class ValidationEarlyStopping:
+    """Track validation progress independently of the absolute best checkpoint."""
+
+    patience: int
+    min_delta: float
+    reference_nll: float = float("inf")
+    checks_without_improvement: int = 0
+
+    def observe(self, validation_nll: float) -> bool:
+        if validation_nll < self.reference_nll - self.min_delta:
+            self.reference_nll = validation_nll
+            self.checks_without_improvement = 0
+        else:
+            self.checks_without_improvement += 1
+        return (
+            self.patience > 0
+            and self.checks_without_improvement >= self.patience
+        )
+
+
+def load_protocol(
+    path: Path, ms: int, data_part: str
+) -> tuple[GridData, np.ndarray, np.ndarray]:
+    arrays = np.load(path)
+    time_key = "calibration_times" if data_part == "calibration" else "stream_times"
+    target_key = "calibration_y" if data_part == "calibration" else "stream_y"
+    y = np.asarray(arrays[target_key], dtype=np.float64)
+    zero_phi = np.zeros((*y.shape, 0), dtype=np.float64)
+    inducing_key = f"inducing_coords_ms{ms}"
+    if inducing_key not in arrays:
+        raise KeyError(f"{path} does not contain {inducing_key}")
+    data = GridData(
+        times=np.asarray(arrays[time_key], dtype=np.float64),
+        coordinates=np.asarray(arrays["coordinates"], dtype=np.float64),
+        y=y,
+        phi=zero_phi,
+        train_indices=np.asarray(arrays["train_indices"], dtype=int),
+        test_indices=np.asarray(arrays["test_indices"], dtype=int),
+        spatial_inducing=np.asarray(arrays[inducing_key], dtype=np.float64),
+    )
+    return (
+        data,
+        np.asarray(arrays["fit_indices"], dtype=int),
+        np.asarray(arrays["validation_indices"], dtype=int),
+    )
+
+
+def load_joint_phi(
+    *,
+    arrays: np.lib.npyio.NpzFile,
+    protocol_json: Path,
+    data_root: Path | None,
+    xlag_length: int,
+    data_part: str,
+) -> tuple[np.ndarray, float]:
+    protocol_key = "calibration_phi" if data_part == "calibration" else "stream_phi"
+    if protocol_key in arrays:
+        started = time.perf_counter()
+        phi = np.asarray(arrays[protocol_key], dtype=np.float32)
+        expected_y = np.asarray(
+            arrays["calibration_y" if data_part == "calibration" else "stream_y"]
+        )
+        if phi.shape[:2] != expected_y.shape or phi.ndim != 3:
+            raise ValueError(
+                f"{protocol_key} must have shape (time, space, features); "
+                f"got {phi.shape} for target {expected_y.shape}"
+            )
+        return phi, time.perf_counter() - started
+    metadata = json.loads(protocol_json.read_text(encoding="utf-8"))
+    root = Path(metadata["root"]) if data_root is None else data_root
+    if data_part == "calibration":
+        started = time.perf_counter()
+        raw = load_hipposvgp_era5(
+            root, tasks=("task_1",), variable_index=0, split="all"
+        )
+        augmented = augment_dataset_phi(
+            raw, phi_mode="medium_era5_xlag", xlag_length=xlag_length
+        )
+        expected = np.asarray(arrays["calibration_y"], dtype=np.float64)
+        np.testing.assert_allclose(augmented.Y, expected, atol=2e-6, rtol=0.0)
+        phi = np.asarray(augmented.Phi, dtype=np.float32).reshape(
+            expected.shape[0], expected.shape[1], -1
+        )
+        return phi, time.perf_counter() - started
+
+    y = np.asarray(arrays["stream_y"], dtype=np.float64)
+    cache = TaskPhiCache(root, y, xlag_length)
+    blocks = [
+        slice(int(start), int(stop))
+        for start, stop in zip(arrays["block_start"], arrays["block_stop"])
+    ]
+    phi = None
+    for block in blocks:
+        block_phi, _ = cache.block(block)
+        if phi is None:
+            phi = np.empty((*y.shape, block_phi.shape[-1]), dtype=np.float32)
+        phi[block] = np.asarray(block_phi, dtype=np.float32)
+    if phi is None:
+        raise ValueError("Protocol does not contain any streaming blocks")
+    return phi, cache.loading_seconds
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--protocol-npz", type=Path, required=True)
+    parser.add_argument("--protocol-json", type=Path)
+    parser.add_argument("--data-root", type=Path)
+    parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--data-part", choices=["calibration", "stream"], default="stream"
+    )
+    parser.add_argument(
+        "--target-mode",
+        choices=["direct", "shared_xlag_residual", "joint_xlag"],
+        required=True,
+    )
+    parser.add_argument("--representation", choices=["analytic_hippo_rff", "inducing_points"], required=True)
+    parser.add_argument("--mt", type=int, default=128)
+    parser.add_argument("--ms", type=int, default=128)
+    parser.add_argument("--iterations", type=int, default=100)
+    parser.add_argument(
+        "--training-objective",
+        choices=["finite_dtc", "vfe"],
+        default="finite_dtc",
+    )
+    parser.add_argument(
+        "--include-conditional-residual-variance",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help=(
+            "Use the full conditional predictive variance independently of the "
+            "training objective. Use --no-include-conditional-residual-variance "
+            "only to reproduce the historical DTC-only prediction protocol."
+        ),
+    )
+    parser.add_argument("--learning-rate", type=float, default=0.02)
+    parser.add_argument("--validation-every", type=int, default=5)
+    parser.add_argument(
+        "--early-stopping-patience-validations",
+        type=int,
+        default=0,
+        help="Stop after this many validation checks without a min-delta improvement; 0 disables.",
+    )
+    parser.add_argument("--early-stopping-min-delta", type=float, default=0.0)
+    parser.add_argument(
+        "--max-training-seconds",
+        type=float,
+        default=0.0,
+        help="Stop after completing the current iteration once this training budget is reached; 0 disables.",
+    )
+    parser.add_argument("--beta-prior-variance", type=float, default=1000.0)
+    parser.add_argument("--rff-sample-size", type=int, default=256)
+    parser.add_argument(
+        "--temporal-kernel",
+        choices=["rbf", "matern32", "spectral_mixture"],
+        default="matern32",
+    )
+    parser.add_argument(
+        "--spectral-mixture-json",
+        type=Path,
+        help="Fixed one-dimensional mixture weights, means, and scales for HiPPO.",
+    )
+    parser.add_argument("--xlag-length", type=int, default=10)
+    parser.add_argument(
+        "--joint-phi-npy",
+        type=Path,
+        help="Optional precomputed float32 joint-X-lag tensor for this data part.",
+    )
+    parser.add_argument("--initial-ell-t", type=float, default=0.05)
+    parser.add_argument("--initial-ell-s", nargs=2, type=float, default=[0.35, 0.35])
+    parser.add_argument("--initial-kernel-variance", type=float, default=1.0)
+    parser.add_argument("--initial-noise", type=float, default=0.1)
+    parser.add_argument("--prediction-chunk-size", type=int, default=8192)
+    parser.add_argument("--split-seed", type=int, required=True)
+    parser.add_argument("--model-seed", type=int, default=0)
+    parser.add_argument("--save-pointwise", action="store_true")
+    parser.add_argument("--predictions-output", type=Path)
+    parser.add_argument("--device", default="auto")
+    parser.add_argument("--dtype", choices=["float32", "float64"], default="float64")
+    parser.add_argument(
+        "--evaluation-backend",
+        choices=["auto", "numpy", "torch"],
+        default="auto",
+        help="Backend for validation/final posterior recovery and prediction.",
+    )
+    parser.add_argument("--warmup-steps", type=int, default=1)
+    parser.add_argument("--profile-flops", action="store_true")
+    parser.add_argument(
+        "--objective-optimization-version",
+        choices=["E0", "E1", "E2", "E3"],
+        default="E0",
+    )
+    parser.add_argument(
+        "--cross-contraction",
+        choices=["auto", "einsum", "spatial_first", "temporal_first"],
+        default="einsum",
+    )
+    parser.add_argument("--feature-block-size", type=int)
+    parser.add_argument(
+        "--feature-projection-npz",
+        type=Path,
+        help="Optional shared orthonormal feature basis stored under the 'basis' key.",
+    )
+    args = parser.parse_args()
+
+    spectral_mixture = load_spectral_mixture_config(args.spectral_mixture_json)
+    if args.temporal_kernel == "spectral_mixture":
+        if spectral_mixture is None:
+            raise ValueError("--spectral-mixture-json is required for spectral_mixture")
+    elif spectral_mixture is not None:
+        raise ValueError("--spectral-mixture-json requires --temporal-kernel spectral_mixture")
+    if args.early_stopping_patience_validations < 0:
+        raise ValueError("Early-stopping patience must be non-negative")
+    if args.early_stopping_min_delta < 0.0:
+        raise ValueError("Early-stopping min delta must be non-negative")
+    if args.max_training_seconds < 0.0:
+        raise ValueError("Maximum training seconds must be non-negative")
+    include_conditional_residual_variance = (
+        args.include_conditional_residual_variance
+    )
+
+    process_started = time.perf_counter()
+    runtime = resolve_torch_runtime(args.device, args.dtype)
+    if args.evaluation_backend == "auto":
+        evaluation_backend = "torch" if runtime.uses_cuda else "numpy"
+    else:
+        evaluation_backend = args.evaluation_backend
+    if evaluation_backend == "numpy" and args.dtype != "float64":
+        raise ValueError(
+            "NumPy evaluation is the float64 reference; use --evaluation-backend torch "
+            "for a float32 experiment."
+        )
+    torch.manual_seed(args.model_seed)
+    if runtime.uses_cuda:
+        torch.cuda.manual_seed_all(args.model_seed)
+    np.random.seed(args.model_seed)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    data, fit_indices, validation_indices = load_protocol(
+        args.protocol_npz, args.ms, args.data_part
+    )
+    arrays = np.load(args.protocol_npz)
+    feature_loading_seconds = 0.0
+    if args.target_mode == "joint_xlag":
+        protocol_phi_key = (
+            "calibration_phi" if args.data_part == "calibration" else "stream_phi"
+        )
+        if (
+            args.protocol_json is None
+            and args.joint_phi_npy is None
+            and protocol_phi_key not in arrays
+        ):
+            raise ValueError("--protocol-json is required for joint_xlag")
+        if args.joint_phi_npy is None:
+            data.phi, feature_loading_seconds = load_joint_phi(
+                arrays=arrays,
+                protocol_json=args.protocol_json,
+                data_root=args.data_root,
+                xlag_length=args.xlag_length,
+                data_part=args.data_part,
+            )
+        else:
+            started = time.perf_counter()
+            data.phi = np.load(args.joint_phi_npy, mmap_mode="r")
+            if data.phi.ndim != 3 or data.phi.shape[:2] != data.y.shape:
+                raise ValueError(
+                    "Cached Phi must have shape (time, space, features): "
+                    f"target={data.y.shape}, phi={data.phi.shape}"
+                )
+            feature_loading_seconds = time.perf_counter() - started
+    feature_projection = None
+    if args.feature_projection_npz is not None:
+        if args.target_mode != "joint_xlag":
+            raise ValueError("Feature projection is only valid for joint_xlag")
+        with np.load(args.feature_projection_npz) as projection_payload:
+            feature_projection = np.asarray(
+                projection_payload["basis"], dtype=np.float64
+            )
+        if feature_projection.ndim != 2 or feature_projection.shape[0] != data.phi.shape[-1]:
+            raise ValueError(
+                "Feature projection must have shape "
+                f"({data.phi.shape[-1]}, rank), got {feature_projection.shape}"
+            )
+        data.phi = np.einsum(
+            "stp,pr->str",
+            np.asarray(data.phi, dtype=np.float64),
+            feature_projection,
+            optimize=True,
+        )
+    if args.target_mode == "shared_xlag_residual":
+        offset_key = (
+            "task1_calibration_mean"
+            if args.data_part == "calibration"
+            else "batch_stream_mean"
+        )
+        offset = np.asarray(arrays[offset_key], dtype=np.float64)
+    else:
+        offset = np.zeros_like(data.y)
+    posterior_y = data.y - offset
+    zero_phi = data.phi
+    y_train, phi_train, coordinates_train = tensor_training_data(
+        data,
+        fit_indices,
+        y_override=posterior_y,
+        phi_override=zero_phi,
+        device=runtime.device,
+        dtype=runtime.dtype,
+    )
+    model = BatchRouteBEmpiricalBayes(
+        times=data.times,
+        spatial_inducing=data.spatial_inducing,
+        mt=args.mt,
+        representation=args.representation,
+        initial_ell_t=args.initial_ell_t,
+        initial_ell_s=tuple(args.initial_ell_s),
+        initial_kernel_variance=args.initial_kernel_variance,
+        initial_noise_std=args.initial_noise,
+        rff_sample_size=args.rff_sample_size,
+        seed=args.model_seed,
+        objective_type=args.training_objective,
+        temporal_kernel=args.temporal_kernel,
+        spectral_mixture=spectral_mixture,
+    ).to(device=runtime.device, dtype=runtime.dtype)
+    optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate)
+    version_index = int(args.objective_optimization_version[1])
+    cached_statistics = (
+        joint_sufficient_statistics(y_train, phi_train)
+        if version_index >= 1
+        else None
+    )
+    objective_options = {
+        "sufficient_statistics": cached_statistics,
+        "combine_basis_transforms": version_index >= 2,
+        "remove_redundant_solve": version_index >= 3,
+        "cross_contraction": args.cross_contraction,
+        "feature_block_size": args.feature_block_size,
+    }
+    initial_spatial_inducing = model.spatial_inducing.detach().clone()
+    initial_temporal_support = model.temporal.z_t.detach().clone()
+    initial_rff = (
+        model.temporal.builder.base_frequencies.detach().clone()
+        if model.temporal.builder is not None
+        else None
+    )
+
+    profiled_step_flops = None
+    flop_profile_seconds = 0.0
+    flop_profile_error = None
+    if args.profile_flops:
+        try:
+            from torch.utils.flop_counter import FlopCounterMode
+
+            with SynchronizedTimer(runtime.synchronize) as flop_timer:
+                optimizer.zero_grad(set_to_none=True)
+                with FlopCounterMode(display=False) as counter:
+                    profile_objective = model.objective(
+                        y_matrix=y_train,
+                        phi_tensor=phi_train,
+                        spatial_coordinates=coordinates_train,
+                        beta_prior_variance=args.beta_prior_variance,
+                        **objective_options,
+                    )
+                    profile_objective.nlml_per_observation.backward()
+                profiled_step_flops = int(counter.get_total_flops())
+                optimizer.zero_grad(set_to_none=True)
+            flop_profile_seconds = flop_timer.elapsed
+        except (ImportError, RuntimeError, TypeError, ValueError) as exc:
+            flop_profile_error = f"{type(exc).__name__}: {exc}"
+
+    warmup_seconds = 0.0
+    if args.warmup_steps > 0:
+        with SynchronizedTimer(runtime.synchronize) as warmup_timer:
+            for _ in range(args.warmup_steps):
+                optimizer.zero_grad(set_to_none=True)
+                warmup_objective = model.objective(
+                    y_matrix=y_train,
+                    phi_tensor=phi_train,
+                    spatial_coordinates=coordinates_train,
+                    beta_prior_variance=args.beta_prior_variance,
+                    **objective_options,
+                )
+                warmup_objective.nlml_per_observation.backward()
+            optimizer.zero_grad(set_to_none=True)
+        warmup_seconds = warmup_timer.elapsed
+    runtime.reset_peak_memory()
+
+    best_nll = float("inf")
+    best_iteration = 0
+    best_elapsed = None
+    best_state = None
+    trace = []
+    iteration_times = []
+    validation_seconds = 0.0
+    early_stopping = ValidationEarlyStopping(
+        patience=args.early_stopping_patience_validations,
+        min_delta=args.early_stopping_min_delta,
+    )
+    stop_reason = "max_iterations"
+    iterations_completed = 0
+    training_started = time.perf_counter()
+    for iteration in range(1, args.iterations + 1):
+        profile_range = profile_this_index(iteration - 1, args.iterations)
+        profile_open = push_range("era5_batch_update", profile_range)
+        with SynchronizedTimer(runtime.synchronize) as iteration_timer:
+            try:
+                optimizer.zero_grad(set_to_none=True)
+                objective = model.objective(
+                    y_matrix=y_train,
+                    phi_tensor=phi_train,
+                    spatial_coordinates=coordinates_train,
+                    beta_prior_variance=args.beta_prior_variance,
+                    **objective_options,
+                )
+                loss = objective.nlml_per_observation
+                if not torch.isfinite(loss):
+                    raise RuntimeError(f"Non-finite NLML at iteration {iteration}")
+                loss.backward()
+                gradient_norm_tensor = torch.nn.utils.clip_grad_norm_(
+                    model.parameters(), 20.0
+                )
+                optimizer.step()
+                model.clamp_parameters()
+            finally:
+                pop_range(profile_open)
+        iteration_seconds = iteration_timer.elapsed
+        gradient_norm = float(gradient_norm_tensor.detach().cpu())
+        iteration_times.append(iteration_seconds)
+        row = {
+            "iteration": iteration,
+            "train_nlml_per_observation": float(loss.detach()),
+            "finite_nlml_per_observation": float(
+                objective.finite_nlml_per_observation.detach()
+            ),
+            "vfe_trace_correction_per_observation": float(
+                objective.vfe_trace_correction_per_observation.detach()
+            ),
+            "vfe_trace_residual_per_observation": float(
+                objective.vfe_trace_residual_per_observation.detach()
+            ),
+            "gradient_norm_before_clip": gradient_norm,
+            "iteration_seconds": iteration_seconds,
+            **model.theta(),
+        }
+        should_stop_early = False
+        if iteration == 1 or iteration % args.validation_every == 0 or iteration == args.iterations:
+            started = time.perf_counter()
+            validation, _, _ = evaluate(
+                empirical_model=model,
+                data=data,
+                posterior_indices=fit_indices,
+                evaluation_indices=validation_indices,
+                representation=args.representation,
+                beta_prior_variance=args.beta_prior_variance,
+                prediction_chunk_size=args.prediction_chunk_size,
+                posterior_y_override=posterior_y,
+                posterior_phi_override=zero_phi,
+                evaluation_phi_override=zero_phi,
+                evaluation_mean_offset=offset,
+                include_conditional_residual_variance=(
+                    include_conditional_residual_variance
+                ),
+                collect_pointwise=False,
+                solver_backend=evaluation_backend,
+                solver_device=runtime.device,
+                solver_dtype=runtime.dtype,
+                synchronize=runtime.synchronize,
+            )
+            elapsed = time.perf_counter() - started
+            validation_seconds += elapsed
+            row.update(
+                validation_nll=validation["nll"],
+                validation_rmse=validation["rmse"],
+                validation_seconds=elapsed,
+            )
+            if validation["nll"] < best_nll:
+                best_nll = validation["nll"]
+                best_iteration = iteration
+                best_elapsed = time.perf_counter() - training_started
+                best_state = copy.deepcopy(model.state_dict())
+            should_stop_early = early_stopping.observe(validation["nll"])
+            row["validation_checks_without_improvement"] = (
+                early_stopping.checks_without_improvement
+            )
+        row["training_elapsed_seconds"] = time.perf_counter() - training_started
+        trace.append(row)
+        iterations_completed = iteration
+        if iteration == 1 or iteration % args.validation_every == 0 or iteration == args.iterations:
+            print(json.dumps(row), flush=True)
+        if should_stop_early:
+            stop_reason = "validation_early_stopping"
+            break
+        if (
+            args.max_training_seconds > 0.0
+            and row["training_elapsed_seconds"] >= args.max_training_seconds
+        ):
+            stop_reason = "wall_clock_budget"
+            break
+
+    if best_state is None:
+        raise RuntimeError("No validation checkpoint was recorded")
+    training_seconds = time.perf_counter() - training_started
+    model.load_state_dict(best_state)
+    torch.testing.assert_close(model.spatial_inducing, initial_spatial_inducing, rtol=0.0, atol=0.0)
+    torch.testing.assert_close(model.temporal.z_t, initial_temporal_support, rtol=0.0, atol=0.0)
+    if initial_rff is not None:
+        torch.testing.assert_close(
+            model.temporal.builder.base_frequencies, initial_rff, rtol=0.0, atol=0.0
+        )
+
+    collect_pointwise = args.save_pointwise or args.predictions_output is not None
+    final, pointwise, persistent_bytes = evaluate(
+        empirical_model=model,
+        data=data,
+        posterior_indices=data.train_indices,
+        evaluation_indices=data.test_indices,
+        representation=args.representation,
+        beta_prior_variance=args.beta_prior_variance,
+        prediction_chunk_size=args.prediction_chunk_size,
+        posterior_y_override=posterior_y,
+        posterior_phi_override=zero_phi,
+        evaluation_phi_override=zero_phi,
+        evaluation_mean_offset=offset,
+        include_conditional_residual_variance=include_conditional_residual_variance,
+        collect_pointwise=collect_pointwise,
+        solver_backend=evaluation_backend,
+        solver_device=runtime.device,
+        solver_dtype=runtime.dtype,
+        synchronize=runtime.synchronize,
+    )
+    checkpoint_bytes = serialized_training_state_bytes(model, optimizer)
+    payload = {
+        "implementation": (
+            f"Route B {args.training_objective} structured empirical Bayes"
+        ),
+        "training_objective": args.training_objective,
+        "protocol": "controlled batch/full-history with spatial held-out validation",
+        "data_part": args.data_part,
+        "target_mode": args.target_mode,
+        "temporal_representation": args.representation,
+        "temporal_kernel": temporal_kernel_metadata(args.temporal_kernel, spectral_mixture),
+        "evaluation_backend": evaluation_backend,
+        "temporal_factor_device": str(runtime.device),
+        "split_seed": args.split_seed,
+        "mt": args.mt,
+        "ms": args.ms,
+        "num_time": int(data.times.size),
+        "num_train_space": int(data.train_indices.size),
+        "num_validation_space": int(validation_indices.size),
+        "num_test_space": int(data.test_indices.size),
+        "num_xlag_features": int(data.phi.shape[-1]),
+        "active_joint_mean_features": int(phi_train.shape[-1]),
+        "hyperparameters": "learned by Route B marginal likelihood; fixed inducing locations",
+        "objective_optimization": {
+            "version": args.objective_optimization_version,
+            "cached_statistics": version_index >= 1,
+            "combined_basis_transforms": version_index >= 2,
+            "removed_redundant_final_solve": version_index >= 3,
+            "cross_contraction": args.cross_contraction,
+            "feature_block_size": args.feature_block_size,
+            "feature_projection": (
+                None
+                if args.feature_projection_npz is None
+                else str(args.feature_projection_npz)
+            ),
+            "feature_dimension": int(phi_train.shape[-1]),
+        },
+        "predictive_variance": (
+            "full structured-joint conditional; conditional residual included"
+            if include_conditional_residual_variance
+            else "finite projected DTC; no conditional residual variance"
+        ),
+        "best_iteration": best_iteration,
+        "iterations_completed": iterations_completed,
+        "stop_reason": stop_reason,
+        "validation_checks_without_improvement": (
+            early_stopping.checks_without_improvement
+        ),
+        "best_validation_nll": best_nll,
+        "time_to_best_validation_seconds": best_elapsed,
+        "learned_theta": model.theta(),
+        "final": final,
+        "timing": {
+            "warmup_seconds": warmup_seconds,
+            "flop_profile_seconds": flop_profile_seconds,
+            "training_seconds": training_seconds,
+            "mean_iteration_seconds": float(np.mean(iteration_times)),
+            "median_iteration_seconds": float(np.median(iteration_times)),
+            "mean_steady_state_iteration_seconds": float(
+                np.mean(iteration_times[1:] or iteration_times)
+            ),
+            "validation_seconds": validation_seconds,
+            "xlag_feature_loading_seconds": feature_loading_seconds,
+            "posterior_setup_seconds": final["posterior_update_seconds"],
+            "prediction_seconds": final["prediction_seconds"],
+            "process_total_seconds": time.perf_counter() - process_started,
+        },
+        "resources": {
+            **runtime.resources(),
+            "persistent_model_state_bytes": persistent_bytes,
+            "persistent_model_state_mib": persistent_bytes / 1024.0**2,
+            "serialized_training_checkpoint_bytes": checkpoint_bytes,
+            "history_replay_buffer_bytes": int(data.y[:, data.train_indices].nbytes),
+            "profiled_forward_backward_flops_per_step": profiled_step_flops,
+            "estimated_training_flops": (
+                profiled_step_flops * iterations_completed
+                if profiled_step_flops is not None
+                else None
+            ),
+            "flops_scope": (
+                "PyTorch-supported operations in one Route-B objective forward/backward; "
+                "optimizer, validation, posterior recovery and prediction excluded"
+            ),
+            "flop_profile_error": flop_profile_error,
+            "training_device": str(runtime.device),
+            "temporal_factor_device": str(runtime.device),
+            "spherical_bessel_device": (
+                str(runtime.device)
+                if args.representation == "analytic_hippo_rff"
+                else None
+            ),
+            "posterior_update_device": (
+                str(runtime.device) if evaluation_backend == "torch" else "cpu"
+            ),
+            "prediction_device": (
+                str(runtime.device) if evaluation_backend == "torch" else "cpu"
+            ),
+            "posterior_solver_backend": evaluation_backend,
+        },
+        "environment": host_snapshot(ROOT),
+        "args": {
+            key: str(value) if isinstance(value, Path) else value
+            for key, value in vars(args).items()
+        },
+    }
+    write_csv(trace, args.output_dir / "training_trace.csv")
+    if pointwise:
+        if args.save_pointwise:
+            write_csv(pointwise, args.output_dir / "pointwise_predictions.csv")
+        if args.predictions_output is not None:
+            shape = (data.times.size, data.test_indices.size)
+            args.predictions_output.parent.mkdir(parents=True, exist_ok=True)
+            np.savez_compressed(
+                args.predictions_output,
+                y_true=np.asarray([row["y_true"] for row in pointwise]).reshape(shape),
+                pred_mean=np.asarray([row["pred_mean"] for row in pointwise]).reshape(shape),
+                pred_var=np.asarray([row["pred_var"] for row in pointwise]).reshape(shape),
+                test_indices=data.test_indices,
+                times=data.times,
+                variance_mode=np.asarray(
+                    "full_joint_conditional"
+                    if include_conditional_residual_variance
+                    else "current_dtc"
+                ),
+                mt=np.asarray(args.mt),
+                ms=np.asarray(args.ms),
+            )
+    (args.output_dir / "result.json").write_text(
+        json.dumps(payload, indent=2, allow_nan=False), encoding="utf-8"
+    )
+    print(json.dumps(payload, indent=2, allow_nan=False), flush=True)
+
+
+if __name__ == "__main__":
+    main()

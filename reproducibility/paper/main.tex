@@ -1,0 +1,570 @@
+\documentclass[twoside]{article}
+\usepackage{aistats2027}
+\usepackage[round]{natbib}
+\renewcommand{\bibname}{References}
+\renewcommand{\bibsection}{\subsubsection*{\bibname}}
+  
+% Shared notation from the previous conference draft.
+\input{math_commands.tex}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{capt-of}
+\usepackage{placeins}
+\usepackage{float}
+\usepackage{needspace}
+\usepackage{microtype}
+\usepackage{xspace}
+\usepackage{hyperref}
+\usepackage{url}
+\hypersetup{hidelinks}
+
+\newcommand{\method}{KronHiPPO-STGP\xspace}
+\newcommand{\trans}{\mathsf T}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+
+\begin{document}
+
+\twocolumn[
+\aistatstitle{KronHiPPO-STGP: Online Bayesian Spatio-temporal Modelling with Evolving Memory}
+\aistatsauthor{Anonymous Authors}
+\aistatsaddress{Anonymous Institution}
+]
+
+\begin{abstract}\small\setlength{\emergencystretch}{1em}
+Online Bayesian inference requires updating posterior beliefs while storing only a bounded summary of historical observations. Existing streaming approaches compress past data into finite states, but these states are usually constructed under a fixed representation. When latent parameters are updated or inducing coordinates change, the stored state may no longer correspond to the original likelihood contribution. We study this issue in online spatio-temporal Gaussian processes with evolving finite-dimensional representations. We propose \method, a method that maintains a bounded Gaussian likelihood state for a parametric mean component and a residual Gaussian process. The proposed state supports posterior updates after representation changes by transferring likelihood factors between successive HiPPO inducing coordinates without replaying previous observations. We derive three properties of evolving Bayesian memory: the cross information required to update coupled trend and residual components, the finite-dimensional projection operator between changing representations together with its associated information loss, and the conditions under which likelihood transfer preserves Kronecker structure. Based on these results, we develop a Schur--Sylvester posterior recovery procedure that is equivalent to solving the corresponding projected Gaussian system while avoiding dense matrix operations. Experiments on environmental, public-health, and traffic datasets show that \method maintains memory cost independent of stream length and achieves accurate prediction with calibrated uncertainty under online representation changes.
+\end{abstract}
+
+\section{Introduction}
+
+Online Bayesian models must update predictions as new observations arrive while discarding raw historical data. This requirement imposes a memory constraint: the retained state must preserve uncertainty about past observations while remaining fixed in size as the stream grows.
+
+Many real-world systems, including environmental monitoring, public health surveillance, and urban sensing, generate continuously arriving spatio-temporal observations where uncertainty quantification is required \citep{Hamelijnck2021,Silk2023,Li2018DCRNN}. Gaussian processes (GPs) provide a natural framework for this setting because they represent uncertainty over latent functions and capture dependencies across space and time \citep{Rasmussen2006,Hartikainen2011,Hamelijnck2021}. However, exact GP inference requires computation and storage that increase with the number of observations. Online GP methods therefore replace raw observations with finite representations, such as inducing variables or approximate likelihood factors \citep{Titsias2009,Matthews2016,Csato2002,Bui2017,Maddox2021}.
+
+Streaming GP methods and sparse variational approaches maintain finite summaries of historical observations. These methods assume that the representation used to store the summary remains consistent during future updates. When the representation changes, however, the stored statistics may no longer describe the same latent quantities.
+
+This issue arises naturally in online models with adaptive finite representations. The posterior update itself remains standard, but the Bayesian information accumulated in previous representations must be mapped to the current representation before further inference.
+
+A decomposition into a parametric trend component and a correlated Gaussian process residual is a standard formulation in spatial statistics and Gaussian process modelling, including universal kriging and Bayesian spatial models \citep{Cressie1993,Stein1999,Rasmussen2006}. In this formulation,
+\[
+y=\phi^\top\beta+f .
+\]
+the trend component captures systematic variations explained by covariates, while the residual GP models remaining structured spatio-temporal dependencies \citep{Hamelijnck2021}.
+
+While this decomposition is well established for offline inference, replay-free online learning introduces a different memory problem. Historical residual statistics depend on the trend parameters used during compression, so updating the mean component changes the interpretation of previously stored residual evidence. A bounded online state must therefore preserve trend--residual coupling information to support posterior revision after historical observations are discarded.
+
+Maintaining long-range temporal information with a fixed number of variables has recently been studied through structured temporal representations such as HiPPO. HiPPO compresses the history of a signal into a fixed-dimensional state and has been used in long-range sequence models including S4 and Mamba \citep{Gu2020,Gu2022S4,GuDao2023Mamba}.
+
+Recurrent Memory for Online Interdomain Gaussian Processes introduced HiPPO as a temporal interdomain inducing representation for Gaussian processes and showed that HiPPO-based inducing variables can preserve long-range temporal information with a fixed number of variables \citep{Chen2025}. Following this direction, we use HiPPO inducing representations for spatio-temporal Gaussian processes to maintain a compact temporal representation during online inference.
+
+Unlike conventional inducing variables with fixed basis functions, HiPPO inducing variables depend on horizon-specific projection functions. As the temporal horizon expands, the inducing basis changes, and previously stored likelihood statistics must be interpreted in the updated representation \citep{Gu2020,Chen2025}.
+
+Therefore, fixed dimensionality does not guarantee that two inducing states represent the same GP functionals. This representation change creates a Bayesian memory problem: historical likelihood information must be transferred before posterior inference continues.
+
+The changing representation introduces three requirements for online Bayesian inference. First, updating the parametric mean requires retaining the coupling between trend and residual components. A residual-only summary cannot correct historical evidence after mean revision. Second, historical likelihood information must be transferred between successive inducing representations rather than reused directly. Third, the transferred likelihood must preserve exploitable structure to allow efficient recovery of the posterior over spatio-temporal inducing variables.
+
+We introduce \method, a bounded-state Bayesian inference framework for online Gaussian processes with changing finite representations. The maintained state is a joint Gaussian likelihood factor over the parametric mean and residual inducing variables. It stores: (1) trend--residual coupling information for updating historical evidence after mean revisions; (2) likelihood statistics that can be transferred between successive HiPPO inducing representations; and (3) structured residual factors for efficient posterior recovery.
+
+Our contributions are:
+\begin{itemize}
+
+\item We formulate online GP inference with changing inducing
+representations by maintaining a joint Gaussian likelihood state over
+trend and residual components.
+
+\item We derive likelihood transfer between successive HiPPO
+representations and characterize the associated projection loss. Under
+the stated assumptions, the transferred likelihood preserves
+Kronecker structure and admits efficient posterior recovery.
+
+\item We evaluate the proposed framework on three real-world
+spatio-temporal datasets and analyze the effects of memory revision,
+representation transfer, and structured recovery.
+
+\end{itemize}
+
+\section{Related work}
+
+\textbf{Finite Bayesian memory for online GP inference.}
+Online GP inference replaces the growing observation history with finite
+representations of past information. Sparse variational GPs achieve this
+through inducing variables while preserving the GP conditional structure
+\citep{Titsias2009,Matthews2016}. Interdomain inducing variables extend
+this framework by representing latent functions through general linear
+functionals rather than point evaluations
+\citep{LazaroGredilla2009,VanderWilk2020}.
+
+Streaming GP methods maintain sequential updates by storing posterior or
+approximate likelihood summaries instead of raw observations
+\citep{Csato2002,Bui2017,Maddox2021}. These methods focus on constructing
+compact representations of historical information. In contrast, our
+setting considers online inference where the inducing representation
+itself changes, requiring the stored likelihood statistics to be
+transferred before further updates.
+
+
+\textbf{HiPPO representations and evolving inducing variables.}
+HiPPO constructs fixed-dimensional states by projecting sequential
+signals onto polynomial bases, providing a mechanism for long-range
+memory compression \citep{Gu2020}. This idea has been adopted in deep
+sequence models including S4 and Mamba
+\citep{Gu2022S4,GuDao2023Mamba}. 
+
+Recent work on recurrent memory for online interdomain Gaussian
+processes introduces HiPPO projections as temporal inducing variables
+and demonstrates their ability to retain long-range temporal
+information with a fixed number of variables
+\citep{Chen2025}. We adopt this type of temporal interdomain
+representation for spatio-temporal GP inference. Unlike conventional
+inducing variables with fixed basis functions, HiPPO inducing variables
+depend on the temporal horizon. Therefore, online updates require
+transforming historical likelihood information between successive
+inducing representations.
+
+
+\textbf{Structured inference for spatio-temporal GP.}
+Scalable spatio-temporal GP inference commonly exploits structural
+properties of covariance functions or latent representations.
+State-space formulations use temporal Markov structure for efficient
+inference \citep{Hartikainen2010,Nickisch2018}, while variational
+approaches combine temporal structure with sparse spatial
+representations \citep{Adam2020,Hamelijnck2021}. Kronecker methods
+exploit spatial--temporal separability to reduce computation on product
+grids \citep{VanLoan2000,Flaxman2015}.
+
+Our work differs from these approaches by studying whether the
+Kronecker structure is preserved after transporting a Bayesian
+likelihood state between changing temporal inducing representations,
+rather than assuming a fixed representation throughout inference.
+
+\section{Preliminaries}
+
+We first define the online information boundary, the joint trend--residual state, and the finite representation that evolves during inference.
+
+\subsection{Online inference with bounded information}
+
+We consider a sequential Bayesian inference problem in which data arrive in blocks. At block $k$, observations are available only at a subset of locations $V_k$, and predictions are required at held-out locations $Q_k$ before their values are revealed.
+
+The online constraint is strict: after processing block $k$, raw observations from previous blocks are discarded. The inference procedure must therefore maintain a bounded state $\mathcal S_k$ that contains all information required for future posterior updates. Dataset-specific calibration and evaluation details are given in Section~5 and Appendix~B.
+
+The representation defining $\mathcal S_k$ is allowed to change across updates, which distinguishes this setting from fixed-coordinate streaming inference.
+
+\subsection{Trend--residual Bayesian state}
+
+We model observations using a parametric component for known covariate effects and a residual Gaussian process:
+\begin{equation}
+ y(t,s)=\phi(t,s)^{\trans}\beta+f(t,s)+\epsilon,
+ \qquad \epsilon\sim\mathcal N(0,\sigma_y^2).
+ \label{eq:intro-model}
+\end{equation}
+The coefficient $\beta$ is a static latent variable,
+$\beta\sim\mathcal N(m_{\beta,0},S_{\beta,0})$. Online learning updates its posterior but does not posit coefficient drift. The residual process $f$ captures correlated spatio-temporal variation through the separable kernel
+\begin{equation}
+ k((t,s),(t',s'))=k_t(t,t')k_s(s,s').
+ \label{eq:separable}
+\end{equation}
+\subsection{Evolving finite representations}
+
+To obtain bounded memory, we represent the residual process using finite interdomain variables. For temporal horizon $\mathcal H_k=[t_0,t_k]$, HiPPO defines inducing variables. For spatial inducing locations $z_j$, the mixed interdomain variables are
+\begin{multline}
+ u_{m,j}^{(k)}=\int_{\mathcal H_k} f(t,z_j)\psi_m(t;\mathcal H_k)\,dt,
+ \\
+ m=0,\ldots,M_t-1,\qquad j=1,\ldots,M_s.
+ \label{eq:hippo-functional}
+\end{multline}
+The number of stored coefficients remains fixed as the horizon grows. However, the representation itself changes because the projection functions $\psi_m(t;\mathcal H_k)$ depend on the current horizon. Consequently,
+
+\[
+\dim(u_{k-1})=\dim(u_k)
+\]
+
+does not imply $u_{k-1}=u_k$. The two vectors have the same dimension but represent different GP functionals. The inducing-variable prior and conditional-mean projection matrix are
+\begin{equation}
+ p(u_k)=\mathcal N(0,K_{t,k}\otimes K_s),
+ \qquad A_k=P_{t,k}\otimes C.
+ \label{eq:inducing}
+\end{equation}
+Here $A_k$ maps the interdomain inducing variables to the conditional mean of the latent function values at the observation locations. These inducing variables parameterise the finite-dimensional variational approximation, while the full GP conditional is retained:
+\begin{align}
+ p(f_k\mid u_k)&=\mathcal N(A_ku_k,K_{f_kf_k}-Q_{f_kf_k}),\\
+ q_k(\beta,u_k,f_k)&=p(f_k\mid u_k)q_k(\beta,u_k).
+ \label{eq:vfe-family}
+\end{align}
+For fixed $(\beta,u_k)$, taking expectation over the retained GP conditional
+$p(f_k\mid u_k)$ gives the Gaussian natural-parameter contributions for the joint state:
+\begin{equation}
+\begin{aligned}
+ &\E\|y_k-\Phi_k\beta-f_k\|^2 \\
+ &=\|y_k-\Phi_k\beta-A_ku_k\|^2
+ +\operatorname{tr}(K_{f_kf_k}-Q_{f_kf_k}).
+\end{aligned}
+\label{eq:vfe-square}
+\end{equation}
+The first term determines the Gaussian natural-parameter contributions, while the second is the standard VFE trace correction \citep{Titsias2009}. Prediction retains the GP conditional variance term
+$\nu_*=k_{**}-k_{*u}K_u^{-1}k_{u*}$, so uncertainty is not restricted to the finite inducing span.
+
+\section{Method}
+
+Online inference maintains a bounded Gaussian likelihood state rather than the complete observation history. When the inducing representation changes, this state must be revised, transported, and recovered in the new representation.
+
+KronHiPPO-STGP performs these operations in three steps: (i) retain trend--residual coupling required for posterior revision; (ii) project historical likelihood factors between successive HiPPO representations; and (iii) exploit the resulting Kronecker structure for posterior recovery. Figure~1 illustrates the three failure modes of a changing Bayesian memory and the corresponding solutions.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=\textwidth]{figures/Figure1_Publication_Overview_gap.pdf}
+\par\vspace{-9pt} % Figure 1 only: compensate remaining artwork-to-caption gap.
+\caption{Three stages of bounded-state inference. (a) Posterior trend revision changes the residual contribution of historical observations, making the retained trend--residual cross statistic necessary for replay-free correction. (b) Successive HiPPO states represent different GP functionals, so conditional projection transports historical likelihood evidence between changing coordinates. (c) The single-Kronecker likelihood invariant enables structured recovery of the transferred finite target without dense product-state factorisation. The complexity annotation assumes $M_s\asymp M_t=M$ and fixed $d_\beta$ under Proposition~\ref{prop:kron-invariant}.}
+\label{fig:revision-aware-overview}
+\end{figure*}
+
+\subsection{Required statistics for bounded Bayesian revision}
+
+A bounded memory cannot preserve all historical observations. Therefore, the first question is which statistics are necessary for future posterior revision.
+
+Consider the joint finite state
+\[
+z=[\beta^{\trans},u^{\trans}]^{\trans}.
+\]
+
+For fixed inducing coordinates, the Gaussian likelihood contribution is summarised by the natural parameters. With design $J_j=[\Phi_j,A_j]$, the Gaussian variational factor at fixed hyperparameters has
+\begin{align}
+ \Lambda_k&=\Lambda_0+\sigma_y^{-2}\sum_{j\leq k}J_j^{\trans}J_j,&
+ h_k&=h_0+\sigma_y^{-2}\sum_{j\leq k}J_j^{\trans}y_j.
+ \label{eq:natural}
+\end{align}
+Thus fixed-coordinate sequential accumulation is identical to optimising the same finite VFE factor over concatenated blocks. The off-diagonal precision contains the trend--residual cross-precision block $R_{\beta u}$, equivalently $R_{u\beta}=R_{\beta u}^{\trans}$, with
+$R_{u\beta}=\sigma_y^{-2}\sum_j A_j^{\trans}\Phi_j$.
+
+This cross-information determines how historical residual evidence should be corrected after the posterior mean changes. If old residual evidence was formed using $\widehat\beta$, define
+\[
+ h_u^{<k}(\widehat\beta)=\sigma_y^{-2}\sum_{j<k}A_j^{\trans}(y_j-\Phi_j\widehat\beta).
+\]
+Then a revised estimate $\widehat\beta'=\widehat\beta+\Delta_\beta$ gives
+\begin{equation}
+ h_u^{<k}(\widehat\beta')-h_u^{<k}(\widehat\beta)
+ =-R_{u\beta}^{<k}\Delta_\beta.
+ \label{eq:stale}
+\end{equation}
+A residual-only summary is stale whenever the right-hand side is nonzero. Once the historical blocks have been discarded, the correction can be reconstructed only if the retained state encodes the action of $R_{u\beta}$. The cross block therefore records the historical information required to reinterpret the compressed residual statistic after the posterior mean estimate is revised.
+\begin{proposition}[Necessity of revision information in bounded Bayesian memory]
+\label{prop:cross-necessity}
+Fix the historical designs and a reference coefficient $\beta_0$. Suppose a replay-free
+summary, together with $h_u^{<k}(\beta_0)$, must recover
+$h_u^{<k}(\beta_0+\Delta)$ without error for every admissible
+$\Delta\in\mathbb R^{d_\beta}$. Then the summary must determine the linear map
+$\Delta\mapsto R_{u\beta}^{<k}\Delta$; when the admissible changes span
+$\mathbb R^{d_\beta}$, this determines $R_{u\beta}^{<k}$ itself. Hence retaining
+$R_{u\beta}$, or an information-equivalent encoding of its action, is necessary
+for faithful correction after arbitrary posterior trend revision.
+\end{proposition}
+This proposition establishes the first principle of evolving Bayesian memory: a finite state is not sufficient merely because it summarises the current posterior; it must also preserve the information required to reinterpret historical evidence after future model revision. Faithful replay-free revision therefore requires retaining $R_{u\beta}$, or an information-equivalent representation of its action. The proof is given in Appendix~\ref{app:cross-necessity}.
+
+\subsection{Transporting Bayesian evidence between evolving representations}
+
+The second challenge is that a bounded state may need to move between different coordinate systems. Successive HiPPO variables $u_o$ and $u_n$ have equal dimension but represent different GP functionals, and replacing one representation by the other need not be an invertible reparameterisation. We therefore project the historical log-likelihood factor into the current representation while keeping it separate from the prior expressed in the current coordinates. Write the retained historical factor as
+
+\begin{equation}
+ \widetilde{\ell}_o(\beta,u_o) \propto
+ \exp\!\left\{ -\frac12 z_o^\trans R_o z_o+r_o^\trans z_o \right\}.
+\label{eq:old-like}
+\end{equation}
+
+Let $L_{on}=K_{on}K_{nn}^{-1}$ denote the conditional-mean map from the new GP functionals to the old ones, and let $M_{on}=\operatorname{diag}(I,L_{on})$. Taking the conditional expectation of $\log \widetilde{\ell}_o(\beta,u_o)$ under $p(u_o\mid u_n)$ gives a quadratic log factor in $(\beta,u_n)$.
+\begin{proposition}[Optimal projection of historical Bayesian evidence]
+\label{prop:joint-transfer}
+Define
+\begin{equation}
+ \log\widetilde\ell_{o\rightarrow n}(\beta,u_n)
+ =\E_{p(u_o\mid u_n)}[\log\widetilde\ell_o(\beta,u_o)]+\mathrm{const},
+ \label{eq:projection}
+\end{equation}
+where $K_{nn}\succ0$. Then the non-constant natural parameters are
+\begin{equation}
+ R_{o\rightarrow n}=M_{on}^{\trans}R_oM_{on},
+ \qquad r_{o\rightarrow n}=M_{on}^{\trans}r_o.
+ \label{eq:transfer}
+\end{equation}
+In particular, $R_{\beta u}\leftarrow R_{\beta u}L_{on}$ and
+$R_{uu}\leftarrow L_{on}^{\trans}R_{uu}L_{on}$.
+\end{proposition}
+This transformation preserves the quadratic natural-parameter form required by the online recursion. Appendix~\ref{app:joint-transfer} gives the derivation. The projection is generally lossy because the new finite state need not retain all information represented by the old GP functionals; Section~4.3 quantifies this loss.
+
+\subsection{Information loss under finite representation transfer}
+
+A changing representation inevitably introduces information loss. The question is not whether loss occurs, but which part of historical evidence cannot be represented in the new finite state. Conditional expectation gives the $L^2$-optimal representation of the historical log factor among functions measurable in $(\beta,u_n)$, but the projection is not generally lossless. Components of the old log likelihood that are not measurable in $(\beta,u_n)$ cannot be represented after transfer. Proposition~\ref{prop:transfer-mse} quantifies this one-step loss.
+
+Assume $K_{nn}\succ0$, $R_{uu}=R_{uu}^{\trans}$, and finite Gaussian second moments. Let
+$\Sigma_{o\mid n}=K_{oo}-K_{on}K_{nn}^{-1}K_{no}$ and partition the old quadratic factor as in Eq.~(\ref{eq:old-like}).
+\begin{proposition}[One-step projection optimality and loss]
+\label{prop:transfer-mse}
+For $g(\beta,u_o)=\log\widetilde\ell_o(\beta,u_o)$ up to an additive constant, $\E[g\mid\beta,u_n]$ is its optimal $L^2$ approximation measurable in $(\beta,u_n)$. With
+\[
+ a=r_u-R_{u\beta}\beta-R_{uu}L_{on}u_n,
+\]
+the conditional projection error is
+\begin{equation}
+\begin{aligned}
+ &\E[(g-\E[g\mid\beta,u_n])^2\mid\beta,u_n] \\
+ &=a^{\trans}\Sigma_{o\mid n}a
+ +\tfrac12\operatorname{tr}[(R_{uu}\Sigma_{o\mid n})^2].
+\end{aligned}
+\label{eq:transfer-mse}
+\end{equation}
+\end{proposition}
+The result is deliberately local: it characterises the best one-step representation in the new finite state and does not imply monotone or globally lossless repeated transfer. The proof, operator-norm bound, and nested-space corollary are given in Appendix~\ref{app:transfer-proof}.
+
+\subsection{Structure-preserving transport}
+
+The previous sections determine whether a finite Bayesian state can be correctly revised and transported. We now ask whether such a state remains computationally useful. Under a separable residual kernel and fixed spatial geometry, the coordinate change acts only on the temporal factor. With fixed spatial observations and inducing functionals, $C$ is constant and $G=C^{\trans}C$, while
+$L_{k-1,k}=L_t\otimes I_{M_s}$ with
+$L_t=K_{k-1,k}^{(t)}(K_{k,k}^{(t)})^{-1}$.
+
+\begin{proposition}[Single-Kronecker likelihood invariant]
+\label{prop:kron-invariant}
+Assume a separable residual kernel, unchanged spatial inducing and observation functionals, Cartesian blocks, and homoscedastic Gaussian noise. If $R_{uu,k-1}=B_{k-1}\otimes G$, then conditional transport followed by assimilation gives
+\begin{align}
+ B_k&=L_t^{\trans}B_{k-1}L_t+\sigma_y^{-2}P_{t,k}^{\trans}P_{t,k}, \nonumber\\
+ R_{uu,k}&=B_k\otimes G,
+ \label{eq:kron-precision}
+\end{align}
+Starting from $B_0=0$, the invariant holds at every block.
+\end{proposition}
+The invariant is preserved by the interaction between the separable kernel and the restricted temporal coordinate transformation; it is not an additional dense factorisation assumption. The proof is in Appendix~\ref{app:kron-invariant}. Adding the prior produces the two-term residual posterior operator
+\begin{equation}
+D_u=K_{t,k}^{-1}\otimes K_s^{-1}+B_k\otimes G.
+\label{eq:du-operator}
+\end{equation}
+The joint precision is
+\begin{equation}
+ \Lambda_k=
+ \begin{bmatrix}A_\beta&B_{\beta u}\\B_{\beta u}^{\trans}&D_u\end{bmatrix}.
+ \label{eq:joint-precision}
+\end{equation}
+The persistent state is $\{R_{\beta\beta,k},R_{\beta u,k},B_k,r_{\beta,k},H_{u,k},K_{t,k}\}$, together with fixed model quantities, where $r_{u,k}=\operatorname{vec}(H_{u,k})$. Proposition~4 reduces the persistent likelihood state to the temporal factor $B_k$, the fixed spatial factor $G$, and the mean--residual cross statistics; the dense $(M_sM_t)\times(M_sM_t)$ likelihood block is never materialised. The persistent-state dimension is therefore independent of stream length.
+
+\subsection{Exact recovery of the projected Bayesian state}
+
+The final question is whether efficient recovery introduces additional approximation beyond the finite representation transfer itself. Propositions 1--4 determine what historical information must be retained, how it is projected between changing coordinates, what finite projection can lose, and which separable structure survives. It remains to recover the resulting coupled Gaussian posterior without materialising the $M_sM_t$-dimensional residual precision. The standard Schur complement reduces joint recovery to applications of $D_u^{-1}$ and one $d_\beta$-dimensional solve. We therefore focus on the nontrivial residual solve, whose Kronecker structure admits the following matrix-equation form.
+
+\begin{lemma}[Structured Sylvester solve of the residual block]
+\label{lem:sylvester}
+For symmetric positive-definite $K_s,K_{t,k}$ and positive-semidefinite $G,B_k$, the system
+$D_u\operatorname{vec}(Z)=\operatorname{vec}(Q)$ is equivalent to
+\begin{equation}
+ K_s^{-1}ZK_{t,k}^{-1}+GZB_k=Q.
+ \label{eq:sylvester}
+\end{equation}
+After whitening and separately diagonalising the spatial and temporal factors,
+the matrix equation decouples elementwise,
+\begin{equation}
+ \widehat Z_{ij}=\frac{\widehat Q_{ij}}{1+\gamma_i\eta_j}.
+ \label{eq:sylvester-solution}
+\end{equation}
+The transformations and recovery map are given in Appendix~\ref{app:sylvester-proof}.
+\end{lemma}
+Preserving the residual likelihood factorisation makes this classical matrix-equation solve applicable at every online update. The derivation and predictive covariance calculations are given in Appendix~\ref{app:sylvester-proof}.
+
+\begin{theorem}[Equivalence to dense recovery of the transferred target]
+\label{thm:dense-equivalence}
+Under the assumptions of Proposition~\ref{prop:kron-invariant}, proper Gaussian priors, fixed hyperparameters, and declared numerical regularisation, the Schur-complement recovery together with Lemma~\ref{lem:sylvester} produces the same posterior means, covariance quadratic forms, and marginal predictive variances as densely solving the same precision $\Lambda_k$ in Eq.~(\ref{eq:joint-precision}), up to floating-point error and jitter.
+\end{theorem}
+The proof is in Appendix~\ref{app:dense-equivalence}. Theorem~\ref{thm:dense-equivalence} separates two sources of error: representation error caused by projecting historical evidence, and numerical error caused by solving the resulting Gaussian system. The Schur--Sylvester solver introduces no additional approximation beyond the finite representation transfer. For fixed mean dimension and balanced spatial and temporal budgets, recovery uses $O(M^3)$ time and $O(M^2)$ persistent memory; the general expressions are given in Appendix~\ref{app:complexity}.
+
+\begin{table}[H]
+\small
+\setlength{\tabcolsep}{2pt}
+\begin{tabularx}{\columnwidth}{@{}r@{\hspace{0.45em}}X@{}}
+\toprule
+\multicolumn{2}{@{}l}{\textbf{Algorithm 1} \method: replay-free update}\\
+\midrule
+\multicolumn{2}{@{}p{\columnwidth}@{}}{\textbf{Require:} stream $\mathcal D_{1:K}$ with $(V_k,Q_k)$; budgets $(M_s,M_t)$; prior $p(\beta)$.}\\[1pt]
+1 & $\theta\leftarrow\textsc{Calibrate}(\mathcal D_1)$; $\textsc{Freeze}(\theta)$\\
+2 & $\mathcal S\leftarrow\textsc{InitialiseBoundedState}()$\\
+3 & \textbf{for} $k=2,\ldots,K$ \textbf{do}\\
+4 & \quad Observe $y_k(V_k)$\\
+5 & \quad $L_t\leftarrow\textsc{HiPPOTransfer}(\mathcal H_{k-1},\mathcal H_k;\theta)$\\
+6 & \quad $\mathcal S\leftarrow\textsc{Assimilate}(\textsc{Transport}(\mathcal S,L_t),\mathcal D_k[V_k])$\\
+7 & \quad $q_k(\beta,u_k)\leftarrow\textsc{SchurSylvester}(\mathcal S)$\\
+8 & \quad $(\mu_k,v_k)\leftarrow\textsc{Predict}(q_k,Q_k)$ \quad {\scriptsize\itshape // before reading $y_k(Q_k)$}\\
+9 & \textbf{end for}\\
+\multicolumn{2}{@{}p{\columnwidth}@{}}{\textbf{Return:} predictions and bounded state $\mathcal S_K$.}\\
+\bottomrule
+\end{tabularx}
+\end{table}
+\FloatBarrier
+
+Algorithm~1 exposes the execution order and strict-online information boundary;
+Propositions~\ref{prop:joint-transfer}--\ref{prop:kron-invariant} and the
+Schur--Sylvester solve define its core operations. Here $\mathcal S_k$ is the bounded persistent likelihood state
+defined above, containing $R_{\beta\beta,k}$, $R_{\beta u,k}$, $B_k$,
+$r_{\beta,k}$, $H_{u,k}$, and $K_{t,k}$.
+
+\section{Experiments}
+\setcounter{dbltopnumber}{1}
+
+We organise the experiments around four questions motivated by the analysis: (i) does the full construction transfer across domains? (ii) does retaining joint trend--residual information matter in practice? (iii) must historical evidence be updated when the HiPPO representation changes, and how accurate is the resulting finite-state transfer? and (iv) does the preserved Kronecker structure translate into measurable computational savings?
+
+Unless stated otherwise, all online experiments use the same information boundary:
+visible locations are observed, held-out locations are predicted before their labels
+are revealed, and previously processed blocks are never replayed. The main
+comparison reports RMSE, CRPS, Gaussian NLPD, and ECE; protocols, coverage,
+per-split results, and additional diagnostics are provided in the appendix.
+Table~1 anchors the cross-domain predictive comparison. Figure~2 shows representative PEMS-BAY trajectories, while Figure~3 mirrors the three stages in Figure~1 with controlled checks of revision-aware coupling, coordinate-consistent transfer, and structured posterior recovery. Complete per-split, calibration, transfer-capacity, and solver statistics are reported in Appendix~B.
+
+\paragraph{Baselines.}
+We compare against streaming sparse GP methods, structured spatio-temporal and
+multi-output GP models, and the task-aligned IGNNK neural kriging model on
+PEMS-BAY. OHSVGP provides a comparison with existing HiPPO-based GP memory,
+while Kron-STGP serves as our fixed-coordinate control. Method references are
+given in Table~1, and Appendix~B.2 records the archived implementation provenance.
+
+\begin{table*}[t]
+\centering
+\caption{Cross-domain strict-online spatial prediction (mean $\pm$ SD; five splits for ERA5-Land/COVID-19 and three for PEMS-BAY). Bold and underlined values denote the best and second-best comparable results; `--' indicates unavailable metrics. PEMS-BAY uses contemporaneous held-out-sensor prediction.}
+\label{tab:cross-domain}
+\small
+\setlength{\tabcolsep}{4.5pt}
+\setlength{\cmidrulewidth}{0.25pt}
+\setlength{\cmidrulekern}{0.8em}
+\begin{tabular}{lrrrr}
+\toprule
+Method & RMSE $\downarrow$ & CRPS $\downarrow$ & NLPD $\downarrow$ & ECE $\downarrow$ \\
+\midrule
+\multicolumn{5}{l}{\textit{ERA5-Land}} \\
+OSGPR~\citep{Bui2017} & $0.9833{\pm}0.0127$ & $0.5612{\pm}0.0086$ & $1.5847{\pm}0.0294$ & $0.1131{\pm}0.0051$ \\
+StreamingSGPR~\citep{Maddox2021} & $1.0660{\pm}0.0196$ & $0.6283{\pm}0.0144$ & $1.7331{\pm}0.0466$ & $0.1543{\pm}0.0080$ \\
+OHSVGP~\citep{Chen2025} & $0.7303{\pm}0.0302$ & $0.4132{\pm}0.0170$ & $1.2989{\pm}0.0686$ & $\underline{0.1063{\pm}0.0091}$ \\
+\addlinespace[2pt]\cmidrule(lr){1-5}\addlinespace[0.5pt]
+Kron-STGP & $\underline{0.4166{\pm}0.0046}$ & $\underline{0.2391{\pm}0.0016}$ & $\underline{0.6590{\pm}0.0051}$ & $0.1711{\pm}0.0018$ \\
+\method & $\mathbf{0.1416{\pm}0.0036}$ & $\mathbf{0.0766{\pm}0.0017}$ & $\mathbf{-0.3349{\pm}0.0434}$ & $\mathbf{0.0669{\pm}0.0067}$ \\
+\midrule
+\multicolumn{5}{l}{\textit{COVID-19}} \\
+Persistence & $0.1955{\pm}0.0095$ & $0.1087{\pm}0.0051$ & $-0.1894{\pm}0.0321$ & $\underline{0.0656{\pm}0.0316}$ \\
+Adaptive OSGPR~\citep{Bui2017} & $0.1742{\pm}0.0290$ & $0.0990{\pm}0.0167$ & $-0.2603{\pm}0.1757$ & $0.1267{\pm}0.0435$ \\
+ST-SVGP~\citep{Hamelijnck2021} & $0.2094{\pm}0.0136$ & $0.1192{\pm}0.0067$ & $-0.0840{\pm}0.0390$ & $0.0900{\pm}0.0239$ \\
+LMC-SVGP~\citep{Jeong2023} & $0.3376{\pm}0.0529$ & $0.1965{\pm}0.0281$ & $1.0809{\pm}0.4905$ & $0.1806{\pm}0.0140$ \\
+ICM-SVGP~\citep{Jeong2023} & $0.3435{\pm}0.0447$ & $0.2002{\pm}0.0219$ & $1.0005{\pm}0.3588$ & $0.1797{\pm}0.0016$ \\
+FSDE-SVI~\citep{Jeong2023} & $0.4705{\pm}0.0478$ & $0.2580{\pm}0.0158$ & $0.6693{\pm}0.1044$ & $\mathbf{0.0238{\pm}0.0066}$ \\
+\addlinespace[2pt]\cmidrule(lr){1-5}\addlinespace[0.5pt]
+Kron-STGP & $\underline{0.1605{\pm}0.0107}$ & $\underline{0.0922{\pm}0.0055}$ & $\underline{-0.3029{\pm}0.0533}$ & $0.1427{\pm}0.0240$ \\
+\method & $\mathbf{0.1580{\pm}0.0120}$ & $\mathbf{0.0885{\pm}0.0058}$ & $\mathbf{-0.3621{\pm}0.0583}$ & $\underline{0.1183{\pm}0.0343}$ \\
+\midrule
+\multicolumn{5}{l}{\textit{PEMS-BAY}} \\
+IGNNK~\citep{Wu2021IGNNK} & $\underline{0.7968{\pm}0.1226}$ & -- & -- & -- \\
+OHSVGP & $0.8190{\pm}0.0681$ & $\underline{0.4064{\pm}0.0204}$ & $\underline{1.2312{\pm}0.0760}$ & $\underline{0.1671{\pm}0.0124}$ \\
+OSGPR & $0.8207{\pm}0.0685$ & $0.4130{\pm}0.0211$ & $1.2318{\pm}0.0652$ & $0.1816{\pm}0.0083$ \\
+\addlinespace[2pt]\cmidrule(lr){1-5}\addlinespace[0.5pt]
+Kron-STGP & $0.8139{\pm}0.0695$ & $0.4104{\pm}0.0220$ & $1.2242{\pm}0.0664$ & $0.1827{\pm}0.0096$ \\
+\method & $\mathbf{0.7666{\pm}0.0629}$ & $\mathbf{0.3774{\pm}0.0193}$ & $\mathbf{1.1883{\pm}0.1076}$ & $\mathbf{0.1317{\pm}0.0196}$ \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+
+
+\subsection{Cross-domain replay-free prediction}
+
+We first test the same bounded-state inference construction across three
+qualitatively different processes. ERA5-Land provides the longest
+environmental stream and uses a comparatively rich meteorological mean
+representation; COVID-19 introduces weekly public-health regime changes; and
+PEMS-BAY tests urban mobility with a substantially simpler mean design.
+PEMS-BAY is evaluated as contemporaneous held-out-sensor prediction rather
+than standard future traffic forecasting, making IGNNK a task-aligned external
+kriging baseline \citep{Li2018DCRNN,Wu2021IGNNK}. Together, the three settings
+test portability of the inference construction rather than performance of one
+domain-specific forecasting architecture.
+
+\begin{figure}[t!]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig_representative_replay_free.pdf}
+\caption{PEMS-BAY predictions across three predeclared difficulty regimes. The panels show seed-1 sensors nearest the 15th/50th/85th percentiles of KronHiPPO-STGP RMSE. Lines compare KronHiPPO-STGP with IGNNK and Kron-STGP; shading shows the 90\% predictive interval. Sensor IDs and selection details are reported in Appendix~B.}
+\label{fig:representative-replay-free}
+\end{figure}
+
+Table~\ref{tab:cross-domain} shows consistent performance of the same replay-free construction across all three domains. \method attains the lowest mean RMSE and the lowest comparable CRPS and NLPD, although the calibration metrics do not produce a uniform ranking. The cross-domain pattern is therefore more informative than dominance on every individual metric. On PEMS-BAY, the improvement also persists outside the high-dimensional meteorological mean design used on ERA5 and against the task-aligned IGNNK baseline.
+
+Figure~\ref{fig:representative-replay-free} provides a qualitative view across the three predeclared PEMS-BAY difficulty regimes. In these displayed trajectories, IGNNK smooths several abrupt congestion transitions that \method tracks more closely while also reporting predictive uncertainty. We treat these panels as illustrations rather than aggregate evidence; the quantitative comparison is reported in Table~\ref{tab:cross-domain}.
+
+\subsection{Mechanism validation: memory and transfer}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/figure3_main_mechanism.pdf}
+\caption{Controlled checks aligned with the three stages of Figure~1. (a) Removing the trend--residual cross-precision block increases RMSE under two ERA5-Land operating points and on PEMS-BAY; points show the per-split ratio (\(\mathrm{RMSE}_{\mathrm{zero\text{-}cross}}/\mathrm{RMSE}_{\mathrm{joint}}\)) under changing HiPPO coordinates, with (1) denoting no change. (b) Conditional transport keeps the online predictive distribution close to the current-representation variational reference, whereas identity reuse produces a persistent mismatch. (c) Schur--Sylvester recovery solves the same Gaussian system increasingly faster than dense recovery as the balanced product-state dimension grows. Error bars in (a) and bands in (b) denote sample standard deviations over the corresponding matched splits. Detailed predictive and calibration metrics and selected solver timings are reported in Appendix~B.6.}
+\label{fig:main-mechanism}
+\end{figure*}
+
+\paragraph{Revision-aware memory.}
+Figure~\ref{fig:main-mechanism}(a) tests the practical role of the trend--residual cross-precision block identified in Proposition~\ref{prop:cross-necessity}. Within each setting, every joint/changing and zero-cross/changing pair uses the same spatial split, frozen hyperparameters, inducing-variable budgets, and changing-coordinate updates. Zero-cross removes the accumulated trend--residual cross block after the transported historical and current-block statistics have been combined; all other retained statistics and assimilation steps are unchanged. Removing this block increases RMSE at both ERA5 operating points and on PEMS-BAY. At the archived Table-1 ERA5 operating point, RMSE rises from $0.1416$ to $1.2921$, while the full arm reproduces the archived predictions to numerical precision. This operating-point replication shows that the effect is not specific to the spectral-mixture mechanism configuration. Because the intervention removes both historical and current-block cross-block contributions, it tests joint mean--residual likelihood coupling rather than historical trend revision in isolation. Complete predictive and calibration metrics are reported in Appendix Table~\ref{tab:mechanism_full}; calibration does not yield a uniform ordering.
+
+\paragraph{Coordinate identity versus transfer.}
+Figure~\ref{fig:main-mechanism}(b) tests whether equal-dimensional HiPPO states can be treated as the same GP representation. Identity reuse carries the historical approximate-likelihood natural parameters forward unchanged while updating the HiPPO inducing representation; the prior, current-block update, hyperparameters, and posterior solver are held fixed. At $M_t=128$, conditional transport gives predictive KL $1.26\times10^{-4}$ to the reference posterior recomputed in the current representation, whereas identity reuse gives $2.07$. The mismatch propagates to prediction: identity reuse raises RMSE from $0.0795$ to $0.2651$ and reduces Coverage90 from $0.982$ to $0.632$. CRPS and NLPD worsen in the same comparison, while ECE moves in the opposite direction, so we do not claim a uniform calibration ordering. Complete statistics are reported in Appendix Table~\ref{tab:coordinate_control}.
+
+\paragraph{Transfer fidelity.}
+The capacity sweep separates finite-projection error from coordinate mismatch. Conditional transport is non-monotone in $M_t$, but predictive KL falls to $3.67\times10^{-3}$ at $M_t=64$ and $1.26\times10^{-4}$ at $M_t=128$, whereas identity reuse remains near order one for $M_t\ge32$. Increasing temporal capacity alone therefore does not correct coordinate mismatch; at the operating capacity, conditional transport closely matches the current-representation finite-dimensional target. We do not infer a general convergence guarantee from this sweep. Appendix Fig.~\ref{fig:transfer_solver_diagnostics} reports the complete capacity diagnostic.
+
+\subsection{Structured posterior computation and efficiency}
+
+Figure~\ref{fig:main-mechanism}(c) tests the computational consequence of the preserved Kronecker structure. Dense and Schur--Sylvester recovery solve the same positive-definite systems with matched factors, right-hand sides, and BLAS threading. The mean paired speed-up rises from $7.9\times$ at $M_s=M_t=16$ to $1036.7\times$ at $M_s=M_t=64$, while relative solution error remains below $5\times10^{-12}$. For balanced budgets ($M_s=M_t=M$) and fixed $d_\beta$, the widening gap is consistent with the $O(M^3)$ structured and $O(M^6)$ dense solve complexities. Because both methods target the same Gaussian system, the speed-up is not obtained by changing the posterior approximation. Selected timings and relative errors are reported in Appendix Table~\ref{tab:solver}.
+
+The matched solver benchmark is the evidence for the algorithmic claim. A separate archived RTX~4090 implementation audit includes full-model overhead: at $M_s=M_t=128$, KronHiPPO-STGP records $110.8\times$ lower training wall time and $8.8\times$ lower peak reserved memory than ST-SVGP, with $5.4\%$ higher RMSE. These are implementation-level measurements rather than architecture-neutral complexity ratios; the $40.4\times$ profiler-count difference is likewise implementation-specific. Appendix~B.7 reports the full audit and long-stream accounting.
+
+\FloatBarrier
+
+\FloatBarrier
+\setcounter{dbltopnumber}{2}
+
+\section{Conclusion}
+
+We introduced \method, a bounded-memory variational GP method for jointly updating a parametric mean and spatio-temporal GP residual without replay. Across environmental, public-health, and traffic streams, the method provides strong point and probabilistic predictions while keeping persistent memory independent of stream length. The analysis and controlled experiments examine each component of the construction: retaining the joint information needed to revise past evidence, updating that evidence when the HiPPO representation changes, and preserving Kronecker structure for efficient posterior computation.
+
+The current construction assumes separable residual kernels, fixed spatial
+inducing and observation geometry, Cartesian-product observation blocks with
+Gaussian likelihood, and frozen streaming hyperparameters;
+richer observation patterns and likelihoods will require more general structured
+states. The results also indicate that, in online probabilistic models, a changing
+finite memory should be treated as a changing coordinate system for historical
+evidence rather than as an interchangeable latent state.
+
+\subsection*{AI use statement}
+
+We used OpenAI ChatGPT and Codex as research-support and editing tools. Their use included suggesting literature-search queries and organising candidate sources; assisting with revisions to experimental code and additions to training scripts; organising experiment records and checking the consistency of tables and reported results; improving LaTeX layout, cross-references, and figure and table formatting; and suggesting language and structural revisions to selected sections. Generative-AI outputs were treated as suggestions rather than scholarly evidence. The authors checked cited claims against the original publications, reviewed and tested code changes, generated the reported numerical results by running the documented experiments, and verified mathematical arguments and reported values against project records. All material was selected, revised, and approved by the authors, who remain responsible for its accuracy and originality.
+
+\bibliography{references}
+\bibliographystyle{apalike}
+
+\clearpage
+\appendix
+\thispagestyle{empty}
+\onecolumn
+\aistatstitle{KronHiPPO-STGP: Online Bayesian Spatio-temporal Modelling with Evolving Memory: Supplementary Materials}
+\setcounter{table}{4}
+\section*{Reproducibility statement}
+The appendix specifies the information boundary, data splits, objectives, hyperparameter-freezing rule, metrics, and structured-solver check. The anonymised supplementary package contains machine-readable aggregate and per-seed mechanism results, the suite manifest, proof audit, and scripts used to run and visualise the diagnostics.
+
+\subsection*{Ethics statement}
+The study uses environmental observations and aggregate public-health data from public sources. It does not recruit participants, conduct clinical interventions, or access identifiable or individual-level health records. The models were evaluated as research methods and were not deployed for clinical or public-health decision making. Any operational use would require separate assessment of calibration, distribution shift, fairness, and the consequences of missed or false alarms.
+
+\input{appendix}
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+

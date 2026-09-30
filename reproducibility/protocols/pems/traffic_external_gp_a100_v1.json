@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "experiment": "PEMS-BAY existing-GP baselines under locked Protocol N",
+  "dataset": "pems_bay",
+  "seeds": [1, 2, 3],
+  "task1_steps": 2016,
+  "online_steps": 50100,
+  "spatial_split": {
+    "visible": 260,
+    "visible_calibration": 234,
+    "visible_validation": 26,
+    "held_out": 65
+  },
+  "information_order": [
+    "absorb y_H,t-1 exactly once",
+    "condition on y_V,t",
+    "predict y_H,t",
+    "reveal y_H,t after prediction"
+  ],
+  "shared_target": "Task-1-prefix standardised speed",
+  "shared_residual_mean_for_streaming_gp_adapters": {
+    "mode": "road_context_xlag",
+    "lag_count": 10,
+    "graph_diffusion": 7.448975327393576,
+    "fit": "Task-1 visible-calibration sensors only",
+    "uses_current_hidden_target": false,
+    "note": "OHSVGP, Maddox StreamingSGPR and Bui OSGPR use this frozen offset; ST-SVGP retains its official zero-mean model class."
+  },
+  "likelihood": "Gaussian",
+  "methods": {
+    "OHSVGP": {
+      "source_commit": "a1bff1bc8162",
+      "M": 64,
+      "RFF": 256,
+      "task1_block_steps": 12,
+      "online_update_steps": 1,
+      "description": "official OHSVGP core with the audited multidimensional Protocol-N adapter"
+    },
+    "Maddox StreamingSGPR": {
+      "source_commit": "3bff4c347263",
+      "temporal_inducing": 4,
+      "spatial_inducing": 32,
+      "resample_ratio": 0.2,
+      "dtype": "float64",
+      "jitter": 0.001,
+      "description": "official StreamingSGPR fantasy update with fixed Task-1 hyperparameters"
+    },
+    "Bui OSGPR": {
+      "source_commit": "d95081b8a673",
+      "temporal_inducing": 4,
+      "spatial_inducing": 32,
+      "description": "official OSGPR update with fixed Task-1 hyperparameters"
+    },
+    "ST-SVGP": {
+      "spatial_inducing": 32,
+      "task1_iterations": 2500,
+      "online_inference_steps": 1,
+      "history_window": 12,
+      "description": "causal refit adaptation; not sequential posterior transfer"
+    }
+  },
+  "selection_boundary": "No PEMS formal-stream target is used to select these capacities.",
+  "acceptance": {
+    "archive_shape": [50100, 65],
+    "finite_means": true,
+    "positive_variances": true,
+    "current_hidden_reads": 0,
+    "delayed_hidden_absorptions": 3256435,
+    "truth_must_match_locked_protocol": true
+  }
+}

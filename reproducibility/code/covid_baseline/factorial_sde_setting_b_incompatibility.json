@@ -1,0 +1,22 @@
+{
+  "status": "superseded_by_thin_adapter_audit",
+  "source": "SeyoungKimLab/FactorialSDE",
+  "source_commit": "6e9ad8fb904e8d94e0325b21429111f26d8b6e69",
+  "setting_b_requirement": "At week t the method must condition on all arrived labels through t-1 and only 42 of 52 current outputs, then predict the 10 current hidden outputs.",
+  "evidence": [
+    {
+      "method": "LMC-SVGP",
+      "source_file": "fsde/baselines/gpflow_lmc_svgp.py",
+      "lines": "376-384",
+      "finding": "The official trainer passes every time point with its complete output vector Y_train.T to tf.data.Dataset."
+    },
+    {
+      "method": "IMC-SVGP",
+      "source_file": "fsde/baselines/gpflow_imc_svgp.py",
+      "lines": "546-554",
+      "finding": "The official trainer has the same complete-vector interface Y_train.T and no observation mask argument."
+    }
+  ],
+  "correction": "Complete historical vectors are compatible with the delayed Setting B protocol. LMC-SVGP and IMC-SVGP now use a thin official-core adapter followed by analytic conditioning of the full-output predictive Gaussian. FSDE-SVI exposes the same full covariance through FSDE_SVI.predict and is audited separately in fsde_svi_setting_b_gate.json.",
+  "reporting_rule": "This file no longer governs LMC-SVGP, IMC-SVGP or FSDE-SVI eligibility. It remains as provenance for the original API audit; the current catalogue records each method's completed or runtime-limited state."
+}

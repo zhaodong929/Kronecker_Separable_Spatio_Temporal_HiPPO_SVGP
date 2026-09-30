@@ -1,0 +1,35 @@
+{
+  "status": "unmodified_upstream_covid_entrypoints_attempted_not_completed",
+  "source_repository": "https://github.com/SeyoungKimLab/FactorialSDE",
+  "source_commit": "6e9ad8fb904e8d94e0325b21429111f26d8b6e69",
+  "unmodified_entrypoint": "fsde/real_exps/real_lmc.py 1 --natgrad",
+  "upstream_protocol": "The unmodified entrypoint trains the paper's county-level COVID benchmark for up to 50,000 steps and writes only upstream MAE/NLPD output.",
+  "attempts": [
+    {
+      "entrypoint": "real_lmc.py 1 --natgrad",
+      "environment": "baselines/.venvs/factorial_sde_gpflow38",
+      "device": "CPU because the author-pinned TensorFlow 2.4.1 cannot load the CUDA 11 runtime on this host",
+      "observed_runtime_seconds": 2212,
+      "observed_rss_mib": 6280,
+      "result_file_written": false,
+      "outcome": "Stopped after the unmodified process remained in its 50,000-step upstream training loop. It cannot produce a 52-jurisdiction Setting B result and would otherwise occupy the local baseline host for many additional hours."
+    },
+    {
+      "entrypoint": "real_lmc.py 1 --natgrad",
+      "environment": "baselines/.venvs/factorial_sde_tf216_cuda",
+      "device": "RTX 5070 Laptop GPU",
+      "result_file_written": false,
+      "log": "baselines/covid_long_setting_b/reproduction/factorial_sde_official_lmc_covid_failure.log",
+      "outcome": "The unmodified source loaded the bundled COVID data and entered LMC construction, then TensorFlow 2.16.2 failed before training with CUDA_ERROR_INVALID_HANDLE because its PTX path is incompatible with compute capability 12.0."
+    },
+    {
+      "entrypoint": "real_fsde_svi.py 1 --natgrad",
+      "environment": "baselines/.venvs/factorial_fsde",
+      "device": "CPU; author-pinned JAX 0.3.16 environment",
+      "result_file_written": false,
+      "log": "baselines/covid_long_setting_b/reproduction/factorial_sde_official_fsde_covid_failure.log",
+      "outcome": "The unmodified source loaded the bundled COVID data, then failed before the first optimization step because ind_times_covid.pkl has shape (50, 1) while the script passes it to lax.dynamic_slice as a one-dimensional array: ValueError: Length of slice indices must match number of operand dimensions (1 vs (50, 1))."
+    }
+  ],
+  "setting_b_interpretation": "LMC-SVGP, IMC-SVGP and FSDE-SVI table rows are completed causal adapters that call pinned upstream constructors, trainers and predictive covariance code. They are not presented as scores from an upstream county-level entrypoint."
+}
