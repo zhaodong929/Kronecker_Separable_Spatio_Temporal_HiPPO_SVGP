@@ -2,7 +2,7 @@
   "campaign": "fair-three-domain-wandb-20260929",
   "entity": "harrisonzhu",
   "project": "KronHiPPO-STGP",
-  "as_of": "2026-09-30T00:13:39.766403+00:00",
+  "as_of": "2026-09-30T00:18:17.587225+00:00",
   "rows": [
     {
       "dataset": "era5",
@@ -310,7 +310,7 @@
       "split_seed": 5,
       "stage": "final",
       "submission_status": "submitted_with_per_split_validation_gate",
-      "job_id": 294345,
+      "job_id": 294350,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
       "dispatch_unit": "hippo-osgpr-covid-dispatch-v2.service"
@@ -461,7 +461,7 @@
       "stage": "final",
       "submission_status": "submitted_with_per_split_validation_gate",
       "job_id": 294321,
-      "run_url": null,
+      "run_url": "https://wandb.ai/harrisonzhu/KronHiPPO-STGP/runs/aa77ee75a9a8",
       "pending_requirement": "Independent split validation must pass before formal stream starts"
     },
     {
@@ -501,7 +501,7 @@
       "stage": "final",
       "submission_status": "submitted",
       "job_id": 294335,
-      "run_url": null,
+      "run_url": "https://wandb.ai/harrisonzhu/KronHiPPO-STGP/runs/27b32b2f1e6f",
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending"
     },
     {
@@ -511,7 +511,7 @@
       "stage": "final",
       "submission_status": "submitted",
       "job_id": 294335,
-      "run_url": null,
+      "run_url": "https://wandb.ai/harrisonzhu/KronHiPPO-STGP/runs/dde60817bdb3",
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending"
     },
     {
@@ -553,7 +553,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "Waiting for COVID submission receipts and quota; GPU qualification and full-initial resource gate precede final execution",
-      "dispatch_unit": "hippo-osgpr-pems-dispatch-v5-extended.service"
+      "dispatch_unit": "hippo-osgpr-pems-dispatch-v6.service"
     },
     {
       "dataset": "pems_bay",
@@ -564,7 +564,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "Waiting for COVID submission receipts and quota; GPU qualification and full-initial resource gate precede final execution",
-      "dispatch_unit": "hippo-osgpr-pems-dispatch-v5-extended.service"
+      "dispatch_unit": "hippo-osgpr-pems-dispatch-v6.service"
     },
     {
       "dataset": "pems_bay",
@@ -575,7 +575,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "Waiting for COVID submission receipts and quota; GPU qualification and full-initial resource gate precede final execution",
-      "dispatch_unit": "hippo-osgpr-pems-dispatch-v5-extended.service"
+      "dispatch_unit": "hippo-osgpr-pems-dispatch-v6.service"
     },
     {
       "dataset": "pems_bay",
@@ -689,6 +689,24 @@
       "method": "mgpvae",
       "stage": "validation_retry",
       "status": "completed_and_verified"
+    }
+  ],
+  "recovery_jobs": [
+    {
+      "job_id": 294345,
+      "method": "osgpr",
+      "dataset": "covid",
+      "seeds": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "status": "failed_then_cancelled_before_calibration",
+      "reason": "TensorFlow XLA libdevice path resolution failed in real CUDA qualification; remaining array cancelled to avoid repeating environment failure",
+      "replacement_head": 294350,
+      "replacement_release": "9f4a9d7ddeb92c7d84a09029641d49e21ca24b9c"
     }
   ]
 }
