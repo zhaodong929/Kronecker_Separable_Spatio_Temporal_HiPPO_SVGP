@@ -8,6 +8,16 @@ This index identifies the evidence used by the current paper snapshot.
 | COVID-19 | `protocols/covid/seed*/protocol.json` and `protocol.audit.json` | `results/covid/formal_gaussian_st_bui_complete/`, `results/covid/reorganized_results_20260821/` | Formal tables and per-seed reports retained |
 | PEMS-BAY | `protocols/pems/traffic_paired_spatial_v1.json`, `protocols/pems/traffic_external_gp_a100_v1.json` | `results/pems/pems_matched_mechanism_20260914/`, `results/pems/external_gp_paper_ready/` | Three matched mechanism splits and external-GP audit retained |
 
+## Required ablations
+
+The mechanism evidence shown in the paper is explicitly archived under `results/ablations/`:
+
+- matched joint/zero-cross/fixed-global controls for ERA5-Land and PEMS-BAY;
+- conditional coordinate transport versus identity reuse, including predictive KL;
+- dense versus Schur--Sylvester posterior recovery timings and relative errors;
+- the compact cross-domain main-table values;
+- the corresponding mechanism and transfer figures.
+
 ## Paper result labels
 
 - `formal`: included in the current paper tables or their cited appendix tables.
