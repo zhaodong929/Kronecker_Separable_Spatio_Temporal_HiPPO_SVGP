@@ -48,6 +48,8 @@ def main():
     p.add_argument('--max-blocks', type=int, default=0)
     p.add_argument('--metric-backend', choices=['numpy','jax'], default='numpy')
     p.add_argument('--rematerialize-scans', action='store_true')
+    p.add_argument('--initial-marginals', choices=['reference','direct'], default='reference')
+    p.add_argument('--check-initial-marginal-prefix', action='store_true')
     p.add_argument('--validation-only', action='store_true')
     p.add_argument('--selection-json', type=Path)
     a = p.parse_args()
@@ -85,12 +87,27 @@ def main():
     import jax.numpy as jnp
     import objax
     t = jnp.asarray(scaled(times))[:, None]
+    if a.check_initial_marginal_prefix:
+        from baselines.mgpvae.initial import verify_initial_prefix
+        check=verify_initial_prefix(model,t,jnp.asarray(residuals(protocol.fit_locations).T[...,None]),
+            jnp.asarray(protocol.coordinates[protocol.validation_locations]))
+        (a.output_dir/'initial-marginal-equivalence.json').write_text(json.dumps(check,indent=2))
+        import gc
+        gc.collect();jax.clear_caches()
     training_started = time.perf_counter()
     trace = []
+    initial_predictors = {}
 
     def validation(model, training):
         # Task-1 smoothing uses only fitting sites; all initial times are legal.
-        lm, lv = model.predict(t, t, training, jnp.asarray(protocol.coordinates[protocol.validation_locations]))
+        if a.initial_marginals=='direct':
+            from baselines.mgpvae.initial import make_initial_predictor
+            if id(model) not in initial_predictors:
+                initial_predictors[id(model)]=make_initial_predictor(model,t,training,
+                    jnp.asarray(protocol.coordinates[protocol.validation_locations]))
+            lm,lv=initial_predictors[id(model)]()
+        else:
+            lm, lv = model.predict(t, t, training, jnp.asarray(protocol.coordinates[protocol.validation_locations]))
         shape = (len(protocol.validation_locations), len(times), a.latent)
         lm, lv = jnp.reshape(lm, shape), jnp.reshape(lv, shape)
         if not np.isfinite(lv).all() or np.any(np.asarray(lv) <= 0):

@@ -1,0 +1,15 @@
+{
+  "job_name": "hippo-mgpvae-pems-marginals-tail-20260930",
+  "array": "2,3%3",
+  "sbatch": "slurm/fair_three_domain/mgpvae_pems.sbatch",
+  "seeds": [
+    2,
+    3
+  ],
+  "kind": "final",
+  "scope": "MGPVAE PEMS: GPU tests and full-initial-window resource integration, then own validation and full causal final run; memory recovery preserving objective and precision, GPU equivalence and full-size resource gates required; direct initial-time spatial marginals with official full-state prediction parity on real spatial prefix",
+  "result_template": "/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/fair-three-domain-wandb-20260929/pems/mgpvae/seed{seed}/job-{job}",
+  "wait_for_submissions": [
+    "/data/nk523/projects/hipposvgp-fair-comparison/outputs/2026-09-29-doc-campaign/mgpvae-pems-marginals-head/submission.json"
+  ]
+}

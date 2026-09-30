@@ -25,10 +25,11 @@ def main():
         '--official-source',os.environ['MGPVAE_SOURCE'],'--prediction-samples','512',
         '--protocol-kind',{'covid':'covid','pems':'traffic','era5':'era5'}[a.dataset],
         '--metric-backend','numpy' if a.dataset=='covid' else 'jax']
-    if a.dataset!='covid':common.append('--rematerialize-scans')
+    if a.dataset!='covid':common += ['--rematerialize-scans','--initial-marginals','direct']
     tests=['tests/test_mgpvae_spatial_moments.py','tests/test_mgpvae_selected.py',
         'tests/test_mgpvae_partial.py','tests/test_mgpvae_official_filter.py','tests/test_mgpvae_mixture_metrics.py',
-        'tests/test_mgpvae_gpu_metrics.py','tests/test_mgpvae_memory.py']
+        'tests/test_mgpvae_gpu_metrics.py','tests/test_mgpvae_memory.py',
+        'tests/test_mgpvae_initial_marginals.py']
     if a.dataset=='era5':tests.append('tests/test_era5_information_boundary.py')
     with (a.output/'tests.txt').open('w') as log:
         subprocess.run([worker,'-m','pytest','-q',*tests],stdout=log,stderr=subprocess.STDOUT,check=True)
@@ -41,6 +42,7 @@ def main():
             max_iterations=budget,decoder_samples=512,metric_backend='numpy' if a.dataset=='covid' else 'jax',predictive_family='Gaussian decoder mixture',
             covariance_pushforward_corrected=True,main_table_admitted=False)
         spec['scan_rematerialization']=a.dataset!='covid'
+        spec['initial_marginals']='reference' if a.dataset=='covid' else 'direct'
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
                 expected_sites=expected_sites,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=initial_sites)
@@ -49,7 +51,7 @@ def main():
         (output/'spec.json').write_text(json.dumps(spec,indent=2))
         command=[worker,'scripts/run_mgpvae_causal.py',*common,'--output-dir',str(output),
             '--latent',str(capacity),'--iterations',str(budget),'--check-every','25']
-        if qualification:command += ['--max-blocks','3']
+        if qualification:command += ['--max-blocks','3','--check-initial-marginal-prefix']
         else:command += ['--validation-only'] if selection is None else ['--selection-json',str(selection)]
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
             '--output',str(output),'--',*command],check=True)
