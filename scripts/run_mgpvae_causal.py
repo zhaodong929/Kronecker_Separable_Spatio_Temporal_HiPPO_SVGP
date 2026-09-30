@@ -48,6 +48,7 @@ def main():
     p.add_argument('--max-blocks', type=int, default=0)
     p.add_argument('--metric-backend', choices=['numpy','jax'], default='numpy')
     p.add_argument('--rematerialize-scans', action='store_true')
+    p.add_argument('--compact-training-marginals', action='store_true')
     p.add_argument('--initial-marginals', choices=['reference','direct'], default='reference')
     p.add_argument('--check-initial-marginal-prefix', action='store_true')
     p.add_argument('--validation-only', action='store_true')
@@ -75,7 +76,8 @@ def main():
         return (np.asarray(t)-origin)/span
     def create(locations):
         return make_model(a.official_source, protocol.coordinates[locations], seed=a.seed,
-            latent=a.latent, width=a.width, correct_spatial_covariance=True)
+            latent=a.latent, width=a.width, correct_spatial_covariance=True,
+            compact_spatial_marginals=a.compact_training_marginals)
     def residuals(locations):
         offsets = np.stack([mean_function.at(t, locations) for t in times])
         return select_initial_targets(initial, locations)-offsets
@@ -182,6 +184,12 @@ def main():
     (a.output_dir/'calibration.json').write_text(json.dumps(calibration, indent=2))
     if a.validation_only:
         return
+    # Fitting/validation executables are no longer needed for the all-site
+    # refit. Release them without changing any parameters, draws or objective.
+    del model
+    initial_predictors.clear()
+    import gc
+    gc.collect();jax.clear_caches()
     refit_started = time.perf_counter()
     fitted = create(initial.locations)
     fit(fitted, initial.locations, selected['step'], 'refit', False)

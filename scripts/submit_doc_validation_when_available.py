@@ -52,7 +52,17 @@ def main():
             time.sleep(600)
             continue
         try:
-            qualifications=plan.get('wait_for_qualifications',[])
+            qualifications=[]
+            for dependency in plan.get('wait_for_qualifications',[]):
+                expected=dict(dependency)
+                if 'head_submission' in dependency:
+                    head=json.loads(Path(dependency['head_submission']).read_text())
+                    if dependency['seed'] not in head['followup_plan']['seeds']:
+                        raise RuntimeError('Qualification seed is absent from head submission')
+                    expected.update(path=head['followup_plan']['result_template'].format(
+                        seed=dependency['seed'],job=head['job'])+'/qualification.json',
+                        source_commit=head['source_commit'])
+                qualifications.append(expected)
             if qualifications:
                 code=('import json; from pathlib import Path; expected='+repr(qualifications)+
                     '; states=[json.loads(Path(x["path"]).read_text()) if Path(x["path"]).is_file() else {} for x in expected]; '
@@ -99,7 +109,7 @@ def main():
                     record['error'] = r.stderr[-2500:]
                     record_failure(record)
                     return 1
-        except (OSError, subprocess.TimeoutExpired, RuntimeError) as error:
+        except (OSError, subprocess.TimeoutExpired, RuntimeError, ValueError, KeyError) as error:
             record['error'] = str(error)
         if job is not None:
             record.update(status='submitted', job=job, source_commit=a.release, followup_plan=plan)

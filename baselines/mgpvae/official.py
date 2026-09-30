@@ -21,12 +21,14 @@ def import_official(source):
     return STMarkovGaussianProcessVAEExternal
 
 
-def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spatial_covariance=False):
+def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spatial_covariance=False, compact_spatial_marginals=False):
     cls = import_official(source)
+    if compact_spatial_marginals and not correct_spatial_covariance:
+        raise ValueError('Compact training requires the explicit covariance correction')
     if correct_spatial_covariance:
-        from .spatial_moments import corrected_energy
+        from .spatial_moments import corrected_energy,diagonal_corrected_energy
         class SpatialCovarianceCorrectedMGPVAE(cls):
-            energy = corrected_energy
+            energy = diagonal_corrected_energy if compact_spatial_marginals else corrected_energy
         cls = SpatialCovarianceCorrectedMGPVAE
     import jax.numpy as jnp
     import objax
@@ -40,6 +42,12 @@ def make_model(source, coordinates, *, seed=0, latent=2, width=16, correct_spati
         R=jnp.asarray(coordinates), lengthscale=2., variance=1.,
         lengthscale_time=jnp.ones(latent)*5., variance_time=jnp.ones(latent),
         fix_variance=True)
+    if compact_spatial_marginals:
+        import numpy as np
+        expected=np.kron(np.eye(kernel.Ns),np.array([[1.,0.]]))
+        h=np.asarray(kernel.measurement_model())
+        if not np.array_equal(h,np.broadcast_to(expected,h.shape)):
+            raise ValueError("Compact training requires the pinned identity measurement")
     return cls(kernel=kernel,
         likelihood=DecoderGaussian(decoder, variance=1., num_latent=latent, y_dim=1),
         encoder=encoder, num_hidden=width,
