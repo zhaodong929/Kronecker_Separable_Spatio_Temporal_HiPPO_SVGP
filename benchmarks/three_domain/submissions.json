@@ -368,7 +368,7 @@
       "job_id": 294350,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-dispatch-v2.service",
+      "dispatch_unit": "hippo-osgpr-covid-graph-budget-head.service",
       "training_seed_actual": 5
     },
     {
@@ -380,7 +380,7 @@
       "job_id": 294359,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-dispatch-v2.service",
+      "dispatch_unit": "hippo-osgpr-covid-graph-budget-tail67.service",
       "training_seed_actual": 6
     },
     {
@@ -392,7 +392,7 @@
       "job_id": 294359,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-dispatch-v2.service",
+      "dispatch_unit": "hippo-osgpr-covid-graph-budget-tail67.service",
       "training_seed_actual": 7
     },
     {
@@ -404,7 +404,7 @@
       "job_id": 294359,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-dispatch-v2.service",
+      "dispatch_unit": "hippo-osgpr-covid-graph-budget-tail89.service",
       "training_seed_actual": 8
     },
     {
@@ -416,7 +416,7 @@
       "job_id": 294359,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-dispatch-v2.service",
+      "dispatch_unit": "hippo-osgpr-covid-graph-budget-tail89.service",
       "training_seed_actual": 9
     },
     {
@@ -834,6 +834,36 @@
       "status": "validation_budget_incomplete",
       "replacement_job": 294366,
       "replacement_release": "5ea6e26197f7c27d332b983fac80c213bfab6973"
+    },
+    {
+      "job_id": 294350,
+      "dataset": "covid",
+      "method": "osgpr",
+      "seeds": [
+        5
+      ],
+      "status": "initial_validation_budget_incomplete",
+      "reason": "Selected 800-step configuration still improves; final not started",
+      "replacement_release": "c0834d59ec1e6056a2ec2a224b23381a1bc74241",
+      "replacement_dispatch_unit": "hippo-osgpr-covid-graph-budget-head.service"
+    },
+    {
+      "job_id": 294359,
+      "dataset": "covid",
+      "method": "osgpr",
+      "seeds": [
+        6,
+        7,
+        8,
+        9
+      ],
+      "status": "cancelled_for_verified_graph_and_budget_recovery",
+      "reason": "Replace eager initial/online execution consistently with parity-qualified graph and extended Task-1 budget gates",
+      "replacement_release": "c0834d59ec1e6056a2ec2a224b23381a1bc74241",
+      "replacement_dispatch_units": [
+        "hippo-osgpr-covid-graph-budget-tail67.service",
+        "hippo-osgpr-covid-graph-budget-tail89.service"
+      ]
     }
   ]
 }
