@@ -82,12 +82,23 @@ def make_kernel(theta, *, frozen: bool):
     return kernel
 
 
-def adapt_model(model, *, steps: int, learning_rate: float, execution: str = 'eager') -> int:
+def adapt_model(model, *, steps: int, learning_rate: float, execution: str = 'eager', graph_cache=None) -> int:
     """Run a bounded, causal Adam update for the official GPflow model."""
 
     global _OPTIMIZER_STEP
     if steps <= 0:
         return 0
+    if execution=='graph' and graph_cache is not None and isinstance(model,OSGPR_VFE):
+        from baselines.osgpr_graph import optimizer_entry
+        cached,step=optimizer_entry(model,learning_rate,graph_cache)
+        for _ in range(int(steps)):
+            loss=step()
+            emit('train',_OPTIMIZER_STEP+1,dict(negative_elbo=float(loss),requested_steps=steps,execution='graph_reused'))
+            _OPTIMIZER_STEP+=1
+        if cached is not model:
+            for destination,source in zip(model.trainable_variables,cached.trainable_variables):
+                destination.assign(source)
+        return int(steps)
     optimizer = tf.optimizers.Adam(float(learning_rate), jit_compile=False)
     if execution not in {'eager','graph'}:
         raise ValueError('Unknown TensorFlow optimizer execution mode')
@@ -347,6 +358,7 @@ def main():
     old_kernel_covariance = None
     old_z = z
     calibration_seconds = 0.0
+    graph_cache = {}
     task1_warm_start = bool(
         args.task1_posterior_warm_start or args.adaptive or args.task1_validation_only
     )
@@ -384,6 +396,7 @@ def main():
                     steps=args.adaptive_calibration_steps,
                     learning_rate=args.adaptive_learning_rate,
                     execution=args.initial_optimizer_execution,
+                    graph_cache=graph_cache,
                 )
                 z = np.asarray(model.inducing_variable.Z)
                 noise_variance = float(model.likelihood.variance.numpy())
@@ -484,6 +497,7 @@ def main():
                     steps=args.adaptive_online_steps,
                     learning_rate=args.adaptive_learning_rate,
                     execution=args.online_optimizer_execution,
+                    graph_cache=graph_cache,
                 )
                 z = np.asarray(model.inducing_variable.Z)
                 noise_variance = float(model.likelihood.variance.numpy())

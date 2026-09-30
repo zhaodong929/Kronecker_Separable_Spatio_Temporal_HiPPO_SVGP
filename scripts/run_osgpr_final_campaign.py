@@ -43,6 +43,7 @@ def main():
             temporal_inducing=mt,spatial_inducing=ms,calibration_steps_per_block=budget,
             online_steps_per_update=updates,initial_optimizer_execution='graph',initial_block_times=10 if a.dataset=='covid' else 256,
             online_optimizer_execution='graph',main_table_admitted=False)
+        spec['optimizer_graph_reuse']=True
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
                 expected_sites=expected_sites,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=initial_sites,predictive_family='gaussian')
