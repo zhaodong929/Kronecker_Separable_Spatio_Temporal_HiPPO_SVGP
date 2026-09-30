@@ -21,6 +21,9 @@ def main():
             submitted_comparisons=sum(r['job_id'] is not None for r in rows),
             unsubmitted_comparisons=sum(r['job_id'] is None for r in rows),
             verified_completed_comparisons=sum(r['submission_status']=='completed_and_verified' for r in rows),
+            failed_requires_review_comparisons=sum(r['submission_status']=='failed_requires_review' for r in rows),
+            submitted_not_yet_verified_comparisons=sum(r['job_id'] is not None and r['submission_status'] not in
+                {'completed_and_verified','failed_requires_review'} for r in rows),
             as_of=data['as_of'],
             status_scope='Submission snapshot; use individual runs for live execution status',
             ablations=False,compute='DoC only; at most three allocated GPUs'))

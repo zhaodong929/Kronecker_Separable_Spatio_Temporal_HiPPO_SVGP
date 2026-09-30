@@ -52,7 +52,7 @@ def main():
                 if state.get(path, {}).get('status') == 'synchronized':
                     row['submission_status'] = 'completed_and_verified'
                     row['pending_requirement'] = 'Source-aligned common evaluation and W&B artifacts verified; manuscript admission remains pending'
-            elif observed.get('exit', {}).get('exit_code', 0) != 0:
+            elif 'exit' in observed:
                 row['submission_status'] = 'failed_requires_review'
                 row['pending_requirement'] = 'Inspect terminal records and recover before counting this comparison complete'
     ledger['as_of'] = datetime.datetime.now(datetime.timezone.utc).isoformat()
