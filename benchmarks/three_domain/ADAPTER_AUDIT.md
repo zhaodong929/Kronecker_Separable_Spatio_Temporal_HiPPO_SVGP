@@ -361,3 +361,6 @@ strict tolerances and reject unexplained differences. The mapping is used only
 for legacy provenance checks, never to alter the new target/covariate time grid.
 All-site full-period alignment remains pending February/March retrieval. The
 preparation code and hashes are snapshotted alongside the data-verification report.
+
+### 2026-09-30: OSGPR initial-budget recovery
+COVID seed5 job294350 failed the qualification gate before any final stream because the selected initial configuration still improved at 800 updates. Array294359 (seeds6–9) was cancelled to replace slow eager execution consistently. Official SGPR/OSGPR losses, parameters and Adam remain unchanged; the already CPU/CUDA parity-qualified graph mode is now used for both initial and online optimization on all domains. Candidate endpoints that remain globally selected and improve materially are extended 800→1600→3200→6400. Worsening extension resolves the earlier endpoint without forcing a worse setting; an improving selected 6400 endpoint still blocks final evaluation. Chronological initial-fold online budgets similarly extend 80→320→1280 only when the selected endpoint improves materially. Selection uses only Task-1 validation, never final labels. All previous validation W&B artifacts remain preserved; new attempts repeat selection with fresh provenance.

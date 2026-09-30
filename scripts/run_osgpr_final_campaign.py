@@ -41,8 +41,8 @@ def main():
             source_commit=a.release,worker_python=worker,
             input_files=[str(protocol/'protocol.npz'),str(protocol/'protocol.json')],
             temporal_inducing=mt,spatial_inducing=ms,calibration_steps_per_block=budget,
-            online_steps_per_update=updates,initial_optimizer_execution='eager' if a.dataset=='covid' else 'graph',initial_block_times=10 if a.dataset=='covid' else 256,
-            online_optimizer_execution='eager' if a.dataset=='covid' else 'graph',main_table_admitted=False)
+            online_steps_per_update=updates,initial_optimizer_execution='graph',initial_block_times=10 if a.dataset=='covid' else 256,
+            online_optimizer_execution='graph',main_table_admitted=False)
         if stage=='final':
             spec.update(qualification_record=str(a.output/'qualification.json'),expected_steps=expected_steps,
                 expected_sites=expected_sites,hidden_delay_steps=None if a.dataset=='era5' else 1,initial_observed_sites=initial_sites,predictive_family='gaussian')
@@ -54,8 +54,7 @@ def main():
             '--adaptive-calibration-steps',str(budget),'--adaptive-online-steps',str(updates),
             '--device','cuda','--calibration-block-size',
             '10' if a.dataset=='covid' else '256','--initial-optimizer-execution',
-            'eager' if a.dataset=='covid' else 'graph']
-        if a.dataset!='covid':command += ['--online-optimizer-execution','graph']
+            'graph','--online-optimizer-execution','graph']
         if a.dataset!='era5':command.append('--delayed-observations')
         if calibration_only:command.append('--task1-validation-only')
         subprocess.run([sys.executable,'scripts/run_tracked_experiment.py','--spec',str(output/'spec.json'),
@@ -74,17 +73,34 @@ def main():
                 scores[-1]['requires_larger_budget']=True
         candidates.extend(scores)
     selected=min(candidates,key=lambda c:c['nlpd'])
-    if selected.get('requires_larger_budget'):
-        (a.output/'initial-budget-incomplete.json').write_text(json.dumps(candidates,indent=2))
-        raise RuntimeError('Selected initial configuration improves at maximum budget; extend qualification')
+    # Extend only a currently selected endpoint. A larger budget that worsens
+    # validation resolves the earlier endpoint; it does not force its selection.
+    while selected.get('requires_larger_budget'):
+        extended_budget=2*selected['budget']
+        if extended_budget>6400:
+            (a.output/'initial-budget-incomplete.json').write_text(json.dumps(candidates,indent=2))
+            raise RuntimeError('Selected initial configuration improves at 6400; extend qualification')
+        result=run(a.output/f"calibration-mt{selected['mt']}-ms{selected['ms']}-b{extended_budget}",
+            'validation',selected['mt'],selected['ms'],extended_budget,5,source,True)
+        candidate=dict(mt=selected['mt'],ms=selected['ms'],budget=extended_budget,
+            nlpd=result['metrics']['gaussian_nlpd'],result=result,
+            requires_larger_budget=result['metrics']['gaussian_nlpd']<selected['nlpd']-0.01)
+        selected['requires_larger_budget']=False
+        selected['extended_budget_checked']=extended_budget
+        candidates.append(candidate)
+        selected=min(candidates,key=lambda c:c['nlpd'])
     mt,ms,budget=selected['mt'],selected['ms'],selected['budget']
     online=[]
-    for updates in [5,20,80]:
+    for updates in [5,20,80,320,1280]:
+        if updates>80:
+            best_so_far=min(online,key=lambda c:c['nlpd'])
+            if best_so_far is not online[-1] or online[-1]['nlpd']>=min(c['nlpd'] for c in online[:-1])-0.01:
+                break
         result=run(a.output/f'online-budget-u{updates}','validation',mt,ms,budget,updates,fold)
         online.append(dict(updates=updates,nlpd=result['final']['nll'],
             update_seconds=result['timing']['mean_block_update_seconds']))
     best=min(online,key=lambda c:c['nlpd'])
-    if best['updates']==80 and best['nlpd'] < min(c['nlpd'] for c in online[:-1])-0.01:
+    if best['updates']==1280 and best['nlpd'] < min(c['nlpd'] for c in online[:-1])-0.01:
         (a.output/'online-budget-incomplete.json').write_text(json.dumps(online,indent=2))
         raise RuntimeError('Online validation materially improves at maximum budget; extend qualification')
     selection=dict(initial_candidates=candidates,selected_initial=selected,
