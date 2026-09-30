@@ -1,0 +1,17 @@
+{
+  "job_name": "hippo-st-endpoint-continuation-20260930",
+  "sbatch": "slurm/fair_three_domain/st_svgp_continuation.sbatch",
+  "seeds": [
+    0
+  ],
+  "kind": "baseline-validation",
+  "methods": [
+    "st_svgp"
+  ],
+  "scope": "Latest endpoint-aware ST-SVGP: all five full COVID streams versus frozen official references, exclusive A30 timing; qualification only, not an independent replicate",
+  "result_template": "/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/fair-three-domain-wandb-20260929/st-svgp-continuation/job-{job}",
+  "wait_for_submissions": [],
+  "wait_for_successful_monitors": [
+    "outputs/2026-09-29-doc-campaign/st_svgp-pems-endpoint-head/monitor/terminal.json"
+  ]
+}
