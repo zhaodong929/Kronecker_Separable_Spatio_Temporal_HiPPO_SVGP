@@ -47,6 +47,7 @@ def main():
     p.add_argument('--prediction-samples', type=int, default=128)
     p.add_argument('--max-blocks', type=int, default=0)
     p.add_argument('--metric-backend', choices=['numpy','jax'], default='numpy')
+    p.add_argument('--rematerialize-scans', action='store_true')
     p.add_argument('--validation-only', action='store_true')
     p.add_argument('--selection-json', type=Path)
     a = p.parse_args()
@@ -77,6 +78,9 @@ def main():
         offsets = np.stack([mean_function.at(t, locations) for t in times])
         return select_initial_targets(initial, locations)-offsets
     model = create(protocol.fit_locations)
+    if a.rematerialize_scans:
+        from baselines.mgpvae.memory import enable_scan_rematerialization
+        enable_scan_rematerialization()
     import jax
     import jax.numpy as jnp
     import objax

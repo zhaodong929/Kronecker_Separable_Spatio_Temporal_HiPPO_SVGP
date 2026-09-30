@@ -587,6 +587,12 @@ def main() -> None:
         print(json.dumps(result, indent=2))
         return
 
+    # Only host copies of the fitted hyperparameters are used below. Keeping
+    # the fitting model alive retains its dense site covariances alongside a
+    # second replay model, exhausting an A30 on the full PEMS initial window.
+    del task1_model
+    release_finished_week_model()
+
     # Rebuild the legal history before the requested segment. Current hidden
     # labels never enter this list: protocol.week() exposes only delayed hidden
     # labels and current visible labels.

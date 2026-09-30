@@ -1,0 +1,16 @@
+{
+  "job_name": "hippo-st_svgp-era5-memory-tail12-20260930",
+  "array": "1,2%3",
+  "sbatch": "slurm/fair_three_domain/st_svgp_era5.sbatch",
+  "seeds": [
+    1,
+    2
+  ],
+  "kind": "final",
+  "scope": "ERA5 st_svgp: full-source verification, own initial validation, no hidden-label release, hourly full 1674-step evaluation; memory recovery preserving objective and precision, GPU equivalence and full-size resource gates required",
+  "result_template": "/vol/bitbucket/nk523/hipposvgp-fair-20260929/results/fair-three-domain-wandb-20260929/era5/st_svgp/seed{seed}/job-{job}",
+  "wait_for_submissions": [
+    "/data/nk523/projects/hipposvgp-fair-comparison/outputs/2026-09-29-doc-campaign/era5-ready.json",
+    "/data/nk523/projects/hipposvgp-fair-comparison/outputs/2026-09-29-doc-campaign/st_svgp-era5-memory-head/submission.json"
+  ]
+}
