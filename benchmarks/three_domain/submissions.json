@@ -73,7 +73,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-osgpr-era5-head-dispatch.service",
+      "dispatch_unit": "hippo-osgpr-era5-reuse-head-dispatch.service",
       "training_seed_actual": 0
     },
     {
@@ -85,7 +85,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-osgpr-era5-tail12-dispatch.service",
+      "dispatch_unit": "hippo-osgpr-era5-reuse-tail12-dispatch.service",
       "training_seed_actual": 1
     },
     {
@@ -97,7 +97,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-osgpr-era5-tail12-dispatch.service",
+      "dispatch_unit": "hippo-osgpr-era5-reuse-tail12-dispatch.service",
       "training_seed_actual": 2
     },
     {
@@ -109,7 +109,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-osgpr-era5-tail34-dispatch.service",
+      "dispatch_unit": "hippo-osgpr-era5-reuse-tail34-dispatch.service",
       "training_seed_actual": 3
     },
     {
@@ -121,7 +121,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "All-period CDS source and five canonical-hour protocols verified on DoC; waiting for scheduler quota, then per-method GPU qualification and full comparison",
-      "dispatch_unit": "hippo-osgpr-era5-tail34-dispatch.service",
+      "dispatch_unit": "hippo-osgpr-era5-reuse-tail34-dispatch.service",
       "training_seed_actual": 4
     },
     {
@@ -368,7 +368,7 @@
       "job_id": 294350,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-graph-budget-head.service",
+      "dispatch_unit": "hippo-osgpr-covid-reuse-head-dispatch.service",
       "training_seed_actual": 5
     },
     {
@@ -380,7 +380,7 @@
       "job_id": 294359,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-graph-budget-tail67.service",
+      "dispatch_unit": "hippo-osgpr-covid-reuse-tail67-dispatch.service",
       "training_seed_actual": 6
     },
     {
@@ -392,7 +392,7 @@
       "job_id": 294359,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-graph-budget-tail67.service",
+      "dispatch_unit": "hippo-osgpr-covid-reuse-tail67-dispatch.service",
       "training_seed_actual": 7
     },
     {
@@ -404,7 +404,7 @@
       "job_id": 294359,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-graph-budget-tail89.service",
+      "dispatch_unit": "hippo-osgpr-covid-reuse-tail89-dispatch.service",
       "training_seed_actual": 8
     },
     {
@@ -416,7 +416,7 @@
       "job_id": 294359,
       "run_url": null,
       "pending_requirement": "GPU qualification, Task-1 selection, full final stream and independent evaluation pending",
-      "dispatch_unit": "hippo-osgpr-covid-graph-budget-tail89.service",
+      "dispatch_unit": "hippo-osgpr-covid-reuse-tail89-dispatch.service",
       "training_seed_actual": 9
     },
     {
@@ -631,7 +631,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "Waiting for COVID submission receipts and quota; GPU qualification and full-initial resource gate precede final execution",
-      "dispatch_unit": "hippo-osgpr-pems-head-dispatch.service",
+      "dispatch_unit": "hippo-osgpr-pems-reuse-head-dispatch.service",
       "training_seed_actual": 1
     },
     {
@@ -643,7 +643,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "Waiting for COVID submission receipts and quota; GPU qualification and full-initial resource gate precede final execution",
-      "dispatch_unit": "hippo-osgpr-pems-tail-dispatch.service",
+      "dispatch_unit": "hippo-osgpr-pems-reuse-tail-dispatch.service",
       "training_seed_actual": 2
     },
     {
@@ -655,7 +655,7 @@
       "job_id": null,
       "run_url": null,
       "pending_requirement": "Waiting for COVID submission receipts and quota; GPU qualification and full-initial resource gate precede final execution",
-      "dispatch_unit": "hippo-osgpr-pems-tail-dispatch.service",
+      "dispatch_unit": "hippo-osgpr-pems-reuse-tail-dispatch.service",
       "training_seed_actual": 3
     },
     {
@@ -921,6 +921,29 @@
       "status": "memory_qualification_recovery",
       "reason": "Cancelled for fitted-model memory release",
       "replacement_release": "f44f615c13023898c0e5df93594a2b310e1c1c9a"
+    },
+    {
+      "job_id": 294381,
+      "dataset": "pems",
+      "method": "osgpr",
+      "seeds": [
+        1
+      ],
+      "status": "cancelled_before_final_for_graph_reuse",
+      "reason": "Repeated tracing ~7.9 s per time projects beyond 72 h; reuse official graph with fresh Adam state, CPU parity and causal tests passed",
+      "replacement_release": "6a952dc2a1012592c0b74d1f9b01d9a1c8c898dc"
+    },
+    {
+      "job_id": 294382,
+      "dataset": "pems",
+      "method": "osgpr",
+      "seeds": [
+        2,
+        3
+      ],
+      "status": "cancelled_before_final_for_graph_reuse",
+      "reason": "Repeated tracing ~7.9 s per time projects beyond 72 h; reuse official graph with fresh Adam state, CPU parity and causal tests passed",
+      "replacement_release": "6a952dc2a1012592c0b74d1f9b01d9a1c8c898dc"
     }
   ]
 }
