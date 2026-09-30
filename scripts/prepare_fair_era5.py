@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Recover ERA5-Land source, verify legacy alignment, build fit-only hourly protocols."""
-import argparse,hashlib,json,re,sys
+import argparse,hashlib,json,re,sys,subprocess
 from pathlib import Path
 import numpy as np
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
 from baselines.covid_long_setting_b.development import _ridge
 from benchmarks.three_domain.geometry import farthest_indices
+from benchmarks.three_domain.era5_alignment import legacy_row_indices
 VARIABLES={'d2m':0,'t2m':1,'skt':2,'u10':29,'v10':30,'sp':31,'tp':32}
 TOLERANCE={'d2m':.005,'t2m':.005,'skt':.005,'u10':.005,'v10':.005,'sp':1.,'tp':1e-6}
 
@@ -14,6 +15,10 @@ from benchmarks.three_domain.era5_features import features
 def main():
     p=argparse.ArgumentParser();p.add_argument('--downloads',type=Path,required=True);p.add_argument('--output',type=Path,required=True);a=p.parse_args()
     import xarray as xr
+    preparation_names=['scripts/prepare_fair_era5.py','benchmarks/three_domain/era5_features.py','benchmarks/three_domain/era5_alignment.py','benchmarks/three_domain/geometry.py','baselines/covid_long_setting_b/development.py']
+    preparation_code={name:(ROOT/name).read_bytes() for name in preparation_names}
+    preparation_hashes={name:hashlib.sha256(value).hexdigest() for name,value in preparation_code.items()}
+    preparation_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
     public=ROOT/'baselines/external/harrisonzhu508_HIPPOSVGP/data/era5/processed_timeseries_4'
     files=sorted(x for x in (public/'task_1/sequences').glob('*.npz') if not x.stem.endswith('_scaled'))
     coords=np.array([[float(x) for x in re.match(r'lat_([-\d.]+)_lon_([-\d.]+)',f.stem).groups()] for f in files]);assert coords.shape==(1000,2)
@@ -32,9 +37,9 @@ def main():
             raw.append(np.stack([subset[v].transpose('valid_time','site').values for v in VARIABLES],axis=-1));dates.append(subset.valid_time.values)
         source.append(dict(file=f.name,sha256=hashlib.file_digest(f.open('rb'),'sha256').hexdigest()))
     raw=np.concatenate(raw);dates=np.concatenate(dates)
-    expected=np.datetime64('2020-01-01T00','h')+np.arange(1860).astype('timedelta64[h]');raw=raw[:1860];dates=dates[:1860]
+    expected=np.datetime64('2020-01-01T00','h')+np.arange(1860).astype('timedelta64[h]');fullraw=raw;raw=raw[:1860];dates=dates[:1860]
     np.testing.assert_array_equal(dates,expected);assert raw.shape==(1860,1000,7) and np.isfinite(raw).all()
-    errors={v:0. for v in VARIABLES};oldrecovered=np.empty((1860,1000))
+    errors={v:0. for v in VARIABLES};oldrecovered=np.empty((1860,1000));legacy_gaps=[];fullerror=0.
     for j,f in enumerate(files):
         public_values=[]
         for task in ['task_1','task_2']:
@@ -42,15 +47,21 @@ def main():
                 t=np.concatenate([data['time_'+s] for s in ['train','val','test']]);v=np.concatenate([data['data_'+s] for s in ['train','val','test']],axis=1)
                 public_values.append(v[:,np.argsort(t)])
         v=np.concatenate(public_values,axis=1)
-        for k,(name,idx) in enumerate(VARIABLES.items()):errors[name]=max(errors[name],float(np.max(abs(raw[:372,j,k]-v[idx]))))
         scale,offset=np.linalg.lstsq(np.column_stack([oldy[:186,j],np.ones(186)]),v[0,:186],rcond=None)[0]
         oldrecovered[:,j]=oldy[:,j]*scale+offset
+        index,gap=legacy_row_indices(oldrecovered[:,j],fullraw[:,j,0],TOLERANCE['d2m'])
+        fullerror=max(fullerror,float(np.max(abs(fullraw[index,j,0]-oldrecovered[:,j]))))
+        if gap is not None:legacy_gaps.append(dict(site=j,file=f.name,location=coords[j].tolist(),omitted_utc_hour_index=gap,omitted_utc=str(np.datetime64('2020-01-01T00','h')+np.timedelta64(gap,'h')),legacy_offset_after_gap=1))
+        for k,(name,idx) in enumerate(VARIABLES.items()):errors[name]=max(errors[name],float(np.max(abs(fullraw[index[:372],j,k]-v[idx]))))
     for name,err in errors.items():
         if err>TOLERANCE[name]:raise ValueError(f'Source overlap mismatch: {name} error {err}, tolerance {TOLERANCE[name]}')
-    fullerror=float(np.max(abs(raw[:,:,0]-oldrecovered)))
+    uncorrected_error=float(np.max(abs(raw[:,:,0]-oldrecovered)))
     if fullerror>TOLERANCE['d2m']:raise ValueError(f'Long target alignment mismatch {fullerror}')
     a.output.mkdir(parents=True,exist_ok=True)
-    evidence=dict(status='all_sites_full_period_target_and_372_hour_covariates_verified',source_files=source,source_dataset='reanalysis-era5-land',overlap_max_absolute_errors=errors,full_target_max_absolute_error_K=fullerror,tolerances=TOLERANCE,not_bitwise_identical=True)
+    evidence=dict(status='all_sites_full_period_target_and_372_hour_covariates_verified',source_files=source,source_dataset='reanalysis-era5-land',overlap_max_absolute_errors=errors,full_target_max_absolute_error_K=fullerror,uncorrected_legacy_target_max_absolute_error_K=uncorrected_error,legacy_omitted_hours=legacy_gaps,output_time_policy='Canonical CDS UTC grid; legacy per-site dropped hours restored, never shift source values to imitate the old misalignment',tolerances=TOLERANCE,not_bitwise_identical=True)
+    evidence.update(preparation_source_sha256=preparation_hashes,preparation_git_commit=preparation_commit)
+    for name,value in preparation_code.items():
+        dst=a.output/'preparation-source'/name;dst.parent.mkdir(parents=True,exist_ok=True);dst.write_bytes(value)
     (a.output/'source-verification.json').write_text(json.dumps(evidence,indent=2))
     np.savez_compressed(a.output/'raw-recovered.npz',values=raw,coordinates=coords,times=dates)
     for seed in range(5):

@@ -341,3 +341,23 @@ not a numerical rerun. ERA5 proposal calibration now explicitly passes
 `--model-seed 0` and declares `training_seed=0`, matching its online builder.
 All ledger rows record `training_seed_actual` separately from `split_seed`.
 External methods use their explicit `--seed`, equal to the recorded split seed.
+
+### ERA5 legacy time-index defect found during full-site source checks
+
+The January CDS source contains all 744 physical hours and the seven requested
+variables. The public 372-row files for two sites omit one physical hour:
+(50.3,1.8) drops 2020-01-13 05:00 UTC (index 293); (52.8,1.0) drops 03:00 UTC
+(index 291). Their subsequent synthetic time indices are one hour behind their
+actual values. With that single-row omission accounted for, **all seven variables
+match bit-for-bit** at these sites over the public prefix. The official processing
+notebook shows per-location `dropna()` followed by synthetic sequence indices,
+consistent with this observed defect; do not assume equal row numbers imply equal
+physical timestamps.
+
+The rerun uses the canonical CDS UTC grid, restoring those hours rather than
+shifting future weather/targets into the present. The reference-alignment gate
+may diagnose a single omitted source hour, but must still meet the original
+strict tolerances and reject unexplained differences. The mapping is used only
+for legacy provenance checks, never to alter the new target/covariate time grid.
+All-site full-period alignment remains pending February/March retrieval. The
+preparation code and hashes are snapshotted alongside the data-verification report.
