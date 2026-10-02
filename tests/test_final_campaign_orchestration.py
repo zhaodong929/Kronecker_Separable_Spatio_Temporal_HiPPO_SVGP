@@ -53,10 +53,10 @@ def test_failed_run_does_not_stop_other_assigned_tasks(tmp_path,monkeypatch):
         p=Path(p);p.parent.mkdir(parents=True,exist_ok=True);p.write_text(json.dumps(d))
     selection=tmp_path/'selection.json';selection.write_text('{}')
     proof=dict(source_commit='a',source_sha256='b',selection_sha256=m.digest(selection),
-               refit_budget={},input_files={})
+               refit_budget={},input_files={},qualification_sha256=m.digest(selection))
     task=dict(id='x',configuration=dict(method='kronhippo_svgp',seed=0),proof=proof,
               output=str(tmp_path/'out'),prepared=str(tmp_path/'prepared'),selection=str(selection),
-              dataset='covid',split_seed=5)
+              dataset='covid',split_seed=5,qualification_record=str(selection))
     tasks=[dict(task,id=str(i),output=str(tmp_path/f'out{i}')) for i in range(4)]
     helpers=types.SimpleNamespace(atomic_json=atomic,verify_source=lambda *a:None,
         InputProofs=lambda:types.SimpleNamespace(get=lambda *a:{}),ENVIRONMENTS={'kronhippo_svgp':'env-routeb'})

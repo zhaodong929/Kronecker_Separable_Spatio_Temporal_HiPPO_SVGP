@@ -39,6 +39,28 @@ def completed(attempt, proof):
     except (OSError, ValueError, KeyError, TypeError): return False
 
 
+def qualify(c, destination, method, dataset, helpers):
+    results=c/'results'
+    if method in ('osgpr','st_svgp'):
+        parity=results/'task-stream-memory-parity-20260930-44d78a8'/method/'job-294587/result.json'
+        shape=results/f'task-stream-memory-shapes-20260930-44d78a8-{dataset}'/method/'job-294588/result.json'
+    else:
+        parity=results/('task-stream-compact-20260930-eedc07f' if method=='mgpvae' else 'task-stream-tiny-20260930-fcff705')/method/('job-294570/result.json' if method=='mgpvae' else 'job-294564/result.json')
+        shape=results/f'task-stream-shapes-20260930-eedc07f-{dataset}'/method/'job-294573/result.json'
+    evidence=[]
+    for kind,path in [('device_parity',parity),('full_size_shape',shape)]:
+        record=json.loads(path.read_text())
+        assert record['status']=='completed' and record['method']==method
+        assert record['qualification'] in ('cpu_gpu_parity_passed','independentfits_completed_and_fixed_state_prediction_parity','shape_only_passed')
+        if kind=='device_parity': assert record['qualification']!='shape_only_passed'
+        evidence.append(dict(kind=kind,path=str(path),sha256=digest(path),record=record))
+    path=destination/'qualifications'/f'{dataset}-{method}.json'
+    helpers.atomic_json(path,dict(status='passed',method=method,dataset=dataset,evidence=evidence,
+        scope='device numerics and full initial-data shape qualification; subsequent selection complete',
+        convergence_qualified=False,main_table_admitted=False))
+    return path
+
+
 def build(c, source, destination, campaign, helpers):
     from benchmarks.task_stream.data import PreparedData
     from benchmarks.task_stream.provenance import feature_identity, source_identity
@@ -81,11 +103,12 @@ def build(c, source, destination, campaign, helpers):
         inputs=proofs.get(prepared)
         winner_result=json.loads((winner/'result.json').read_text())
         assert all(winner_result['provenance']['input_files'].get(p)==h for p,h in inputs.items())
+        qualification=qualify(c,destination,g['method'],g['dataset'],helpers)
         name=f"{g['dataset']}-seed{g['split_seed']}-{g['method']}"
         tasks.append(dict(id=name,dataset=g['dataset'],split_seed=g['split_seed'],configuration=config,
-            prepared=str(prepared),selection=str(selection),output=str(destination/'runs'/name),
+            prepared=str(prepared),selection=str(selection),qualification_record=str(qualification),output=str(destination/'runs'/name),
             proof=dict(source_commit=revision,source_sha256=identity,configuration_sha256=config_hash,
-                input_files=inputs,selection_sha256=digest(selection),refit_budget=plan)))
+                input_files=inputs,selection_sha256=digest(selection),qualification_sha256=digest(qualification),refit_budget=plan)))
     assert actual==expected
     # Interleave domains; method order distributes each framework across workers.
     tasks.sort(key=lambda t:(t['split_seed'],t['configuration']['method']))
@@ -119,6 +142,7 @@ def run(tasks, c, source, destination, campaign, index, helpers):
             helpers.verify_source(source,proof['source_commit'],proof['source_sha256'])
             assert cache.get(task['prepared'])==proof['input_files']
             assert digest(task['selection'])==proof['selection_sha256']
+            assert digest(task['qualification_record'])==proof['qualification_sha256']
             reusable=[p for p in (logical/'attempts').glob('*') if completed(p,proof)]
             if reusable:
                 status['completed'].append(dict(id=task['id'],attempt=str(sorted(reusable)[-1]),reused=True));persist();continue
@@ -130,7 +154,8 @@ def run(tasks, c, source, destination, campaign, index, helpers):
                 method=method,split_seed=task['split_seed'],training_seed=task['configuration']['seed'],stage='final',
                 source_commit=proof['source_commit'],source_sha256=proof['source_sha256'],worker_python=str(worker),
                 main_table_admitted=False,convergence_qualified=False,refit_budget=proof['refit_budget'],
-                input_files=[str(attempt/'configuration.json'),task['selection'],*proof['input_files']],
+                qualification_record=task['qualification_record'],
+                input_files=[str(attempt/'configuration.json'),task['selection'],task['qualification_record'],*proof['input_files']],
                 timing_scope='one dedicated A30 GPU; fixed selected refit work and complete final task stream')
             helpers.atomic_json(attempt/'spec.json',spec)
             command=[str(c/'env-tracking/bin/python'),str(source/'scripts/run_tracked_experiment.py'),
