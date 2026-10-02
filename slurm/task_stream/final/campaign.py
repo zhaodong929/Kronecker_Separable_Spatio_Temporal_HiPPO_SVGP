@@ -61,7 +61,7 @@ def build(c, source, destination, campaign, helpers):
         assert len(selected['candidates'])==3
         winner=Path(selected['winner']['path'])
         assert digest(winner/'result.json') == selected['winner']['result_sha256']
-        config,config_hash=helpers.canonical_configuration(json.loads((winner/'configuration.json').read_text()))
+        config,config_hash=helpers.canonical_configuration(json.loads((winner.parent/'configuration.json').read_text()))
         assert selected['configuration_sha256']==config_hash
         assert selected['source_commit']==revision and selected['source_sha256']==identity
         artifacts=json.loads((winner/'artifacts.json').read_text())
